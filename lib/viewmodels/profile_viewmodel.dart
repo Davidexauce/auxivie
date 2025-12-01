@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import '../models/user_model.dart';
 import '../services/database_service.dart';
+import '../services/backend_api_service.dart';
 
 /// ViewModel pour la gestion des profils
 class ProfileViewModel extends ChangeNotifier {

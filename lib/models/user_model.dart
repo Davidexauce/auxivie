@@ -11,6 +11,11 @@ class UserModel {
   final int? experience; // années d'expérience
   final String? photo;
   final String userType; // 'professionnel' ou 'famille'
+  // Champs spécifiques aux familles
+  final String? besoin; // Besoins de la famille
+  final String? preference; // Préférences de la famille
+  final String? mission; // Mission demandée
+  final String? particularite; // Particularités
 
   UserModel({
     this.id,
@@ -24,6 +29,10 @@ class UserModel {
     this.experience,
     this.photo,
     required this.userType,
+    this.besoin,
+    this.preference,
+    this.mission,
+    this.particularite,
   });
 
   /// Convertit le modèle en Map pour SQLite
@@ -40,6 +49,10 @@ class UserModel {
       'experience': experience,
       'photo': photo,
       'userType': userType,
+      'besoin': besoin,
+      'preference': preference,
+      'mission': mission,
+      'particularite': particularite,
     };
   }
 
@@ -57,6 +70,10 @@ class UserModel {
       experience: map['experience'] as int?,
       photo: map['photo'] as String?,
       userType: map['userType'] as String,
+      besoin: map['besoin'] as String?,
+      preference: map['preference'] as String?,
+      mission: map['mission'] as String?,
+      particularite: map['particularite'] as String?,
     );
   }
 
@@ -75,6 +92,10 @@ class UserModel {
     int? experience,
     String? photo,
     String? userType,
+    String? besoin,
+    String? preference,
+    String? mission,
+    String? particularite,
   }) {
     return UserModel(
       id: id ?? this.id,
@@ -88,6 +109,10 @@ class UserModel {
       experience: experience ?? this.experience,
       photo: photo ?? this.photo,
       userType: userType ?? this.userType,
+      besoin: besoin ?? this.besoin,
+      preference: preference ?? this.preference,
+      mission: mission ?? this.mission,
+      particularite: particularite ?? this.particularite,
     );
   }
 }

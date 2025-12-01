@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import '../models/reservation_model.dart';
 import '../services/database_service.dart';
+import '../services/backend_api_service.dart';
 
 /// ViewModel pour la gestion des réservations
 class ReservationViewModel extends ChangeNotifier {
@@ -26,7 +27,8 @@ class ReservationViewModel extends ChangeNotifier {
     notifyListeners();
 
     try {
-      _reservations = await _db.getUserReservations(userId);
+      // Charger depuis le backend (base de données unique)
+      _reservations = await BackendApiService.getUserReservations(userId);
       _isLoading = false;
       notifyListeners();
     } catch (e) {
@@ -43,7 +45,8 @@ class ReservationViewModel extends ChangeNotifier {
     notifyListeners();
 
     try {
-      _reservations = await _db.getProfessionalReservations(professionnelId);
+      // Charger depuis le backend (base de données unique)
+      _reservations = await BackendApiService.getProfessionalReservations(professionnelId);
       _isLoading = false;
       notifyListeners();
     } catch (e) {
@@ -85,9 +88,16 @@ class ReservationViewModel extends ChangeNotifier {
         status: 'pending',
       );
 
-      await _db.createReservation(reservation);
+      // Créer directement dans le backend (base de données unique)
+      final success = await BackendApiService.createReservation(reservation);
+      if (!success) {
+        _errorMessage = 'Erreur lors de la création de la réservation';
+        _isLoading = false;
+        notifyListeners();
+        return false;
+      }
       
-      // Recharger les réservations
+      // Recharger les réservations depuis le backend
       await loadUserReservations(userId);
 
       _isLoading = false;
@@ -108,9 +118,16 @@ class ReservationViewModel extends ChangeNotifier {
     notifyListeners();
 
     try {
-      await _db.updateReservation(reservation);
+      // Mettre à jour directement dans le backend
+      final success = await BackendApiService.updateReservation(reservation);
+      if (!success) {
+        _errorMessage = 'Erreur lors de la mise à jour de la réservation';
+        _isLoading = false;
+        notifyListeners();
+        return false;
+      }
       
-      // Recharger les réservations
+      // Recharger les réservations depuis le backend
       await loadUserReservations(reservation.userId);
 
       _isLoading = false;
@@ -143,9 +160,9 @@ class ReservationViewModel extends ChangeNotifier {
     notifyListeners();
 
     try {
-      await _db.deleteReservation(reservationId);
-      
-      // Retirer de la liste locale
+      // Supprimer directement dans le backend
+      // TODO: Implémenter la suppression via API si nécessaire
+      // Pour l'instant, retirer de la liste locale
       _reservations.removeWhere((r) => r.id == reservationId);
 
       _isLoading = false;

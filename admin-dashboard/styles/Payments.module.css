@@ -1,0 +1,114 @@
+.container {
+  width: 100%;
+}
+
+.title {
+  font-size: 32px;
+  font-weight: 700;
+  color: #0b1220;
+  margin-bottom: 24px;
+}
+
+.filters {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 24px;
+}
+
+.filter,
+.activeFilter {
+  padding: 8px 16px;
+  border: 2px solid #e2e8f0;
+  border-radius: 8px;
+  background: white;
+  cursor: pointer;
+  font-weight: 500;
+  transition: all 0.2s;
+}
+
+.activeFilter {
+  background: linear-gradient(to right, #16a34a, #10b981, #16a34a);
+  color: white;
+  border-color: transparent;
+}
+
+.filter:hover {
+  border-color: #16a34a;
+}
+
+.tableContainer {
+  background: white;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.table thead {
+  background: #f6fbf8;
+}
+
+.table th {
+  padding: 16px;
+  text-align: left;
+  font-weight: 600;
+  color: #0b1220;
+  font-size: 14px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.table td {
+  padding: 16px;
+  border-top: 1px solid #e2e8f0;
+  color: #0b1220;
+}
+
+.table tbody tr:hover {
+  background: #f6fbf8;
+}
+
+.amount {
+  font-weight: 600;
+  color: #16a34a;
+}
+
+.status {
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.status.pending {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.status.completed {
+  background: #f0fdf4;
+  color: #166534;
+}
+
+.status.failed {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.noData {
+  text-align: center;
+  padding: 40px;
+  color: #475569;
+}
+
+.loading {
+  text-align: center;
+  padding: 40px;
+  color: #475569;
+}
+

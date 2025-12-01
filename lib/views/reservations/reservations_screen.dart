@@ -23,15 +23,17 @@ class _ReservationsScreenState extends State<ReservationsScreen> {
   CalendarFormat _calendarFormat = CalendarFormat.month;
   DateTime _focusedDay = DateTime.now();
   DateTime _selectedDay = DateTime.now();
-  late Future<void> _loadFuture;
+  bool _hasLoaded = false;
 
   @override
   void initState() {
     super.initState();
-    _loadFuture = _loadReservations();
   }
 
   Future<void> _loadReservations() async {
+    if (!mounted || _hasLoaded) return;
+    
+    _hasLoaded = true;
     final reservationViewModel = Provider.of<ReservationViewModel>(context, listen: false);
     final authViewModel = Provider.of<AuthViewModel>(context, listen: false);
     final user = authViewModel.currentUser;
@@ -45,8 +47,7 @@ class _ReservationsScreenState extends State<ReservationsScreen> {
     }
   }
 
-  Map<DateTime, List<ReservationModel>> _getReservationsByDate() {
-    final reservationViewModel = Provider.of<ReservationViewModel>(context);
+  Map<DateTime, List<ReservationModel>> _getReservationsByDate(ReservationViewModel reservationViewModel) {
     final Map<DateTime, List<ReservationModel>> reservationsByDate = {};
 
     for (final reservation in reservationViewModel.reservations) {
@@ -64,8 +65,8 @@ class _ReservationsScreenState extends State<ReservationsScreen> {
     return reservationsByDate;
   }
 
-  List<ReservationModel> _getReservationsForSelectedDay() {
-    final reservationsByDate = _getReservationsByDate();
+  List<ReservationModel> _getReservationsForSelectedDay(ReservationViewModel reservationViewModel) {
+    final reservationsByDate = _getReservationsByDate(reservationViewModel);
     final selectedDate = DateTime(
       _selectedDay.year,
       _selectedDay.month,
@@ -76,10 +77,9 @@ class _ReservationsScreenState extends State<ReservationsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final authViewModel = Provider.of<AuthViewModel>(context);
+    final authViewModel = Provider.of<AuthViewModel>(context, listen: false);
     final currentUser = authViewModel.currentUser;
     final isFamily = currentUser?.userType == 'famille';
-    final reservationsByDate = _getReservationsByDate();
 
     return Scaffold(
       appBar: AppBar(
@@ -101,12 +101,20 @@ class _ReservationsScreenState extends State<ReservationsScreen> {
             ),
         ],
       ),
-      body: FutureBuilder(
-        future: _loadFuture,
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
+      body: Consumer<ReservationViewModel>(
+        builder: (context, reservationViewModel, child) {
+          // Charger les réservations après le premier frame
+          if (!_hasLoaded) {
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              _loadReservations();
+            });
+          }
+
+          if (reservationViewModel.isLoading && reservationViewModel.reservations.isEmpty) {
             return const Center(child: CircularProgressIndicator());
           }
+
+          final reservationsByDate = _getReservationsByDate(reservationViewModel);
 
           return Column(
             children: [
@@ -178,7 +186,7 @@ class _ReservationsScreenState extends State<ReservationsScreen> {
                     ),
                     const SizedBox(height: 8),
                     Expanded(
-                      child: _getReservationsForSelectedDay().isEmpty
+                      child: _getReservationsForSelectedDay(reservationViewModel).isEmpty
                           ? Center(
                               child: Column(
                                 mainAxisAlignment: MainAxisAlignment.center,
@@ -198,9 +206,9 @@ class _ReservationsScreenState extends State<ReservationsScreen> {
                             )
                           : ListView.builder(
                               padding: const EdgeInsets.all(16.0),
-                              itemCount: _getReservationsForSelectedDay().length,
+                              itemCount: _getReservationsForSelectedDay(reservationViewModel).length,
                               itemBuilder: (context, index) {
-                                final reservation = _getReservationsForSelectedDay()[index];
+                                final reservation = _getReservationsForSelectedDay(reservationViewModel)[index];
                                 return _ReservationCard(reservation: reservation);
                               },
                             ),

@@ -66,6 +66,17 @@
   margin-bottom: 16px;
 }
 
+.sectionHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.sectionHeader h2 {
+  margin: 0;
+}
+
 .infoGrid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
@@ -98,10 +109,193 @@
   background: #f0fdf4;
   color: #166534;
   border: 1px solid #dcfce7;
-  padding: 6px 12px;
+  padding: 8px 14px;
   border-radius: 16px;
   font-size: 14px;
   font-weight: 500;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.badgeDescription {
+  font-size: 12px;
+  opacity: 0.7;
+  cursor: help;
+}
+
+.noBadges {
+  color: #475569;
+  font-style: italic;
+  padding: 16px;
+  text-align: center;
+  background: #f6fbf8;
+  border-radius: 8px;
+  border: 1px dashed #e2e8f0;
+}
+
+.removeBadge {
+  background: none;
+  border: none;
+  color: #166534;
+  cursor: pointer;
+  font-size: 18px;
+  font-weight: bold;
+  padding: 0;
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition: background 0.2s;
+}
+
+.removeBadge:hover {
+  background: rgba(22, 101, 52, 0.1);
+}
+
+.addButton {
+  background: linear-gradient(to right, #16a34a, #10b981, #16a34a);
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 500;
+  font-size: 14px;
+  transition: opacity 0.2s;
+}
+
+.addButton:hover {
+  opacity: 0.9;
+}
+
+.reviewsList {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.reviewItem {
+  padding: 16px;
+  background: #f6fbf8;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+}
+
+.reviewHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.reviewerName {
+  font-weight: 600;
+  color: #0b1220;
+}
+
+.reviewRating {
+  color: #fbbf24;
+  font-weight: 600;
+}
+
+.reviewComment {
+  color: #334155;
+  margin: 8px 0;
+  line-height: 1.5;
+}
+
+.reviewDate {
+  font-size: 12px;
+  color: #475569;
+}
+
+.modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.modalContent {
+  background: white;
+  padding: 24px;
+  border-radius: 12px;
+  width: 90%;
+  max-width: 400px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+}
+
+.modalContent h3 {
+  margin: 0 0 20px 0;
+  color: #0b1220;
+  font-size: 20px;
+}
+
+.modalForm {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.modalInput {
+  padding: 12px;
+  border: 2px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: 14px;
+}
+
+.modalInput:focus {
+  outline: none;
+  border-color: #16a34a;
+}
+
+.modalActions {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.modalButton {
+  flex: 1;
+  background: linear-gradient(to right, #16a34a, #10b981, #16a34a);
+  color: white;
+  border: none;
+  padding: 12px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: opacity 0.2s;
+}
+
+.modalButton:hover {
+  opacity: 0.9;
+}
+
+.modalButtonCancel {
+  flex: 1;
+  background: #e2e8f0;
+  color: #0b1220;
+  border: none;
+  padding: 12px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: background 0.2s;
+}
+
+.modalButtonCancel:hover {
+  background: #cbd5e1;
 }
 
 .rating {
@@ -125,5 +319,112 @@
   text-align: center;
   padding: 40px;
   color: #6c757d;
+}
+
+.modalLabel {
+  display: block;
+  font-size: 14px;
+  font-weight: 600;
+  color: #0b1220;
+  margin-bottom: 8px;
+}
+
+.modalSelect {
+  width: 100%;
+  padding: 12px;
+  border: 2px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: 14px;
+  background-color: white;
+  cursor: pointer;
+  transition: border-color 0.2s;
+  margin-bottom: 0;
+}
+
+.modalSelect:focus {
+  outline: none;
+  border-color: #16a34a;
+}
+
+.modalSelect:hover {
+  border-color: #16a34a;
+}
+
+.badgePreview {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px;
+  background: #f6fbf8;
+  border: 2px solid #dcfce7;
+  border-radius: 8px;
+  margin-top: 12px;
+}
+
+.badgePreviewIcon {
+  font-size: 32px;
+  width: 48px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  flex-shrink: 0;
+}
+
+.badgePreviewInfo {
+  flex: 1;
+}
+
+.badgePreviewName {
+  font-size: 16px;
+  font-weight: 600;
+  color: #0b1220;
+  margin-bottom: 4px;
+}
+
+.badgePreviewDescription {
+  font-size: 13px;
+  color: #475569;
+  line-height: 1.4;
+}
+
+.modalButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.modalTextarea {
+  width: 100%;
+  padding: 12px;
+  border: 2px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: 14px;
+  font-family: inherit;
+  resize: vertical;
+  min-height: 80px;
+}
+
+.modalTextarea:focus {
+  outline: none;
+  border-color: #16a34a;
+}
+
+.deleteReviewButton {
+  background: none;
+  border: none;
+  color: #dc2626;
+  cursor: pointer;
+  font-size: 20px;
+  font-weight: bold;
+  padding: 4px 8px;
+  border-radius: 4px;
+  transition: background 0.2s;
+}
+
+.deleteReviewButton:hover {
+  background: rgba(220, 38, 38, 0.1);
 }
 

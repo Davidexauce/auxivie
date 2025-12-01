@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import '../../viewmodels/message_viewmodel.dart';
+import '../../services/backend_api_service.dart';
+import '../professionals/professional_detail_screen.dart';
+import '../families/family_detail_screen.dart';
 
 /// Écran de chat/conversation
 class ChatScreen extends StatefulWidget {
@@ -127,6 +130,60 @@ class _ChatScreenState extends State<ChatScreen> {
             ),
           ],
         ),
+        actions: [
+          // Bouton pour voir le profil
+          IconButton(
+            icon: Icon(
+              partner?.userType == 'professionnel'
+                  ? Icons.person_outline
+                  : Icons.family_restroom,
+            ),
+            tooltip: 'Voir le profil',
+            onPressed: () async {
+              if (partner == null) {
+                // Charger le partenaire depuis le backend
+                final loadedPartner = await BackendApiService.getUserById(widget.otherUserId);
+                if (loadedPartner != null) {
+                  if (loadedPartner.userType == 'professionnel') {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) => ProfessionalDetailScreen(
+                          professional: loadedPartner,
+                        ),
+                      ),
+                    );
+                  } else {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) => FamilyDetailScreen(
+                          family: loadedPartner,
+                        ),
+                      ),
+                    );
+                  }
+                }
+              } else {
+                if (partner.userType == 'professionnel') {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (_) => ProfessionalDetailScreen(
+                        professional: partner,
+                      ),
+                    ),
+                  );
+                } else {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (_) => FamilyDetailScreen(
+                        family: partner,
+                      ),
+                    ),
+                  );
+                }
+              }
+            },
+          ),
+        ],
       ),
       body: Column(
         children: [

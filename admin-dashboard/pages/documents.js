@@ -36,6 +36,20 @@ export default function Documents() {
       loadDocuments();
     } catch (error) {
       console.error('Erreur:', error);
+      alert('Erreur lors de la validation');
+    }
+  };
+
+  const handleReject = async (docId) => {
+    if (!confirm('Êtes-vous sûr de vouloir refuser ce document ?')) {
+      return;
+    }
+    try {
+      await documentsAPI.reject(docId);
+      loadDocuments();
+    } catch (error) {
+      console.error('Erreur:', error);
+      alert('Erreur lors du refus');
     }
   };
 
@@ -70,19 +84,38 @@ export default function Documents() {
                   <td>{doc.userId}</td>
                   <td>{doc.type}</td>
                   <td>
-                    <span className={doc.verified ? styles.verified : styles.pending}>
-                      {doc.verified ? 'Vérifié' : 'En attente'}
+                    <span className={
+                      doc.verified ? styles.verified : 
+                      doc.status === 'rejected' ? styles.rejected : 
+                      styles.pending
+                    }>
+                      {doc.verified ? 'Vérifié' : 
+                       doc.status === 'rejected' ? 'Refusé' : 
+                       'En attente'}
                     </span>
                   </td>
                   <td>
-                    {!doc.verified && (
-                      <button
-                        className={styles.verifyButton}
-                        onClick={() => handleVerify(doc.id)}
-                      >
-                        Vérifier
-                      </button>
-                    )}
+                    <div className={styles.actions}>
+                      {!doc.verified && doc.status !== 'rejected' && (
+                        <>
+                          <button
+                            className={styles.verifyButton}
+                            onClick={() => handleVerify(doc.id)}
+                          >
+                            Valider
+                          </button>
+                          <button
+                            className={styles.rejectButton}
+                            onClick={() => handleReject(doc.id)}
+                          >
+                            Refuser
+                          </button>
+                        </>
+                      )}
+                      {doc.status === 'rejected' && (
+                        <span className={styles.rejected}>Refusé</span>
+                      )}
+                    </div>
                   </td>
                 </tr>
               ))}

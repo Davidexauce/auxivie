@@ -3,7 +3,15 @@
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "sync": "node scripts/sync-from-flutter.js",
+    "dev": "nodemon server.js",
+    "start": "node server.js",
+    "start:prod": "NODE_ENV=production node server.js",
+    "clear-all": "node scripts/clear-all-data.js",
+    "clear-flutter": "node scripts/clear-flutter-db.js",
+    "backup": "node scripts/backup-db.js",
+    "migrate:postgres": "node scripts/migrate-to-postgres.js"
   },
   "keywords": [],
   "author": "",
@@ -13,7 +21,7 @@
     "bcryptjs": "^3.0.3",
     "cors": "^2.8.5",
     "dotenv": "^17.2.3",
-    "express": "^5.1.0",
+    "express": "^5.2.0",
     "jsonwebtoken": "^9.0.2",
     "sqlite3": "^5.1.7"
   },

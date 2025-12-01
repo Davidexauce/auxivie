@@ -39,7 +39,7 @@ export const authAPI = {
 // API des utilisateurs
 export const usersAPI = {
   getAll: async () => {
-    return apiCall('/api/users');
+    return apiCall('/api/users/admin');
   },
   getById: async (id) => {
     return apiCall(`/api/users/${id}`);
@@ -72,12 +72,47 @@ export const documentsAPI = {
       method: 'POST',
     });
   },
+  reject: async (id) => {
+    return apiCall(`/api/documents/${id}/reject`, {
+      method: 'POST',
+    });
+  },
+};
+
+// API des messages
+export const messagesAPI = {
+  getAll: async () => {
+    return apiCall('/api/messages/admin');
+  },
+  getConversation: async (userId) => {
+    return apiCall(`/api/messages/admin?userId=${userId}`);
+  },
+  send: async (data) => {
+    return apiCall('/api/messages/admin', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  },
 };
 
 // API des réservations
 export const reservationsAPI = {
   getAll: async () => {
-    return apiCall('/api/reservations');
+    return apiCall('/api/reservations/admin');
+  },
+  getById: async (id) => {
+    return apiCall(`/api/reservations/${id}`);
+  },
+  updateStatus: async (id, status) => {
+    return apiCall(`/api/reservations/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify({ status }),
+    });
+  },
+  delete: async (id) => {
+    return apiCall(`/api/reservations/${id}`, {
+      method: 'DELETE',
+    });
   },
 };
 
@@ -121,10 +156,18 @@ export const ratingsAPI = {
 
 // API des avis
 export const reviewsAPI = {
+  getAll: async () => {
+    return apiCall('/api/reviews');
+  },
   create: async (reviewData) => {
     return apiCall('/api/reviews', {
       method: 'POST',
       body: JSON.stringify(reviewData),
+    });
+  },
+  delete: async (reviewId) => {
+    return apiCall(`/api/reviews/${reviewId}`, {
+      method: 'DELETE',
     });
   },
 };

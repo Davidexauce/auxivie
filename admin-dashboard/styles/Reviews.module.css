@@ -1,0 +1,142 @@
+.container {
+  width: 100%;
+}
+
+.title {
+  font-size: 32px;
+  font-weight: 700;
+  color: #0b1220;
+  margin-bottom: 24px;
+}
+
+.filters {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 24px;
+}
+
+.filter,
+.activeFilter {
+  padding: 8px 16px;
+  border: 2px solid #e2e8f0;
+  border-radius: 8px;
+  background: white;
+  cursor: pointer;
+  font-weight: 500;
+  transition: all 0.2s;
+}
+
+.activeFilter {
+  background: linear-gradient(to right, #16a34a, #10b981, #16a34a);
+  color: white;
+  border-color: transparent;
+}
+
+.filter:hover {
+  border-color: #16a34a;
+}
+
+.reviewsList {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.reviewCard {
+  background: white;
+  padding: 24px;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+.reviewHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 12px;
+}
+
+.reviewInfo {
+  flex: 1;
+}
+
+.reviewerName {
+  font-size: 18px;
+  font-weight: 600;
+  color: #0b1220;
+  margin: 0 0 4px 0;
+}
+
+.professionalName {
+  font-size: 14px;
+  color: #475569;
+  margin: 0 0 8px 0;
+}
+
+.rating {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.stars {
+  color: #fbbf24;
+  font-size: 18px;
+}
+
+.ratingValue {
+  font-size: 14px;
+  font-weight: 600;
+  color: #0b1220;
+}
+
+.reviewMeta {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 8px;
+}
+
+.date {
+  font-size: 12px;
+  color: #475569;
+}
+
+.deleteButton {
+  background: #dc2626;
+  color: white;
+  border: none;
+  padding: 6px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 500;
+  font-size: 12px;
+  transition: background 0.2s;
+}
+
+.deleteButton:hover {
+  background: #991b1b;
+}
+
+.comment {
+  color: #334155;
+  line-height: 1.6;
+  margin: 0;
+  padding-top: 12px;
+  border-top: 1px solid #e2e8f0;
+}
+
+.noData {
+  text-align: center;
+  padding: 40px;
+  color: #475569;
+  background: white;
+  border-radius: 12px;
+}
+
+.loading {
+  text-align: center;
+  padding: 40px;
+  color: #475569;
+}
+

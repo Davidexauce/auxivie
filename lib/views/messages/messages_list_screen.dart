@@ -1,8 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../viewmodels/message_viewmodel.dart';
+import '../../viewmodels/auth_viewmodel.dart';
 import '../../models/user_model.dart';
 import 'chat_screen.dart';
+import 'select_professional_screen.dart';
+import '../../views/professionals/professional_detail_screen.dart';
+import '../../views/families/family_detail_screen.dart';
 
 /// Écran de liste des conversations
 class MessagesListScreen extends StatefulWidget {
@@ -31,9 +35,30 @@ class _MessagesListScreenState extends State<MessagesListScreen> {
   Widget build(BuildContext context) {
     final messageViewModel = Provider.of<MessageViewModel>(context);
 
+    final authViewModel = Provider.of<AuthViewModel>(context);
+    final currentUser = authViewModel.currentUser;
+    final isFamily = currentUser?.userType == 'famille';
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Messages'),
+        actions: [
+          // Bouton "Nouveau message" uniquement pour les familles
+          if (isFamily)
+            IconButton(
+              icon: const Icon(Icons.add_circle_outline),
+              tooltip: 'Nouveau message',
+              onPressed: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (_) => SelectProfessionalScreen(
+                      currentUserId: widget.userId,
+                    ),
+                  ),
+                );
+              },
+            ),
+        ],
       ),
       body: messageViewModel.isLoading
           ? const Center(child: CircularProgressIndicator())
@@ -54,11 +79,39 @@ class _MessagesListScreenState extends State<MessagesListScreen> {
                       ),
                       const SizedBox(height: 8),
                       Text(
-                        'Commencez une nouvelle conversation',
+                        isFamily
+                            ? 'Commencez une nouvelle conversation avec un professionnel'
+                            : 'Commencez une nouvelle conversation',
                         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                               color: Colors.grey[600],
                             ),
+                        textAlign: TextAlign.center,
                       ),
+                      if (isFamily) ...[
+                        const SizedBox(height: 24),
+                        ElevatedButton.icon(
+                          onPressed: () {
+                            Navigator.of(context).push(
+                              MaterialPageRoute(
+                                builder: (_) => SelectProfessionalScreen(
+                                  currentUserId: widget.userId,
+                                ),
+                              ),
+                            );
+                          },
+                          icon: const Icon(Icons.add_circle_outline),
+                          label: const Text('Nouveau message'),
+                          style: ElevatedButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 24,
+                              vertical: 12,
+                            ),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                        ),
+                      ],
                     ],
                   ),
                 )
@@ -158,7 +211,43 @@ class _ConversationCard extends StatelessWidget {
                       color: Colors.grey[600],
                     ),
               ),
-        trailing: const Icon(Icons.arrow_forward_ios),
+        trailing: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Bouton pour voir le profil
+            if (partner != null)
+              IconButton(
+                icon: Icon(
+                  partner!.userType == 'professionnel' 
+                      ? Icons.person_outline 
+                      : Icons.family_restroom,
+                  color: Theme.of(context).primaryColor,
+                ),
+                tooltip: 'Voir le profil',
+                onPressed: () {
+                  final currentPartner = partner!;
+                  if (currentPartner.userType == 'professionnel') {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) => ProfessionalDetailScreen(
+                          professional: currentPartner,
+                        ),
+                      ),
+                    );
+                  } else {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) => FamilyDetailScreen(
+                          family: currentPartner,
+                        ),
+                      ),
+                    );
+                  }
+                },
+              ),
+            const Icon(Icons.arrow_forward_ios),
+          ],
+        ),
         onTap: () {
           Navigator.of(context).push(
             MaterialPageRoute(

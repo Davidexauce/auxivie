@@ -55,6 +55,11 @@
   font-weight: 600;
 }
 
+.actions {
+  display: flex;
+  gap: 8px;
+}
+
 .verifyButton {
   background: linear-gradient(to right, #16a34a, #10b981, #16a34a);
   color: white;
@@ -70,6 +75,27 @@
 
 .verifyButton:hover {
   background: linear-gradient(to right, #15803d, #059669, #15803d);
+}
+
+.rejectButton {
+  background: #dc2626;
+  color: white;
+  border: none;
+  padding: 6px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 500;
+  font-size: 14px;
+  transition: background 0.2s;
+}
+
+.rejectButton:hover {
+  background: #991b1b;
+}
+
+.rejected {
+  color: #dc2626;
+  font-weight: 600;
 }
 
 .loading {

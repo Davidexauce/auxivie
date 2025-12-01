@@ -1,47 +1,75 @@
-# Miscellaneous
-*.class
-*.log
-*.pyc
-*.swp
-.DS_Store
-.atom/
-.build/
-.buildlog/
-.history
-.svn/
-.swiftpm/
-migrate_working_dir/
-
-# IntelliJ related
-*.iml
-*.ipr
-*.iws
-.idea/
-
-# The .vscode folder contains launch configuration and tasks you configure in
-# VS Code which you may wish to be included in version control, so this line
-# is commented out by default.
-#.vscode/
-
-# Flutter/Dart/Pub related
-**/doc/api/
-**/ios/Flutter/.last_build_id
+# Flutter
+build/
 .dart_tool/
 .flutter-plugins
 .flutter-plugins-dependencies
 .packages
 .pub-cache/
 .pub/
-/build/
+pubspec.lock
 
-# Symbolication related
-app.*.symbols
+# Android
+android/app/debug
+android/app/profile
+android/app/release
+android/.gradle/
+android/local.properties
+*.jks
+*.keystore
 
-# Obfuscation related
-app.*.map.json
+# iOS
+ios/Pods/
+ios/.symlinks/
+ios/Flutter/Flutter.framework
+ios/Flutter/Flutter.podspec
+ios/Flutter/Generated.xcconfig
+ios/Flutter/app.flx
+ios/Flutter/app.zip
+ios/Flutter/flutter_assets/
+ios/Flutter/flutter_export_environment.sh
+ios/ServiceDefinitions.json
+ios/Runner/GeneratedPluginRegistrant.*
 
-# Android Studio will place build artifacts here
-/android/app/debug
-/android/app/profile
-/android/app/release
+# macOS
+macos/Flutter/Flutter.framework
+macos/Flutter/Flutter.podspec
+macos/Flutter/GeneratedPluginRegistrant.swift
 
+# Backend
+backend/node_modules/
+backend/.env
+backend/.env.production
+backend/.env.local
+backend/data/*.db
+backend/data/*.db-journal
+backend/logs/
+backend/backups/
+backend/.DS_Store
+
+# Dashboard
+admin-dashboard/node_modules/
+admin-dashboard/.next/
+admin-dashboard/.env
+admin-dashboard/.env.local
+admin-dashboard/.env.production
+admin-dashboard/.DS_Store
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Environment
+.env
+.env.local
+.env.production
+.env.*.local

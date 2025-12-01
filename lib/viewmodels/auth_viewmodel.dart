@@ -1,6 +1,9 @@
 import 'package:flutter/foundation.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
 import '../models/user_model.dart';
 import '../services/database_service.dart';
+import '../services/backend_api_service.dart';
 
 /// ViewModel pour la gestion de l'authentification
 class AuthViewModel extends ChangeNotifier {
@@ -29,6 +32,19 @@ class AuthViewModel extends ChangeNotifier {
     notifyListeners();
 
     try {
+      // Essayer d'abord via l'API backend (base de données unique)
+      final loginResult = await BackendApiService.login(email, password);
+      
+      if (loginResult != null && loginResult['user'] != null) {
+        // Connexion réussie via l'API
+        final userData = loginResult['user'];
+        _currentUser = UserModel.fromMap(userData);
+        _isLoading = false;
+        notifyListeners();
+        return true;
+      }
+
+      // Fallback : essayer la base locale (pour compatibilité)
       final user = await _db.getUserByEmail(email);
       
       if (user == null) {
@@ -84,7 +100,7 @@ class AuthViewModel extends ChangeNotifier {
         return false;
       }
 
-      // Créer le nouvel utilisateur
+      // Créer le nouvel utilisateur directement dans le backend (base unique)
       final user = UserModel(
         name: name,
         email: email,
@@ -97,12 +113,19 @@ class AuthViewModel extends ChangeNotifier {
         userType: userType,
       );
 
-      final userId = await _db.createUser(user);
-      
-      // Récupérer l'utilisateur créé avec son ID
-      final createdUser = await _db.getUserById(userId);
-      if (createdUser == null) {
+      // Créer directement dans le backend
+      final success = await BackendApiService.createUser(user);
+      if (!success) {
         _errorMessage = 'Erreur lors de la création du compte';
+        _isLoading = false;
+        notifyListeners();
+        return false;
+      }
+
+      // Récupérer l'utilisateur créé depuis le backend
+      final createdUser = await BackendApiService.getUserByEmail(email);
+      if (createdUser == null) {
+        _errorMessage = 'Erreur lors de la récupération du compte';
         _isLoading = false;
         notifyListeners();
         return false;
@@ -131,5 +154,41 @@ class AuthViewModel extends ChangeNotifier {
   void clearError() {
     _errorMessage = null;
     notifyListeners();
+  }
+
+  /// Synchronise un utilisateur avec le backend
+  Future<void> _syncUserToBackend(UserModel user) async {
+    try {
+      print('🔄 Synchronisation utilisateur: ${user.email} (${user.userType})');
+      
+      final response = await http.post(
+        Uri.parse('http://localhost:3001/api/users/sync'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'name': user.name,
+          'email': user.email,
+          'password': user.password,
+          'phone': user.phone,
+          'categorie': user.categorie,
+          'ville': user.ville,
+          'tarif': user.tarif,
+          'experience': user.experience,
+          'photo': user.photo,
+          'userType': user.userType,
+        }),
+      ).timeout(const Duration(seconds: 10));
+
+      print('📡 Réponse synchronisation: Status ${response.statusCode}');
+      
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        final responseBody = json.decode(response.body);
+        print('✅ Utilisateur synchronisé avec le backend: ${responseBody}');
+      } else {
+        print('❌ Erreur synchronisation: ${response.statusCode} - ${response.body}');
+      }
+    } catch (e) {
+      // Erreur silencieuse - ne pas bloquer l'inscription
+      print('❌ Erreur connexion backend: $e');
+    }
   }
 }

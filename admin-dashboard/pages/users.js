@@ -96,14 +96,23 @@ export default function Users() {
                   </td>
                   <td>{user.categorie || '-'}</td>
                   <td>{user.ville || '-'}</td>
-                  <td>
-                    <button
-                      className={styles.actionButton}
-                      onClick={() => router.push(`/users/${user.id}`)}
-                    >
-                      Voir
-                    </button>
-                  </td>
+                        <td>
+                          <div className={styles.actionButtons}>
+                            <button
+                              className={styles.actionButton}
+                              onClick={() => router.push(`/users/${user.id}`)}
+                            >
+                              Voir
+                            </button>
+                            <button
+                              className={styles.actionButton}
+                              onClick={() => router.push(`/messages?userId=${user.id}`)}
+                              style={{ backgroundColor: 'var(--primary)', color: 'white', marginLeft: '8px' }}
+                            >
+                              Contacter
+                            </button>
+                          </div>
+                        </td>
                 </tr>
               ))}
             </tbody>

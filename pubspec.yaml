@@ -17,6 +17,9 @@ dependencies:
   sqflite: ^2.3.0
   path: ^1.8.3
   
+  # API & Réseau
+  http: ^1.2.0
+  
   # UI & Utilitaires
   intl: ^0.18.1
   table_calendar: ^3.0.9
