@@ -1,0 +1,80 @@
+.container {
+  width: 100%;
+}
+
+.title {
+  font-size: 32px;
+  font-weight: 700;
+  color: #0b1220;
+  margin-bottom: 24px;
+}
+
+.tableContainer {
+  background: white;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.table thead {
+  background: #f8f9fa;
+}
+
+.table th {
+  padding: 16px;
+  text-align: left;
+  font-weight: 600;
+  color: #0b1220;
+  font-size: 14px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.table td {
+  padding: 16px;
+  border-top: 1px solid #e2e8f0;
+  color: #0b1220;
+}
+
+.table tbody tr:hover {
+  background: #f8f9fa;
+}
+
+.verified {
+  color: #166534;
+  font-weight: 600;
+}
+
+.pending {
+  color: #15803d;
+  font-weight: 600;
+}
+
+.verifyButton {
+  background: linear-gradient(to right, #16a34a, #10b981, #16a34a);
+  color: white;
+  border: none;
+  padding: 6px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 500;
+  font-size: 14px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.06);
+  transition: all 0.2s;
+}
+
+.verifyButton:hover {
+  background: linear-gradient(to right, #15803d, #059669, #15803d);
+}
+
+.loading {
+  text-align: center;
+  padding: 40px;
+  color: #475569;
+}
+
