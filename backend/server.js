@@ -3,7 +3,7 @@ require('dotenv').config({ path: process.env.NODE_ENV === 'production' ? '.env.p
 
 const express = require('express');
 const cors = require('cors');
-const sqlite3 = require('sqlite3').verbose();
+const db = require('./db');
 const path = require('path');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
@@ -111,57 +111,14 @@ app.use((req, res, next) => {
   next();
 });
 
-// Base de données
-const dbPath = path.join(__dirname, 'data', 'auxivie.db');
-const db = new sqlite3.Database(dbPath);
-
-// Initialiser la base de données si nécessaire
-db.serialize(() => {
-  // Créer la table users si elle n'existe pas
-  db.run(`CREATE TABLE IF NOT EXISTS users (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    name TEXT NOT NULL,
-    email TEXT NOT NULL UNIQUE,
-    password TEXT NOT NULL,
-    phone TEXT,
-    categorie TEXT NOT NULL,
-    ville TEXT,
-    tarif REAL,
-    experience INTEGER,
-    photo TEXT,
-    userType TEXT NOT NULL,
-    besoin TEXT,
-    preference TEXT,
-    mission TEXT,
-    particularite TEXT
-  )`, (err) => {
-    if (err) {
-      console.error('Erreur création table users:', err);
-    } else {
-      // Ajouter les colonnes famille si elles n'existent pas
-      db.run(`ALTER TABLE users ADD COLUMN besoin TEXT`, (alterErr) => {
-        if (alterErr && !alterErr.message.includes('duplicate column')) {
-          // Colonne existe déjà ou erreur
-        }
-      });
-      db.run(`ALTER TABLE users ADD COLUMN preference TEXT`, (alterErr) => {
-        if (alterErr && !alterErr.message.includes('duplicate column')) {
-          // Colonne existe déjà ou erreur
-        }
-      });
-      db.run(`ALTER TABLE users ADD COLUMN mission TEXT`, (alterErr) => {
-        if (alterErr && !alterErr.message.includes('duplicate column')) {
-          // Colonne existe déjà ou erreur
-        }
-      });
-      db.run(`ALTER TABLE users ADD COLUMN particularite TEXT`, (alterErr) => {
-        if (alterErr && !alterErr.message.includes('duplicate column')) {
-          // Colonne existe déjà ou erreur
-        }
-      });
-    }
-  });
-});
+// Initialiser la base de données MySQL
+(async () => {
+  try {
+    await db.initializeTables();
+  } catch (error) {
+    console.error('Erreur initialisation base de données:', error);
+  }
+})();
 
 // Routes d'authentification
 app.post('/api/auth/login', async (req, res) => {
@@ -174,70 +131,65 @@ app.post('/api/auth/login', async (req, res) => {
     }
 
     // Récupérer l'utilisateur
-    db.get(
-      'SELECT * FROM users WHERE email = ?',
-      [email],
-      async (err, user) => {
-        if (err) {
-          console.error('Erreur DB:', err);
-          return res.status(500).json({ message: 'Erreur serveur' });
-        }
+    try {
+      const user = await db.get('SELECT * FROM users WHERE email = ?', [email]);
 
-        if (!user) {
-          return res.status(401).json({ message: 'Email ou mot de passe incorrect' });
-        }
+      if (!user) {
+        return res.status(401).json({ message: 'Email ou mot de passe incorrect' });
+      }
 
-        // Vérifier le mot de passe
-        let isValid = false;
+      // Vérifier le mot de passe
+      let isValid = false;
+      
+      // Si le mot de passe en base commence par $2b$, c'est un hash bcrypt
+      if (user.password.startsWith('$2b$')) {
+        isValid = await bcrypt.compare(password, user.password);
+      } else {
+        // Sinon, c'est un mot de passe en clair (pour migration)
+        isValid = password === user.password;
         
-        // Si le mot de passe en base commence par $2b$, c'est un hash bcrypt
-        if (user.password.startsWith('$2b$')) {
-          isValid = await bcrypt.compare(password, user.password);
-        } else {
-          // Sinon, c'est un mot de passe en clair (pour migration)
-          isValid = password === user.password;
-          
-          // Si la connexion réussit avec un mot de passe en clair, hasher et mettre à jour
-          if (isValid) {
-            const hashedPassword = await bcrypt.hash(password, 10);
-            db.run('UPDATE users SET password = ? WHERE id = ?', [hashedPassword, user.id], (err) => {
-              if (err) {
-                console.error('Erreur lors du hashage du mot de passe:', err);
-              } else {
-                console.log(`✅ Mot de passe hashé pour l'utilisateur ${user.id}`);
-              }
-            });
+        // Si la connexion réussit avec un mot de passe en clair, hasher et mettre à jour
+        if (isValid) {
+          const hashedPassword = await bcrypt.hash(password, 10);
+          try {
+            await db.run('UPDATE users SET password = ? WHERE id = ?', [hashedPassword, user.id]);
+            console.log(`✅ Mot de passe hashé pour l'utilisateur ${user.id}`);
+          } catch (err) {
+            console.error('Erreur lors du hashage du mot de passe:', err);
           }
         }
-        
-        if (!isValid) {
-          return res.status(401).json({ message: 'Email ou mot de passe incorrect' });
-        }
-
-        // Si c'est une requête mobile, accepter tous les types d'utilisateurs
-        // Sinon, vérifier que c'est un admin (pour le dashboard)
-        if (!isMobileRequest && user.userType !== 'admin') {
-          return res.status(403).json({ message: 'Accès réservé aux administrateurs' });
-        }
-
-        // Générer le token JWT
-        const token = jwt.sign(
-          { userId: user.id, email: user.email, userType: user.userType },
-          JWT_SECRET,
-          { expiresIn: '24h' }
-        );
-
-        res.json({
-          token,
-          user: {
-            id: user.id,
-            name: user.name,
-            email: user.email,
-            userType: user.userType,
-          },
-        });
       }
-    );
+      
+      if (!isValid) {
+        return res.status(401).json({ message: 'Email ou mot de passe incorrect' });
+      }
+
+      // Si c'est une requête mobile, accepter tous les types d'utilisateurs
+      // Sinon, vérifier que c'est un admin (pour le dashboard)
+      if (!isMobileRequest && user.userType !== 'admin') {
+        return res.status(403).json({ message: 'Accès réservé aux administrateurs' });
+      }
+
+      // Générer le token JWT
+      const token = jwt.sign(
+        { userId: user.id, email: user.email, userType: user.userType },
+        JWT_SECRET,
+        { expiresIn: '24h' }
+      );
+
+      res.json({
+        token,
+        user: {
+          id: user.id,
+          name: user.name,
+          email: user.email,
+          userType: user.userType,
+        },
+      });
+    } catch (error) {
+      console.error('Erreur DB:', error);
+      return res.status(500).json({ message: 'Erreur serveur' });
+    }
   } catch (error) {
     console.error('Erreur login:', error);
     res.status(500).json({ message: 'Erreur serveur' });
@@ -269,68 +221,67 @@ const authenticateToken = (req, res, next) => {
 
 // Routes des utilisateurs
 // Route publique pour récupérer les professionnels (app mobile)
-app.get('/api/users', (req, res) => {
-  const { userType } = req.query;
-  
-  // Si userType=professionnel, route publique pour l'app mobile
-  if (userType === 'professionnel') {
-    db.all('SELECT id, name, email, phone, categorie, ville, tarif, experience, photo, userType FROM users WHERE userType = "professionnel"', (err, rows) => {
-      if (err) {
-        return res.status(500).json({ message: 'Erreur serveur' });
-      }
-      res.json(rows);
-    });
-    return;
-  }
-  
-  // Sinon, nécessite authentification (pour le dashboard)
-  const authHeader = req.headers['authorization'];
-  const token = authHeader && authHeader.split(' ')[1];
-  
-  if (!token) {
-    return res.status(401).json({ message: 'Token manquant' });
-  }
-  
-  jwt.verify(token, JWT_SECRET, (err, user) => {
-    if (err) {
-      return res.status(403).json({ message: 'Token invalide' });
+app.get('/api/users', async (req, res) => {
+  try {
+    const { userType } = req.query;
+    
+    // Si userType=professionnel, route publique pour l'app mobile
+    if (userType === 'professionnel') {
+      const rows = await db.all('SELECT id, name, email, phone, categorie, ville, tarif, experience, photo, userType FROM users WHERE userType = "professionnel"');
+      return res.json(rows);
     }
     
-    db.all('SELECT id, name, email, phone, categorie, ville, tarif, userType FROM users WHERE userType != "admin"', (err, rows) => {
+    // Sinon, nécessite authentification (pour le dashboard)
+    const authHeader = req.headers['authorization'];
+    const token = authHeader && authHeader.split(' ')[1];
+    
+    if (!token) {
+      return res.status(401).json({ message: 'Token manquant' });
+    }
+    
+    jwt.verify(token, JWT_SECRET, async (err, user) => {
       if (err) {
+        return res.status(403).json({ message: 'Token invalide' });
+      }
+      
+      try {
+        const rows = await db.all('SELECT id, name, email, phone, categorie, ville, tarif, userType FROM users WHERE userType != "admin"');
+        res.json(rows);
+      } catch (error) {
         return res.status(500).json({ message: 'Erreur serveur' });
       }
-      res.json(rows);
     });
-  });
+  } catch (error) {
+    return res.status(500).json({ message: 'Erreur serveur' });
+  }
 });
 
 // Route publique pour l'app mobile
-app.get('/api/users/:id', (req, res) => {
-  const { id } = req.params;
-  db.get('SELECT id, name, email, phone, categorie, ville, tarif, experience, photo, userType, besoin, preference, mission, particularite FROM users WHERE id = ?', [id], (err, row) => {
-    if (err) {
-      return res.status(500).json({ message: 'Erreur serveur' });
-    }
+app.get('/api/users/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const row = await db.get('SELECT id, name, email, phone, categorie, ville, tarif, experience, photo, userType, besoin, preference, mission, particularite FROM users WHERE id = ?', [id]);
     if (!row) {
       return res.status(404).json({ message: 'Utilisateur non trouvé' });
     }
     res.json(row);
-  });
+  } catch (error) {
+    return res.status(500).json({ message: 'Erreur serveur' });
+  }
 });
 
 // Route protégée pour le Dashboard
-app.get('/api/users/:id/admin', authenticateToken, (req, res) => {
-  const { id } = req.params;
-  db.get('SELECT id, name, email, phone, categorie, ville, tarif, userType FROM users WHERE id = ?', [id], (err, row) => {
-    if (err) {
-      return res.status(500).json({ message: 'Erreur serveur' });
-    }
+app.get('/api/users/:id/admin', authenticateToken, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const row = await db.get('SELECT id, name, email, phone, categorie, ville, tarif, userType FROM users WHERE id = ?', [id]);
     if (!row) {
       return res.status(404).json({ message: 'Utilisateur non trouvé' });
     }
     res.json(row);
-  });
+  } catch (error) {
+    return res.status(500).json({ message: 'Erreur serveur' });
+  }
 });
 
 app.put('/api/users/:id', authenticateToken, (req, res) => {
@@ -508,7 +459,7 @@ app.post('/api/documents/upload', uploadDocument.single('file'), (req, res) => {
     // Enregistrer le document dans la base de données
     const filePath = `/uploads/documents/${path.basename(req.file.path)}`;
     db.run(
-      'INSERT INTO documents (userId, type, path, status, createdAt) VALUES (?, ?, ?, "pending", datetime("now"))',
+      'INSERT INTO documents (userId, type, path, status, createdAt) VALUES (?, ?, ?, "pending", NOW())',
       [userId, type, filePath],
       function(err) {
         if (err) {
@@ -651,7 +602,7 @@ app.post('/api/payments/confirm', async (req, res) => {
     // Enregistrer le paiement dans la base de données
     db.run(
       `INSERT INTO payments (userId, reservationId, amount, status, paymentMethod, createdAt)
-       VALUES (?, ?, ?, 'completed', 'stripe', datetime("now"))`,
+       VALUES (?, ?, ?, 'completed', 'stripe', NOW())`,
       [userId, reservationId, amount],
       function(err) {
         if (err) {
@@ -689,7 +640,7 @@ app.get('/api/badges', (req, res) => {
 app.post('/api/badges', authenticateToken, (req, res) => {
   const { userId, badgeType, badgeName, badgeIcon, description } = req.body;
   db.run(
-    'INSERT INTO user_badges (userId, badgeType, badgeName, badgeIcon, description, createdAt) VALUES (?, ?, ?, ?, ?, datetime("now"))',
+    'INSERT INTO user_badges (userId, badgeType, badgeName, badgeIcon, description, createdAt) VALUES (?, ?, ?, ?, ?, NOW())',
     [userId, badgeType, badgeName, badgeIcon, description],
     function(err) {
       if (err) {
@@ -730,7 +681,7 @@ app.put('/api/ratings/:userId', authenticateToken, (req, res) => {
   const { userId } = req.params;
   const { averageRating, totalRatings } = req.body;
   db.run(
-    'INSERT OR REPLACE INTO user_ratings (userId, averageRating, totalRatings, updatedAt) VALUES (?, ?, ?, datetime("now"))',
+    'INSERT INTO user_ratings (userId, averageRating, totalRatings, updatedAt) VALUES (?, ?, ?, NOW())',
     [userId, averageRating, totalRatings],
     function(err) {
       if (err) {
@@ -799,7 +750,7 @@ app.post('/api/reviews', authenticateToken, (req, res) => {
     
     db.run(
       `INSERT INTO reviews (professionalId, userId, rating, comment, reservationId, createdAt) 
-       VALUES (?, ?, ?, ?, ?, datetime("now"))`,
+       VALUES (?, ?, ?, ?, ?, NOW())`,
       [professionalId, userId || 0, rating, comment || null, finalReservationId],
       function(err) {
         if (err) {
@@ -987,7 +938,7 @@ app.post('/api/messages', (req, res) => {
   }
 
   db.run(
-    'INSERT INTO messages (senderId, receiverId, content, timestamp, isRead) VALUES (?, ?, ?, datetime("now"), 0)',
+    'INSERT INTO messages (senderId, receiverId, content, timestamp, isRead) VALUES (?, ?, ?, NOW(), 0)',
     [senderId, receiverId, content],
     function(err) {
       if (err) {
@@ -1078,7 +1029,7 @@ app.post('/api/messages/admin', authenticateToken, (req, res) => {
 
   // L'admin envoie toujours avec senderId = 0
   db.run(
-    'INSERT INTO messages (senderId, receiverId, content, timestamp, isRead) VALUES (0, ?, ?, datetime("now"), 0)',
+    'INSERT INTO messages (senderId, receiverId, content, timestamp, isRead) VALUES (0, ?, ?, NOW(), 0)',
     [receiverId, content],
     function(err) {
       if (err) {
@@ -1123,7 +1074,7 @@ app.post('/api/reservations/sync', (req, res) => {
         // Créer une nouvelle réservation
         const dateFin = req.body.dateFin || null;
         db.run(
-          'INSERT INTO reservations (userId, professionnelId, date, dateFin, heure, status, createdAt) VALUES (?, ?, ?, ?, ?, ?, datetime("now"))',
+          'INSERT INTO reservations (userId, professionnelId, date, dateFin, heure, status, createdAt) VALUES (?, ?, ?, ?, ?, ?, NOW())',
           [userId, professionnelId, date, dateFin, heure, status || 'pending'],
           function(insertErr) {
             if (insertErr) {
@@ -1185,7 +1136,7 @@ app.post('/api/users/sync', (req, res) => {
       
       db.run(
         `INSERT INTO users (name, email, password, phone, categorie, ville, tarif, experience, photo, userType, besoin, preference, mission, particularite, createdAt)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime("now"))`,
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())`,
         [name, email, hashedPassword, phone || null, categorie, ville || null, tarif || null, experience || null, photo || null, userType, besoin || null, preference || null, mission || null, particularite || null],
         function(insertErr) {
           if (insertErr) {
