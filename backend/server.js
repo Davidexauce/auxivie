@@ -284,165 +284,114 @@ app.get('/api/users/:id/admin', authenticateToken, async (req, res) => {
   }
 });
 
-app.put('/api/users/:id', authenticateToken, (req, res) => {
-  const { id } = req.params;
-  const { name, email, phone, categorie, ville, tarif, password, currentPassword } = req.body;
-  
-  // Si un nouveau mot de passe est fourni, vérifier l'ancien et hasher le nouveau
-  if (password) {
-    // Récupérer l'utilisateur actuel pour vérifier le mot de passe
-    db.get('SELECT password FROM users WHERE id = ?', [id], (err, user) => {
-      if (err) {
-        return res.status(500).json({ message: 'Erreur serveur' });
-      }
+app.put('/api/users/:id', authenticateToken, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { name, email, phone, categorie, ville, tarif, password, currentPassword } = req.body;
+    
+    // Si un nouveau mot de passe est fourni, vérifier l'ancien et hasher le nouveau
+    if (password) {
+      // Récupérer l'utilisateur actuel pour vérifier le mot de passe
+      const user = await db.get('SELECT password FROM users WHERE id = ?', [id]);
+      
       if (!user) {
         return res.status(404).json({ message: 'Utilisateur non trouvé' });
       }
       
       // Vérifier le mot de passe actuel si fourni
       if (currentPassword) {
-        bcrypt.compare(currentPassword, user.password, (err, isMatch) => {
-          if (err || !isMatch) {
-            return res.status(401).json({ message: 'Mot de passe actuel incorrect' });
-          }
-          
-          // Hasher le nouveau mot de passe
-          bcrypt.hash(password, 10, (err, hashedPassword) => {
-            if (err) {
-              return res.status(500).json({ message: 'Erreur serveur' });
-            }
-            
-            // Mettre à jour avec le mot de passe hashé
-            const updates = { name, email, phone, categorie, ville, tarif, password: hashedPassword };
-            const fields = [];
-            const values = [];
-            
-            if (name !== undefined) { fields.push('name = ?'); values.push(name); }
-            if (email !== undefined) { fields.push('email = ?'); values.push(email); }
-            if (phone !== undefined) { fields.push('phone = ?'); values.push(phone); }
-            if (categorie !== undefined) { fields.push('categorie = ?'); values.push(categorie); }
-            if (ville !== undefined) { fields.push('ville = ?'); values.push(ville); }
-            if (tarif !== undefined) { fields.push('tarif = ?'); values.push(tarif); }
-            fields.push('password = ?'); values.push(hashedPassword);
-            values.push(id);
-            
-            db.run(
-              `UPDATE users SET ${fields.join(', ')} WHERE id = ?`,
-              values,
-              function(err) {
-                if (err) {
-                  return res.status(500).json({ message: 'Erreur serveur' });
-                }
-                res.json({ message: 'Utilisateur mis à jour' });
-              }
-            );
-          });
-        });
-      } else {
-        // Pas de vérification de l'ancien mot de passe (pour les admins)
-        bcrypt.hash(password, 10, (err, hashedPassword) => {
-          if (err) {
-            return res.status(500).json({ message: 'Erreur serveur' });
-          }
-          
-          const updates = { name, email, phone, categorie, ville, tarif, password: hashedPassword };
-          const fields = [];
-          const values = [];
-          
-          if (name !== undefined) { fields.push('name = ?'); values.push(name); }
-          if (email !== undefined) { fields.push('email = ?'); values.push(email); }
-          if (phone !== undefined) { fields.push('phone = ?'); values.push(phone); }
-          if (categorie !== undefined) { fields.push('categorie = ?'); values.push(categorie); }
-          if (ville !== undefined) { fields.push('ville = ?'); values.push(ville); }
-          if (tarif !== undefined) { fields.push('tarif = ?'); values.push(tarif); }
-          fields.push('password = ?'); values.push(hashedPassword);
-          values.push(id);
-          
-          db.run(
-            `UPDATE users SET ${fields.join(', ')} WHERE id = ?`,
-            values,
-            function(err) {
-              if (err) {
-                return res.status(500).json({ message: 'Erreur serveur' });
-              }
-              res.json({ message: 'Utilisateur mis à jour' });
-            }
-          );
-        });
-      }
-    });
-  } else {
-    // Mise à jour normale sans changement de mot de passe
-    const fields = [];
-    const values = [];
-    
-    if (name !== undefined) { fields.push('name = ?'); values.push(name); }
-    if (email !== undefined) { fields.push('email = ?'); values.push(email); }
-    if (phone !== undefined) { fields.push('phone = ?'); values.push(phone); }
-    if (categorie !== undefined) { fields.push('categorie = ?'); values.push(categorie); }
-    if (ville !== undefined) { fields.push('ville = ?'); values.push(ville); }
-    if (tarif !== undefined) { fields.push('tarif = ?'); values.push(tarif); }
-    values.push(id);
-    
-    if (fields.length === 0) {
-      return res.status(400).json({ message: 'Aucun champ à mettre à jour' });
-    }
-    
-    db.run(
-      `UPDATE users SET ${fields.join(', ')} WHERE id = ?`,
-      values,
-      function(err) {
-        if (err) {
-          return res.status(500).json({ message: 'Erreur serveur' });
+        const isMatch = await bcrypt.compare(currentPassword, user.password);
+        if (!isMatch) {
+          return res.status(401).json({ message: 'Mot de passe actuel incorrect' });
         }
-        res.json({ message: 'Utilisateur mis à jour' });
       }
-    );
+      
+      // Hasher le nouveau mot de passe
+      const hashedPassword = await bcrypt.hash(password, 10);
+      
+      // Mettre à jour avec le mot de passe hashé
+      const fields = [];
+      const values = [];
+      
+      if (name !== undefined) { fields.push('name = ?'); values.push(name); }
+      if (email !== undefined) { fields.push('email = ?'); values.push(email); }
+      if (phone !== undefined) { fields.push('phone = ?'); values.push(phone); }
+      if (categorie !== undefined) { fields.push('categorie = ?'); values.push(categorie); }
+      if (ville !== undefined) { fields.push('ville = ?'); values.push(ville); }
+      if (tarif !== undefined) { fields.push('tarif = ?'); values.push(tarif); }
+      fields.push('password = ?'); values.push(hashedPassword);
+      values.push(id);
+      
+      await db.run(`UPDATE users SET ${fields.join(', ')} WHERE id = ?`, values);
+      return res.json({ message: 'Utilisateur mis à jour' });
+    } else {
+      // Mise à jour normale sans changement de mot de passe
+      const fields = [];
+      const values = [];
+      
+      if (name !== undefined) { fields.push('name = ?'); values.push(name); }
+      if (email !== undefined) { fields.push('email = ?'); values.push(email); }
+      if (phone !== undefined) { fields.push('phone = ?'); values.push(phone); }
+      if (categorie !== undefined) { fields.push('categorie = ?'); values.push(categorie); }
+      if (ville !== undefined) { fields.push('ville = ?'); values.push(ville); }
+      if (tarif !== undefined) { fields.push('tarif = ?'); values.push(tarif); }
+      values.push(id);
+      
+      if (fields.length === 0) {
+        return res.status(400).json({ message: 'Aucun champ à mettre à jour' });
+      }
+      
+      await db.run(`UPDATE users SET ${fields.join(', ')} WHERE id = ?`, values);
+      return res.json({ message: 'Utilisateur mis à jour' });
+    }
+  } catch (error) {
+    console.error('Erreur mise à jour utilisateur:', error);
+    return res.status(500).json({ message: 'Erreur serveur' });
   }
 });
 
 // Routes des documents
-app.get('/api/documents', authenticateToken, (req, res) => {
-  db.all(`
-    SELECT d.*, u.name as userName 
-    FROM documents d
-    LEFT JOIN users u ON d.userId = u.id
-    ORDER BY d.createdAt DESC
-  `, (err, rows) => {
-    if (err) {
-      return res.status(500).json({ message: 'Erreur serveur' });
-    }
+app.get('/api/documents', authenticateToken, async (req, res) => {
+  try {
+    const rows = await db.all(`
+      SELECT d.*, u.name as userName 
+      FROM documents d
+      LEFT JOIN users u ON d.userId = u.id
+      ORDER BY d.createdAt DESC
+    `);
     // Ajouter un champ verified basé sur le statut
     const documents = rows.map(doc => ({
       ...doc,
       verified: doc.status === 'verified',
     }));
     res.json(documents);
-  });
+  } catch (error) {
+    return res.status(500).json({ message: 'Erreur serveur' });
+  }
 });
 
-app.post('/api/documents/:id/verify', authenticateToken, (req, res) => {
-  const { id } = req.params;
-  db.run('UPDATE documents SET status = "verified" WHERE id = ?', [id], function(err) {
-    if (err) {
-      return res.status(500).json({ message: 'Erreur serveur' });
-    }
+app.post('/api/documents/:id/verify', authenticateToken, async (req, res) => {
+  try {
+    const { id } = req.params;
+    await db.run('UPDATE documents SET status = "verified" WHERE id = ?', [id]);
     res.json({ message: 'Document vérifié' });
-  });
+  } catch (error) {
+    return res.status(500).json({ message: 'Erreur serveur' });
+  }
 });
 
-app.post('/api/documents/:id/reject', authenticateToken, (req, res) => {
-  const { id } = req.params;
-  db.run('UPDATE documents SET status = "rejected" WHERE id = ?', [id], function(err) {
-    if (err) {
-      return res.status(500).json({ message: 'Erreur serveur' });
-    }
+app.post('/api/documents/:id/reject', authenticateToken, async (req, res) => {
+  try {
+    const { id } = req.params;
+    await db.run('UPDATE documents SET status = "rejected" WHERE id = ?', [id]);
     res.json({ message: 'Document refusé' });
-  });
+  } catch (error) {
+    return res.status(500).json({ message: 'Erreur serveur' });
+  }
 });
 
 // Route pour uploader un document
-app.post('/api/documents/upload', uploadDocument.single('file'), (req, res) => {
+app.post('/api/documents/upload', uploadDocument.single('file'), async (req, res) => {
   try {
     if (!req.file) {
       return res.status(400).json({ message: 'Aucun fichier fourni' });
@@ -458,24 +407,23 @@ app.post('/api/documents/upload', uploadDocument.single('file'), (req, res) => {
 
     // Enregistrer le document dans la base de données
     const filePath = `/uploads/documents/${path.basename(req.file.path)}`;
-    db.run(
-      'INSERT INTO documents (userId, type, path, status, createdAt) VALUES (?, ?, ?, "pending", NOW())',
-      [userId, type, filePath],
-      function(err) {
-        if (err) {
-          // Supprimer le fichier en cas d'erreur
-          fs.unlinkSync(req.file.path);
-          console.error('Erreur insertion document:', err);
-          return res.status(500).json({ message: 'Erreur lors de l\'enregistrement du document' });
-        }
-        res.json({
-          id: this.lastID,
-          message: 'Document uploadé avec succès',
-          path: filePath,
-          url: `${req.protocol}://${req.get('host')}${filePath}`
-        });
-      }
-    );
+    try {
+      const result = await db.run(
+        'INSERT INTO documents (userId, type, path, status, createdAt) VALUES (?, ?, ?, "pending", NOW())',
+        [userId, type, filePath]
+      );
+      res.json({
+        id: result.lastID,
+        message: 'Document uploadé avec succès',
+        path: filePath,
+        url: `${req.protocol}://${req.get('host')}${filePath}`
+      });
+    } catch (err) {
+      // Supprimer le fichier en cas d'erreur
+      fs.unlinkSync(req.file.path);
+      console.error('Erreur insertion document:', err);
+      return res.status(500).json({ message: 'Erreur lors de l\'enregistrement du document' });
+    }
   } catch (error) {
     console.error('Erreur upload document:', error);
     if (req.file && fs.existsSync(req.file.path)) {
@@ -486,7 +434,7 @@ app.post('/api/documents/upload', uploadDocument.single('file'), (req, res) => {
 });
 
 // Route pour uploader une photo de profil
-app.post('/api/users/:id/photo', uploadPhoto.single('photo'), (req, res) => {
+app.post('/api/users/:id/photo', uploadPhoto.single('photo'), async (req, res) => {
   try {
     if (!req.file) {
       return res.status(400).json({ message: 'Aucune photo fournie' });
@@ -496,12 +444,9 @@ app.post('/api/users/:id/photo', uploadPhoto.single('photo'), (req, res) => {
     const filePath = `/uploads/photos/${path.basename(req.file.path)}`;
     const photoUrl = `${req.protocol}://${req.get('host')}${filePath}`;
 
-    // Supprimer l'ancienne photo si elle existe
-    db.get('SELECT photo FROM users WHERE id = ?', [id], (err, user) => {
-      if (err) {
-        fs.unlinkSync(req.file.path);
-        return res.status(500).json({ message: 'Erreur serveur' });
-      }
+    try {
+      // Supprimer l'ancienne photo si elle existe
+      const user = await db.get('SELECT photo FROM users WHERE id = ?', [id]);
 
       if (user && user.photo) {
         const oldPhotoPath = path.join(__dirname, user.photo);
@@ -511,22 +456,16 @@ app.post('/api/users/:id/photo', uploadPhoto.single('photo'), (req, res) => {
       }
 
       // Mettre à jour la photo dans la base de données
-      db.run(
-        'UPDATE users SET photo = ? WHERE id = ?',
-        [photoUrl, id],
-        function(updateErr) {
-          if (updateErr) {
-            fs.unlinkSync(req.file.path);
-            console.error('Erreur mise à jour photo:', updateErr);
-            return res.status(500).json({ message: 'Erreur lors de la mise à jour de la photo' });
-          }
-          res.json({
-            message: 'Photo de profil mise à jour',
-            photo: photoUrl
-          });
-        }
-      );
-    });
+      await db.run('UPDATE users SET photo = ? WHERE id = ?', [photoUrl, id]);
+      res.json({
+        message: 'Photo de profil mise à jour',
+        photo: photoUrl
+      });
+    } catch (err) {
+      fs.unlinkSync(req.file.path);
+      console.error('Erreur mise à jour photo:', err);
+      return res.status(500).json({ message: 'Erreur lors de la mise à jour de la photo' });
+    }
   } catch (error) {
     console.error('Erreur upload photo:', error);
     if (req.file && fs.existsSync(req.file.path)) {
@@ -537,21 +476,21 @@ app.post('/api/users/:id/photo', uploadPhoto.single('photo'), (req, res) => {
 });
 
 // Routes des paiements
-app.get('/api/payments', authenticateToken, (req, res) => {
-  db.all(`
-    SELECT p.*, u.name as userName, r.id as reservationId
-    FROM payments p
-    LEFT JOIN users u ON p.userId = u.id
-    LEFT JOIN reservations r ON p.reservationId = r.id
-    ORDER BY p.createdAt DESC
-  `, (err, rows) => {
-    if (err) {
-      // Si la table n'existe pas ou erreur, retourner un tableau vide
-      console.error('Erreur payments:', err);
-      return res.json([]);
-    }
+app.get('/api/payments', authenticateToken, async (req, res) => {
+  try {
+    const rows = await db.all(`
+      SELECT p.*, u.name as userName, r.id as reservationId
+      FROM payments p
+      LEFT JOIN users u ON p.userId = u.id
+      LEFT JOIN reservations r ON p.reservationId = r.id
+      ORDER BY p.createdAt DESC
+    `);
     res.json(rows || []);
-  });
+  } catch (error) {
+    // Si la table n'existe pas ou erreur, retourner un tableau vide
+    console.error('Erreur payments:', error);
+    return res.json([]);
+  }
 });
 
 // Route pour créer un PaymentIntent Stripe
@@ -600,21 +539,20 @@ app.post('/api/payments/confirm', async (req, res) => {
     }
 
     // Enregistrer le paiement dans la base de données
-    db.run(
-      `INSERT INTO payments (userId, reservationId, amount, status, paymentMethod, createdAt)
-       VALUES (?, ?, ?, 'completed', 'stripe', NOW())`,
-      [userId, reservationId, amount],
-      function(err) {
-        if (err) {
-          console.error('Erreur enregistrement paiement:', err);
-          return res.status(500).json({ message: 'Erreur lors de l\'enregistrement du paiement' });
-        }
-        res.json({
-          id: this.lastID,
-          message: 'Paiement confirmé et enregistré',
-        });
-      }
-    );
+    try {
+      const result = await db.run(
+        `INSERT INTO payments (userId, reservationId, amount, status, paymentMethod, createdAt)
+         VALUES (?, ?, ?, 'completed', 'stripe', NOW())`,
+        [userId, reservationId, amount]
+      );
+      res.json({
+        id: result.lastID,
+        message: 'Paiement confirmé et enregistré',
+      });
+    } catch (err) {
+      console.error('Erreur enregistrement paiement:', err);
+      return res.status(500).json({ message: 'Erreur lors de l\'enregistrement du paiement' });
+    }
   } catch (error) {
     console.error('Erreur confirmation paiement:', error);
     res.status(500).json({ message: 'Erreur lors de la confirmation du paiement', error: error.message });
@@ -623,490 +561,453 @@ app.post('/api/payments/confirm', async (req, res) => {
 
 // Routes des badges
 // Route publique pour l'application mobile (GET uniquement)
-app.get('/api/badges', (req, res) => {
-  const { userId } = req.query;
-  if (userId) {
-    db.all('SELECT * FROM user_badges WHERE userId = ?', [userId], (err, rows) => {
-      if (err) {
-        return res.status(500).json({ message: 'Erreur serveur' });
-      }
+app.get('/api/badges', async (req, res) => {
+  try {
+    const { userId } = req.query;
+    if (userId) {
+      const rows = await db.all('SELECT * FROM user_badges WHERE userId = ?', [userId]);
       res.json(rows);
-    });
-  } else {
-    res.json([]);
+    } else {
+      res.json([]);
+    }
+  } catch (error) {
+    return res.status(500).json({ message: 'Erreur serveur' });
   }
 });
 
-app.post('/api/badges', authenticateToken, (req, res) => {
-  const { userId, badgeType, badgeName, badgeIcon, description } = req.body;
-  db.run(
-    'INSERT INTO user_badges (userId, badgeType, badgeName, badgeIcon, description, createdAt) VALUES (?, ?, ?, ?, ?, NOW())',
-    [userId, badgeType, badgeName, badgeIcon, description],
-    function(err) {
-      if (err) {
-        return res.status(500).json({ message: 'Erreur serveur' });
-      }
-      res.json({ id: this.lastID, message: 'Badge ajouté' });
-    }
-  );
+app.post('/api/badges', authenticateToken, async (req, res) => {
+  try {
+    const { userId, badgeType, badgeName, badgeIcon, description } = req.body;
+    const result = await db.run(
+      'INSERT INTO user_badges (userId, badgeType, badgeName, badgeIcon, description, createdAt) VALUES (?, ?, ?, ?, ?, NOW())',
+      [userId, badgeType, badgeName, badgeIcon, description]
+    );
+    res.json({ id: result.lastID, message: 'Badge ajouté' });
+  } catch (error) {
+    return res.status(500).json({ message: 'Erreur serveur' });
+  }
 });
 
-app.delete('/api/badges/:id', authenticateToken, (req, res) => {
-  const { id } = req.params;
-  db.run('DELETE FROM user_badges WHERE id = ?', [id], function(err) {
-    if (err) {
-      return res.status(500).json({ message: 'Erreur serveur' });
-    }
+app.delete('/api/badges/:id', authenticateToken, async (req, res) => {
+  try {
+    const { id } = req.params;
+    await db.run('DELETE FROM user_badges WHERE id = ?', [id]);
     res.json({ message: 'Badge supprimé' });
-  });
+  } catch (error) {
+    return res.status(500).json({ message: 'Erreur serveur' });
+  }
 });
 
 // Routes des notes
 // Route publique pour l'application mobile
-app.get('/api/ratings', (req, res) => {
-  const { userId } = req.query;
-  if (userId) {
-    db.get('SELECT * FROM user_ratings WHERE userId = ?', [userId], (err, row) => {
-      if (err) {
-        return res.status(500).json({ message: 'Erreur serveur' });
-      }
+app.get('/api/ratings', async (req, res) => {
+  try {
+    const { userId } = req.query;
+    if (userId) {
+      const row = await db.get('SELECT * FROM user_ratings WHERE userId = ?', [userId]);
       res.json(row || null);
-    });
-  } else {
-    res.json(null);
+    } else {
+      res.json(null);
+    }
+  } catch (error) {
+    return res.status(500).json({ message: 'Erreur serveur' });
   }
 });
 
-app.put('/api/ratings/:userId', authenticateToken, (req, res) => {
-  const { userId } = req.params;
-  const { averageRating, totalRatings } = req.body;
-  db.run(
-    'INSERT INTO user_ratings (userId, averageRating, totalRatings, updatedAt) VALUES (?, ?, ?, NOW())',
-    [userId, averageRating, totalRatings],
-    function(err) {
-      if (err) {
-        return res.status(500).json({ message: 'Erreur serveur' });
-      }
-      res.json({ message: 'Note mise à jour' });
-    }
-  );
+app.put('/api/ratings/:userId', authenticateToken, async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const { averageRating, totalRatings } = req.body;
+    await db.run(
+      'INSERT INTO user_ratings (userId, averageRating, totalRatings, updatedAt) VALUES (?, ?, ?, NOW()) ON DUPLICATE KEY UPDATE averageRating = ?, totalRatings = ?, updatedAt = NOW()',
+      [userId, averageRating, totalRatings, averageRating, totalRatings]
+    );
+    res.json({ message: 'Note mise à jour' });
+  } catch (error) {
+    return res.status(500).json({ message: 'Erreur serveur' });
+  }
 });
 
 // Routes des avis
 // Route publique pour l'application mobile
-app.get('/api/reviews', (req, res) => {
-  db.all(`
-    SELECT 
-      r.id,
-      r.reservationId,
-      r.userId,
-      r.professionalId,
-      r.rating,
-      r.comment,
-      r.createdAt,
-      COALESCE(r.userName, u.name) as userName,
-      p.name as professionalName
-    FROM reviews r
-    LEFT JOIN users u ON r.userId = u.id
-    LEFT JOIN users p ON r.professionalId = p.id
-    ORDER BY r.createdAt DESC
-  `, (err, rows) => {
-    if (err) {
-      console.error('Erreur récupération reviews:', err);
-      // Si la table n'existe pas, retourner un tableau vide
-      return res.json([]);
-    }
+app.get('/api/reviews', async (req, res) => {
+  try {
+    const rows = await db.all(`
+      SELECT 
+        r.id,
+        r.reservationId,
+        r.userId,
+        r.professionalId,
+        r.rating,
+        r.comment,
+        r.createdAt,
+        COALESCE(r.userName, u.name) as userName,
+        p.name as professionalName
+      FROM reviews r
+      LEFT JOIN users u ON r.userId = u.id
+      LEFT JOIN users p ON r.professionalId = p.id
+      ORDER BY r.createdAt DESC
+    `);
     res.json(rows);
-  });
+  } catch (error) {
+    console.error('Erreur récupération reviews:', error);
+    // Si la table n'existe pas, retourner un tableau vide
+    return res.json([]);
+  }
 });
 
-app.post('/api/reviews', authenticateToken, (req, res) => {
-  const { professionalId, userId, rating, comment, userName, reservationId } = req.body;
+app.post('/api/reviews', authenticateToken, async (req, res) => {
+  try {
+    const { professionalId, userId, rating, comment, userName, reservationId } = req.body;
 
-  if (!professionalId || !rating) {
-    return res.status(400).json({ message: 'professionalId et rating sont requis' });
-  }
+    if (!professionalId || !rating) {
+      return res.status(400).json({ message: 'professionalId et rating sont requis' });
+    }
 
-  if (rating < 1 || rating > 5) {
-    return res.status(400).json({ message: 'La note doit être entre 1 et 5' });
-  }
+    if (rating < 1 || rating > 5) {
+      return res.status(400).json({ message: 'La note doit être entre 1 et 5' });
+    }
 
-  // Si userName est fourni, on l'utilise, sinon on cherche le nom de l'utilisateur
-  let finalUserName = userName;
-  if (!finalUserName && userId && userId !== 0) {
-    db.get('SELECT name FROM users WHERE id = ?', [userId], (err, user) => {
-      if (!err && user) {
-        finalUserName = user.name;
+    // Si userName est fourni, on l'utilise, sinon on cherche le nom de l'utilisateur
+    let finalUserName = userName;
+    if (!finalUserName && userId && userId !== 0) {
+      try {
+        const user = await db.get('SELECT name FROM users WHERE id = ?', [userId]);
+        if (user) {
+          finalUserName = user.name;
+        }
+      } catch (err) {
+        // Ignorer l'erreur
       }
-      insertReview();
-    });
-  } else {
-    insertReview();
-  }
+    }
 
-  function insertReview() {
     // reservationId est NOT NULL, donc on utilise 0 si non fourni (avis système/admin)
     const finalReservationId = reservationId || 0;
     
-    db.run(
+    const result = await db.run(
       `INSERT INTO reviews (professionalId, userId, rating, comment, reservationId, createdAt) 
        VALUES (?, ?, ?, ?, ?, NOW())`,
-      [professionalId, userId || 0, rating, comment || null, finalReservationId],
-      function(err) {
-        if (err) {
-          console.error('Erreur création avis:', err);
-          return res.status(500).json({ 
-            message: 'Erreur serveur lors de la création de l\'avis',
-            error: err.message 
-          });
-        }
-        
-        // Si userName est fourni et que la colonne existe, mettre à jour
-        if (finalUserName) {
-          db.run(
-            'UPDATE reviews SET userName = ? WHERE id = ?',
-            [finalUserName, this.lastID],
-            (updateErr) => {
-              // Ignorer les erreurs si la colonne n'existe pas
-              if (updateErr && !updateErr.message.includes('no such column')) {
-                console.error('Erreur mise à jour userName:', updateErr);
-              }
-            }
-          );
-        }
-        
-        res.json({ id: this.lastID, message: 'Avis créé avec succès' });
-      }
+      [professionalId, userId || 0, rating, comment || null, finalReservationId]
     );
+    
+    // Si userName est fourni et que la colonne existe, mettre à jour
+    if (finalUserName) {
+      try {
+        await db.run('UPDATE reviews SET userName = ? WHERE id = ?', [finalUserName, result.lastID]);
+      } catch (updateErr) {
+        // Ignorer les erreurs si la colonne n'existe pas
+        if (!updateErr.message.includes('Unknown column')) {
+          console.error('Erreur mise à jour userName:', updateErr);
+        }
+      }
+    }
+    
+    res.json({ id: result.lastID, message: 'Avis créé avec succès' });
+  } catch (error) {
+    console.error('Erreur création avis:', error);
+    return res.status(500).json({ 
+      message: 'Erreur serveur lors de la création de l\'avis',
+      error: error.message 
+    });
   }
 });
 
-app.delete('/api/reviews/:id', authenticateToken, (req, res) => {
-  const { id } = req.params;
-  db.run('DELETE FROM reviews WHERE id = ?', [id], function(err) {
-    if (err) {
-      return res.status(500).json({ message: 'Erreur serveur' });
-    }
+app.delete('/api/reviews/:id', authenticateToken, async (req, res) => {
+  try {
+    const { id } = req.params;
+    await db.run('DELETE FROM reviews WHERE id = ?', [id]);
     res.json({ message: 'Avis supprimé' });
-  });
+  } catch (error) {
+    return res.status(500).json({ message: 'Erreur serveur' });
+  }
 });
 
 // Routes des réservations
 // Route publique pour l'app mobile
-app.get('/api/reservations', (req, res) => {
-  const { userId, professionnelId } = req.query;
-  let query = `
-    SELECT 
-      r.*,
-      u1.name as familleName,
-      u2.name as professionalName
-    FROM reservations r
-    LEFT JOIN users u1 ON r.userId = u1.id
-    LEFT JOIN users u2 ON r.professionnelId = u2.id
-  `;
-  const params = [];
+app.get('/api/reservations', async (req, res) => {
+  try {
+    const { userId, professionnelId } = req.query;
+    let query = `
+      SELECT 
+        r.*,
+        u1.name as familleName,
+        u2.name as professionalName
+      FROM reservations r
+      LEFT JOIN users u1 ON r.userId = u1.id
+      LEFT JOIN users u2 ON r.professionnelId = u2.id
+    `;
+    const params = [];
 
-  if (userId) {
-    query += ' WHERE r.userId = ?';
-    params.push(userId);
-  } else if (professionnelId) {
-    query += ' WHERE r.professionnelId = ?';
-    params.push(professionnelId);
-  }
-
-  query += ' ORDER BY r.date DESC, r.heure DESC';
-
-  db.all(query, params, (err, rows) => {
-    if (err) {
-      console.error('Erreur récupération réservations:', err);
-      return res.status(500).json({ message: 'Erreur serveur' });
+    if (userId) {
+      query += ' WHERE r.userId = ?';
+      params.push(userId);
+    } else if (professionnelId) {
+      query += ' WHERE r.professionnelId = ?';
+      params.push(professionnelId);
     }
+
+    query += ' ORDER BY r.date DESC, r.heure DESC';
+
+    const rows = await db.all(query, params);
     res.json(rows);
-  });
+  } catch (error) {
+    console.error('Erreur récupération réservations:', error);
+    return res.status(500).json({ message: 'Erreur serveur' });
+  }
 });
 
 // Route protégée pour le Dashboard (avec authentification)
-app.get('/api/reservations/admin', authenticateToken, (req, res) => {
-  db.all(`
-    SELECT 
-      r.*,
-      u1.name as familleName,
-      u2.name as professionalName
-    FROM reservations r
-    LEFT JOIN users u1 ON r.userId = u1.id
-    LEFT JOIN users u2 ON r.professionnelId = u2.id
-    ORDER BY r.date DESC, r.heure DESC
-  `, (err, rows) => {
-    if (err) {
-      console.error('Erreur récupération réservations:', err);
-      return res.status(500).json({ message: 'Erreur serveur' });
-    }
+app.get('/api/reservations/admin', authenticateToken, async (req, res) => {
+  try {
+    const rows = await db.all(`
+      SELECT 
+        r.*,
+        u1.name as familleName,
+        u2.name as professionalName
+      FROM reservations r
+      LEFT JOIN users u1 ON r.userId = u1.id
+      LEFT JOIN users u2 ON r.professionnelId = u2.id
+      ORDER BY r.date DESC, r.heure DESC
+    `);
     res.json(rows);
-  });
+  } catch (error) {
+    console.error('Erreur récupération réservations:', error);
+    return res.status(500).json({ message: 'Erreur serveur' });
+  }
 });
 
-app.get('/api/reservations/:id', authenticateToken, (req, res) => {
-  const { id } = req.params;
-  db.get(`
-    SELECT 
-      r.*,
-      u1.name as familleName,
-      u2.name as professionalName
-    FROM reservations r
-    LEFT JOIN users u1 ON r.userId = u1.id
-    LEFT JOIN users u2 ON r.professionnelId = u2.id
-    WHERE r.id = ?
-  `, [id], (err, row) => {
-    if (err) {
-      return res.status(500).json({ message: 'Erreur serveur' });
-    }
+app.get('/api/reservations/:id', authenticateToken, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const row = await db.get(`
+      SELECT 
+        r.*,
+        u1.name as familleName,
+        u2.name as professionalName
+      FROM reservations r
+      LEFT JOIN users u1 ON r.userId = u1.id
+      LEFT JOIN users u2 ON r.professionnelId = u2.id
+      WHERE r.id = ?
+    `, [id]);
     if (!row) {
       return res.status(404).json({ message: 'Réservation non trouvée' });
     }
     res.json(row);
-  });
+  } catch (error) {
+    return res.status(500).json({ message: 'Erreur serveur' });
+  }
 });
 
-app.put('/api/reservations/:id', authenticateToken, (req, res) => {
-  const { id } = req.params;
-  const { status } = req.body;
+app.put('/api/reservations/:id', authenticateToken, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { status } = req.body;
 
-  if (!status) {
-    return res.status(400).json({ message: 'Le statut est requis' });
-  }
-
-  const allowedStatuses = ['pending', 'confirmed', 'completed', 'cancelled'];
-  if (!allowedStatuses.includes(status)) {
-    return res.status(400).json({ message: 'Statut invalide' });
-  }
-
-  db.run(
-    'UPDATE reservations SET status = ? WHERE id = ?',
-    [status, id],
-    function(err) {
-      if (err) {
-        console.error('Erreur mise à jour réservation:', err);
-        return res.status(500).json({ message: 'Erreur serveur' });
-      }
-      if (this.changes === 0) {
-        return res.status(404).json({ message: 'Réservation non trouvée' });
-      }
-      res.json({ message: 'Réservation mise à jour', id: parseInt(id) });
+    if (!status) {
+      return res.status(400).json({ message: 'Le statut est requis' });
     }
-  );
+
+    const allowedStatuses = ['pending', 'confirmed', 'completed', 'cancelled'];
+    if (!allowedStatuses.includes(status)) {
+      return res.status(400).json({ message: 'Statut invalide' });
+    }
+
+    const result = await db.run('UPDATE reservations SET status = ? WHERE id = ?', [status, id]);
+    if (result.changes === 0) {
+      return res.status(404).json({ message: 'Réservation non trouvée' });
+    }
+    res.json({ message: 'Réservation mise à jour', id: parseInt(id) });
+  } catch (error) {
+    console.error('Erreur mise à jour réservation:', error);
+    return res.status(500).json({ message: 'Erreur serveur' });
+  }
 });
 
-app.delete('/api/reservations/:id', authenticateToken, (req, res) => {
-  const { id } = req.params;
-  db.run('DELETE FROM reservations WHERE id = ?', [id], function(err) {
-    if (err) {
-      return res.status(500).json({ message: 'Erreur serveur' });
-    }
-    if (this.changes === 0) {
+app.delete('/api/reservations/:id', authenticateToken, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const result = await db.run('DELETE FROM reservations WHERE id = ?', [id]);
+    if (result.changes === 0) {
       return res.status(404).json({ message: 'Réservation non trouvée' });
     }
     res.json({ message: 'Réservation supprimée' });
-  });
+  } catch (error) {
+    return res.status(500).json({ message: 'Erreur serveur' });
+  }
 });
 
 // Routes des messages
 // Route publique pour l'app mobile
-app.get('/api/messages', (req, res) => {
-  const { userId, partnerId } = req.query;
-  
-  if (!userId || !partnerId) {
-    return res.status(400).json({ message: 'userId et partnerId requis' });
-  }
-
-  db.all(
-    'SELECT * FROM messages WHERE (senderId = ? AND receiverId = ?) OR (senderId = ? AND receiverId = ?) ORDER BY timestamp ASC',
-    [userId, partnerId, partnerId, userId],
-    (err, rows) => {
-      if (err) {
-        return res.status(500).json({ message: 'Erreur serveur' });
-      }
-      res.json(rows);
+app.get('/api/messages', async (req, res) => {
+  try {
+    const { userId, partnerId } = req.query;
+    
+    if (!userId || !partnerId) {
+      return res.status(400).json({ message: 'userId et partnerId requis' });
     }
-  );
+
+    const rows = await db.all(
+      'SELECT * FROM messages WHERE (senderId = ? AND receiverId = ?) OR (senderId = ? AND receiverId = ?) ORDER BY timestamp ASC',
+      [userId, partnerId, partnerId, userId]
+    );
+    res.json(rows);
+  } catch (error) {
+    return res.status(500).json({ message: 'Erreur serveur' });
+  }
 });
 
-app.post('/api/messages', (req, res) => {
-  const { senderId, receiverId, content } = req.body;
+app.post('/api/messages', async (req, res) => {
+  try {
+    const { senderId, receiverId, content } = req.body;
 
-  if (!senderId || !receiverId || !content) {
-    return res.status(400).json({ message: 'Champs requis manquants' });
-  }
-
-  db.run(
-    'INSERT INTO messages (senderId, receiverId, content, timestamp, isRead) VALUES (?, ?, ?, NOW(), 0)',
-    [senderId, receiverId, content],
-    function(err) {
-      if (err) {
-        return res.status(500).json({ message: 'Erreur serveur' });
-      }
-      res.json({ id: this.lastID, message: 'Message envoyé' });
+    if (!senderId || !receiverId || !content) {
+      return res.status(400).json({ message: 'Champs requis manquants' });
     }
-  );
+
+    const result = await db.run(
+      'INSERT INTO messages (senderId, receiverId, content, timestamp, isRead) VALUES (?, ?, ?, NOW(), 0)',
+      [senderId, receiverId, content]
+    );
+    res.json({ id: result.lastID, message: 'Message envoyé' });
+  } catch (error) {
+    return res.status(500).json({ message: 'Erreur serveur' });
+  }
 });
 
 // Route pour récupérer les partenaires de conversation d'un utilisateur
-app.get('/api/messages/partners', (req, res) => {
-  const { userId } = req.query;
+app.get('/api/messages/partners', async (req, res) => {
+  try {
+    const { userId } = req.query;
 
-  if (!userId) {
-    return res.status(400).json({ message: 'userId requis' });
-  }
-
-  db.all(
-    `SELECT DISTINCT 
-      CASE 
-        WHEN senderId = ? THEN receiverId 
-        ELSE senderId 
-      END as partnerId
-    FROM messages 
-    WHERE senderId = ? OR receiverId = ?`,
-    [userId, userId, userId],
-    (err, rows) => {
-      if (err) {
-        return res.status(500).json({ message: 'Erreur serveur' });
-      }
-      const partnerIds = rows.map((row) => row.partnerId).filter((id) => id != null);
-      res.json(partnerIds);
+    if (!userId) {
+      return res.status(400).json({ message: 'userId requis' });
     }
-  );
+
+    const rows = await db.all(
+      `SELECT DISTINCT 
+        CASE 
+          WHEN senderId = ? THEN receiverId 
+          ELSE senderId 
+        END as partnerId
+      FROM messages 
+      WHERE senderId = ? OR receiverId = ?`,
+      [userId, userId, userId]
+    );
+    const partnerIds = rows.map((row) => row.partnerId).filter((id) => id != null);
+    res.json(partnerIds);
+  } catch (error) {
+    return res.status(500).json({ message: 'Erreur serveur' });
+  }
 });
 
 // Routes des messages pour le Dashboard (avec authentification)
-app.get('/api/messages/admin', authenticateToken, (req, res) => {
-  const { userId } = req.query;
+app.get('/api/messages/admin', authenticateToken, async (req, res) => {
+  try {
+    const { userId } = req.query;
 
-  if (userId) {
-    // Récupérer les messages avec un utilisateur spécifique (admin = senderId 0 ou receiverId 0)
-    db.all(
-      `SELECT m.*, 
-        u1.name as senderName, u1.userType as senderType,
-        u2.name as receiverName, u2.userType as receiverType
-      FROM messages m
-      LEFT JOIN users u1 ON m.senderId = u1.id
-      LEFT JOIN users u2 ON m.receiverId = u2.id
-      WHERE (m.senderId = 0 AND m.receiverId = ?) OR (m.senderId = ? AND m.receiverId = 0)
-      ORDER BY m.timestamp ASC`,
-      [userId, userId],
-      (err, rows) => {
-        if (err) {
-          return res.status(500).json({ message: 'Erreur serveur' });
-        }
-        res.json(rows);
-      }
-    );
-  } else {
-    // Récupérer tous les messages où l'admin est impliqué
-    db.all(
-      `SELECT m.*, 
-        u1.name as senderName, u1.userType as senderType,
-        u2.name as receiverName, u2.userType as receiverType
-      FROM messages m
-      LEFT JOIN users u1 ON m.senderId = u1.id
-      LEFT JOIN users u2 ON m.receiverId = u2.id
-      WHERE m.senderId = 0 OR m.receiverId = 0
-      ORDER BY m.timestamp DESC`,
-      (err, rows) => {
-        if (err) {
-          return res.status(500).json({ message: 'Erreur serveur' });
-        }
-        res.json(rows);
-      }
-    );
+    if (userId) {
+      // Récupérer les messages avec un utilisateur spécifique (admin = senderId 0 ou receiverId 0)
+      const rows = await db.all(
+        `SELECT m.*, 
+          u1.name as senderName, u1.userType as senderType,
+          u2.name as receiverName, u2.userType as receiverType
+        FROM messages m
+        LEFT JOIN users u1 ON m.senderId = u1.id
+        LEFT JOIN users u2 ON m.receiverId = u2.id
+        WHERE (m.senderId = 0 AND m.receiverId = ?) OR (m.senderId = ? AND m.receiverId = 0)
+        ORDER BY m.timestamp ASC`,
+        [userId, userId]
+      );
+      res.json(rows);
+    } else {
+      // Récupérer tous les messages où l'admin est impliqué
+      const rows = await db.all(
+        `SELECT m.*, 
+          u1.name as senderName, u1.userType as senderType,
+          u2.name as receiverName, u2.userType as receiverType
+        FROM messages m
+        LEFT JOIN users u1 ON m.senderId = u1.id
+        LEFT JOIN users u2 ON m.receiverId = u2.id
+        WHERE m.senderId = 0 OR m.receiverId = 0
+        ORDER BY m.timestamp DESC`
+      );
+      res.json(rows);
+    }
+  } catch (error) {
+    return res.status(500).json({ message: 'Erreur serveur' });
   }
 });
 
-app.post('/api/messages/admin', authenticateToken, (req, res) => {
-  const { senderId, receiverId, content } = req.body;
+app.post('/api/messages/admin', authenticateToken, async (req, res) => {
+  try {
+    const { senderId, receiverId, content } = req.body;
 
-  if (!receiverId || !content) {
-    return res.status(400).json({ message: 'receiverId et content requis' });
-  }
-
-  // L'admin envoie toujours avec senderId = 0
-  db.run(
-    'INSERT INTO messages (senderId, receiverId, content, timestamp, isRead) VALUES (0, ?, ?, NOW(), 0)',
-    [receiverId, content],
-    function(err) {
-      if (err) {
-        return res.status(500).json({ message: 'Erreur serveur' });
-      }
-      res.json({ id: this.lastID, message: 'Message envoyé' });
+    if (!receiverId || !content) {
+      return res.status(400).json({ message: 'receiverId et content requis' });
     }
-  );
+
+    // L'admin envoie toujours avec senderId = 0
+    const result = await db.run(
+      'INSERT INTO messages (senderId, receiverId, content, timestamp, isRead) VALUES (0, ?, ?, NOW(), 0)',
+      [receiverId, content]
+    );
+    res.json({ id: result.lastID, message: 'Message envoyé' });
+  } catch (error) {
+    return res.status(500).json({ message: 'Erreur serveur' });
+  }
 });
 
 // Route de synchronisation de réservation depuis Flutter
-app.post('/api/reservations/sync', (req, res) => {
-  const { userId, professionnelId, date, dateFin, heure, status } = req.body;
+app.post('/api/reservations/sync', async (req, res) => {
+  try {
+    const { userId, professionnelId, date, dateFin, heure, status } = req.body;
 
-  if (!userId || !professionnelId || !date || !heure) {
-    return res.status(400).json({ message: 'Champs requis manquants' });
-  }
-
-  // Vérifier si la réservation existe déjà (par userId, professionnelId, date, heure)
-  db.get(
-    'SELECT id FROM reservations WHERE userId = ? AND professionnelId = ? AND date = ? AND heure = ?',
-    [userId, professionnelId, date, heure],
-    (err, existing) => {
-      if (err) {
-        console.error('Erreur vérification réservation:', err);
-        return res.status(500).json({ message: 'Erreur serveur' });
-      }
-
-      if (existing) {
-        // Réservation existe déjà, mettre à jour le statut si nécessaire
-        db.run(
-          'UPDATE reservations SET status = ? WHERE id = ?',
-          [status || 'pending', existing.id],
-          function(updateErr) {
-            if (updateErr) {
-              return res.status(500).json({ message: 'Erreur serveur' });
-            }
-            res.json({ id: existing.id, message: 'Réservation mise à jour' });
-          }
-        );
-      } else {
-        // Créer une nouvelle réservation
-        const dateFin = req.body.dateFin || null;
-        db.run(
-          'INSERT INTO reservations (userId, professionnelId, date, dateFin, heure, status, createdAt) VALUES (?, ?, ?, ?, ?, ?, NOW())',
-          [userId, professionnelId, date, dateFin, heure, status || 'pending'],
-          function(insertErr) {
-            if (insertErr) {
-              console.error('Erreur création réservation:', insertErr);
-              return res.status(500).json({ message: 'Erreur serveur' });
-            }
-            res.json({ id: this.lastID, message: 'Réservation synchronisée' });
-          }
-        );
-      }
+    if (!userId || !professionnelId || !date || !heure) {
+      return res.status(400).json({ message: 'Champs requis manquants' });
     }
-  );
+
+    // Vérifier si la réservation existe déjà (par userId, professionnelId, date, heure)
+    const existing = await db.get(
+      'SELECT id FROM reservations WHERE userId = ? AND professionnelId = ? AND date = ? AND heure = ?',
+      [userId, professionnelId, date, heure]
+    );
+
+    if (existing) {
+      // Réservation existe déjà, mettre à jour le statut si nécessaire
+      await db.run(
+        'UPDATE reservations SET status = ? WHERE id = ?',
+        [status || 'pending', existing.id]
+      );
+      res.json({ id: existing.id, message: 'Réservation mise à jour' });
+    } else {
+      // Créer une nouvelle réservation
+      const finalDateFin = dateFin || null;
+      const result = await db.run(
+        'INSERT INTO reservations (userId, professionnelId, date, dateFin, heure, status, createdAt) VALUES (?, ?, ?, ?, ?, ?, NOW())',
+        [userId, professionnelId, date, finalDateFin, heure, status || 'pending']
+      );
+      res.json({ id: result.lastID, message: 'Réservation synchronisée' });
+    }
+  } catch (error) {
+    console.error('Erreur synchronisation réservation:', error);
+    return res.status(500).json({ message: 'Erreur serveur' });
+  }
 });
 
 // Route de synchronisation d'utilisateur depuis Flutter
-app.post('/api/users/sync', (req, res) => {
-  const { name, email, password, phone, categorie, ville, tarif, experience, photo, userType, besoin, preference, mission, particularite } = req.body;
+app.post('/api/users/sync', async (req, res) => {
+  try {
+    const { name, email, password, phone, categorie, ville, tarif, experience, photo, userType, besoin, preference, mission, particularite } = req.body;
 
-  if (!name || !email || !password || !categorie || !userType) {
-    return res.status(400).json({ message: 'Champs requis manquants' });
-  }
-
-  // Vérifier si l'utilisateur existe déjà
-  db.get('SELECT id FROM users WHERE email = ?', [email], async (err, existingUser) => {
-    if (err) {
-      console.error('Erreur DB:', err);
-      return res.status(500).json({ message: 'Erreur serveur' });
+    if (!name || !email || !password || !categorie || !userType) {
+      return res.status(400).json({ message: 'Champs requis manquants' });
     }
+
+    // Vérifier si l'utilisateur existe déjà
+    const existingUser = await db.get('SELECT id FROM users WHERE email = ?', [email]);
 
     if (existingUser) {
       // Mettre à jour l'utilisateur existant (hasher le mot de passe si fourni)
-      const bcrypt = require('bcryptjs');
       let hashedPassword = password;
       
       // Si le mot de passe n'est pas déjà hashé (ne commence pas par $2b$), le hasher
@@ -1114,44 +1015,34 @@ app.post('/api/users/sync', (req, res) => {
         hashedPassword = await bcrypt.hash(password, 10);
       }
       
-      db.run(
+      await db.run(
         `UPDATE users SET 
           name = ?, password = ?, phone = ?, categorie = ?, ville = ?, 
           tarif = ?, experience = ?, photo = ?, userType = ?,
           besoin = ?, preference = ?, mission = ?, particularite = ?
          WHERE email = ?`,
-        [name, hashedPassword, phone || null, categorie, ville || null, tarif || null, experience || null, photo || null, userType, besoin || null, preference || null, mission || null, particularite || null, email],
-        function(updateErr) {
-          if (updateErr) {
-            console.error('Erreur mise à jour:', updateErr);
-            return res.status(500).json({ message: 'Erreur lors de la mise à jour' });
-          }
-          res.json({ message: 'Utilisateur mis à jour', id: existingUser.id, user: { id: existingUser.id, name, email, userType, besoin, preference, mission, particularite } });
-        }
+        [name, hashedPassword, phone || null, categorie, ville || null, tarif || null, experience || null, photo || null, userType, besoin || null, preference || null, mission || null, particularite || null, email]
       );
+      res.json({ message: 'Utilisateur mis à jour', id: existingUser.id, user: { id: existingUser.id, name, email, userType, besoin, preference, mission, particularite } });
     } else {
       // Créer un nouvel utilisateur (hasher le mot de passe)
-      const bcrypt = require('bcryptjs');
       const hashedPassword = await bcrypt.hash(password, 10);
       
-      db.run(
+      const result = await db.run(
         `INSERT INTO users (name, email, password, phone, categorie, ville, tarif, experience, photo, userType, besoin, preference, mission, particularite, createdAt)
          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())`,
-        [name, email, hashedPassword, phone || null, categorie, ville || null, tarif || null, experience || null, photo || null, userType, besoin || null, preference || null, mission || null, particularite || null],
-        function(insertErr) {
-          if (insertErr) {
-            console.error('Erreur insertion:', insertErr);
-            return res.status(500).json({ message: 'Erreur lors de la création' });
-          }
-          res.json({ 
-            message: 'Utilisateur créé', 
-            id: this.lastID,
-            user: { id: this.lastID, name, email, userType, besoin, preference, mission, particularite }
-          });
-        }
+        [name, email, hashedPassword, phone || null, categorie, ville || null, tarif || null, experience || null, photo || null, userType, besoin || null, preference || null, mission || null, particularite || null]
       );
+      res.json({ 
+        message: 'Utilisateur créé', 
+        id: result.lastID,
+        user: { id: result.lastID, name, email, userType, besoin, preference, mission, particularite }
+      });
     }
-  });
+  } catch (error) {
+    console.error('Erreur synchronisation utilisateur:', error);
+    return res.status(500).json({ message: 'Erreur serveur' });
+  }
 });
 
 // Route racine
@@ -1176,85 +1067,82 @@ app.get('/', (req, res) => {
 // ========== ROUTES DISPONIBILITÉS ==========
 
 // Récupérer les disponibilités d'un professionnel
-app.get('/api/availabilities', (req, res) => {
-  const { professionnelId } = req.query;
-  
-  if (!professionnelId) {
-    return res.status(400).json({ message: 'professionnelId requis' });
-  }
-  
-  db.all(
-    'SELECT * FROM availabilities WHERE professionnelId = ? ORDER BY jourSemaine, heureDebut',
-    [professionnelId],
-    (err, rows) => {
-      if (err) {
-        return res.status(500).json({ message: 'Erreur serveur' });
-      }
-      res.json(rows);
+app.get('/api/availabilities', async (req, res) => {
+  try {
+    const { professionnelId } = req.query;
+    
+    if (!professionnelId) {
+      return res.status(400).json({ message: 'professionnelId requis' });
     }
-  );
+    
+    const rows = await db.all(
+      'SELECT * FROM availabilities WHERE professionnelId = ? ORDER BY jourSemaine, heureDebut',
+      [professionnelId]
+    );
+    res.json(rows);
+  } catch (error) {
+    return res.status(500).json({ message: 'Erreur serveur' });
+  }
 });
 
 // Créer ou mettre à jour une disponibilité
-app.post('/api/availabilities', authenticateToken, (req, res) => {
-  const { professionnelId, jourSemaine, heureDebut, heureFin } = req.body;
-  
-  if (!professionnelId || jourSemaine === undefined || !heureDebut || !heureFin) {
-    return res.status(400).json({ message: 'Tous les champs sont requis' });
-  }
-  
-  // Vérifier si une disponibilité existe déjà pour ce jour
-  db.get(
-    'SELECT id FROM availabilities WHERE professionnelId = ? AND jourSemaine = ?',
-    [professionnelId, jourSemaine],
-    (err, existing) => {
-      if (err) {
-        return res.status(500).json({ message: 'Erreur serveur' });
-      }
-      
-      if (existing) {
-        // Mettre à jour
-        db.run(
-          'UPDATE availabilities SET heureDebut = ?, heureFin = ? WHERE id = ?',
-          [heureDebut, heureFin, existing.id],
-          function(updateErr) {
-            if (updateErr) {
-              return res.status(500).json({ message: 'Erreur serveur' });
-            }
-            res.json({ id: existing.id, message: 'Disponibilité mise à jour' });
-          }
-        );
-      } else {
-        // Créer
-        db.run(
-          'INSERT INTO availabilities (professionnelId, jourSemaine, heureDebut, heureFin) VALUES (?, ?, ?, ?)',
-          [professionnelId, jourSemaine, heureDebut, heureFin],
-          function(insertErr) {
-            if (insertErr) {
-              return res.status(500).json({ message: 'Erreur serveur' });
-            }
-            res.json({ id: this.lastID, message: 'Disponibilité créée' });
-          }
-        );
-      }
+app.post('/api/availabilities', authenticateToken, async (req, res) => {
+  try {
+    const { professionnelId, jourSemaine, heureDebut, heureFin } = req.body;
+    
+    if (!professionnelId || jourSemaine === undefined || !heureDebut || !heureFin) {
+      return res.status(400).json({ message: 'Tous les champs sont requis' });
     }
-  );
+    
+    // Vérifier si une disponibilité existe déjà pour ce jour
+    const existing = await db.get(
+      'SELECT id FROM availabilities WHERE professionnelId = ? AND jourSemaine = ?',
+      [professionnelId, jourSemaine]
+    );
+    
+    if (existing) {
+      // Mettre à jour
+      await db.run(
+        'UPDATE availabilities SET heureDebut = ?, heureFin = ? WHERE id = ?',
+        [heureDebut, heureFin, existing.id]
+      );
+      res.json({ id: existing.id, message: 'Disponibilité mise à jour' });
+    } else {
+      // Créer
+      const result = await db.run(
+        'INSERT INTO availabilities (professionnelId, jourSemaine, heureDebut, heureFin) VALUES (?, ?, ?, ?)',
+        [professionnelId, jourSemaine, heureDebut, heureFin]
+      );
+      res.json({ id: result.lastID, message: 'Disponibilité créée' });
+    }
+  } catch (error) {
+    return res.status(500).json({ message: 'Erreur serveur' });
+  }
 });
 
 // Supprimer une disponibilité
-app.delete('/api/availabilities/:id', authenticateToken, (req, res) => {
-  const { id } = req.params;
-  
-  db.run('DELETE FROM availabilities WHERE id = ?', [id], function(err) {
-    if (err) {
-      return res.status(500).json({ message: 'Erreur serveur' });
-    }
+app.delete('/api/availabilities/:id', authenticateToken, async (req, res) => {
+  try {
+    const { id } = req.params;
+    await db.run('DELETE FROM availabilities WHERE id = ?', [id]);
     res.json({ message: 'Disponibilité supprimée' });
-  });
+  } catch (error) {
+    return res.status(500).json({ message: 'Erreur serveur' });
+  }
 });
 
 // Démarrer le serveur
-app.listen(PORT, () => {
-  console.log(`🚀 Serveur API démarré sur http://localhost:${PORT}`);
-});
+(async () => {
+  // Tester la connexion MySQL avant de démarrer
+  const connected = await db.testConnection();
+  if (!connected) {
+    console.error('❌ Impossible de se connecter à MySQL. Vérifiez votre configuration.');
+    process.exit(1);
+  }
+  
+  app.listen(PORT, () => {
+    console.log(`🚀 Serveur API démarré sur http://localhost:${PORT}`);
+    console.log(`✅ Connexion MySQL établie`);
+  });
+})();
 
