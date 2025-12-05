@@ -6,12 +6,7 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "dev": "nodemon server.js",
     "start": "node server.js",
-    "start:prod": "NODE_ENV=production node server.js",
-    "clear-all": "node scripts/clear-all-data.js",
-    "clear-flutter": "node scripts/clear-flutter-db.js",
-    "backup": "node scripts/backup-db.js",
-    "backup:simple": "node scripts/backup-db-simple.js",
-    "export:sql": "node scripts/export-db.js"
+    "start:prod": "NODE_ENV=production node server.js"
   },
   "keywords": [],
   "author": "",
@@ -25,7 +20,6 @@
     "jsonwebtoken": "^9.0.2",
     "multer": "^2.0.2",
     "mysql2": "^3.15.3",
-    "sqlite3": "^5.1.7",
     "stripe": "^14.21.0"
   },
   "devDependencies": {
