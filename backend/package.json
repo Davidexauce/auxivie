@@ -1,5 +1,5 @@
 {
-  "name": "backend",
+  "name": "backend",/Users/david/Christelle Projet/backend/server.js
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
@@ -14,7 +14,7 @@
     "export:sql": "node scripts/export-db.js"
   },
   "keywords": [],
-  "author": "",
+  "author": "",/Users/david/Christelle Projet/backend/package.json
   "license": "ISC",
   "description": "",
   "dependencies": {
