@@ -7,16 +7,89 @@ const sqlite3 = require('sqlite3').verbose();
 const path = require('path');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+const multer = require('multer');
+const fs = require('fs');
+const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY || 'sk_test_placeholder');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-in-production';
 
+// Configuration du stockage des fichiers
+const uploadsDir = path.join(__dirname, 'uploads');
+const documentsDir = path.join(uploadsDir, 'documents');
+const photosDir = path.join(uploadsDir, 'photos');
+
+// Créer les dossiers s'ils n'existent pas
+[uploadsDir, documentsDir, photosDir].forEach(dir => {
+  if (!fs.existsSync(dir)) {
+    fs.mkdirSync(dir, { recursive: true });
+  }
+});
+
+// Configuration multer pour les documents
+const documentStorage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, documentsDir);
+  },
+  filename: (req, file, cb) => {
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    const ext = path.extname(file.originalname);
+    cb(null, `doc-${req.body.userId || 'unknown'}-${uniqueSuffix}${ext}`);
+  }
+});
+
+// Configuration multer pour les photos de profil
+const photoStorage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, photosDir);
+  },
+  filename: (req, file, cb) => {
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    const ext = path.extname(file.originalname);
+    cb(null, `photo-${req.body.userId || 'unknown'}-${uniqueSuffix}${ext}`);
+  }
+});
+
+const uploadDocument = multer({
+  storage: documentStorage,
+  limits: { fileSize: 10 * 1024 * 1024 }, // 10MB max
+  fileFilter: (req, file, cb) => {
+    const allowedTypes = /jpeg|jpg|png|pdf/;
+    const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
+    const mimetype = allowedTypes.test(file.mimetype);
+    
+    if (extname && mimetype) {
+      return cb(null, true);
+    } else {
+      cb(new Error('Type de fichier non autorisé. Formats acceptés: JPEG, PNG, PDF'));
+    }
+  }
+});
+
+const uploadPhoto = multer({
+  storage: photoStorage,
+  limits: { fileSize: 5 * 1024 * 1024 }, // 5MB max
+  fileFilter: (req, file, cb) => {
+    const allowedTypes = /jpeg|jpg|png/;
+    const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
+    const mimetype = allowedTypes.test(file.mimetype);
+    
+    if (extname && mimetype) {
+      return cb(null, true);
+    } else {
+      cb(new Error('Type de fichier non autorisé. Formats acceptés: JPEG, PNG'));
+    }
+  }
+});
+
 // Configuration CORS pour production
 const corsOptions = {
   origin: process.env.CORS_ORIGIN 
-    ? process.env.CORS_ORIGIN.split(',')
-    : '*', // En développement, autoriser toutes les origines
+    ? process.env.CORS_ORIGIN.split(',').map(origin => origin.trim())
+    : process.env.NODE_ENV === 'production'
+      ? ['https://www.auxivie.org', 'https://auxivie.org', 'https://api.auxivie.org']
+      : '*', // En développement, autoriser toutes les origines
   credentials: true,
   optionsSuccessStatus: 200
 };
@@ -24,6 +97,9 @@ const corsOptions = {
 // Middleware
 app.use(cors(corsOptions));
 app.use(express.json());
+
+// Servir les fichiers statiques (photos et documents)
+app.use('/uploads', express.static(uploadsDir));
 
 // Headers de sécurité (basique)
 app.use((req, res, next) => {
@@ -91,6 +167,7 @@ db.serialize(() => {
 app.post('/api/auth/login', async (req, res) => {
   try {
     const { email, password } = req.body;
+    const isMobileRequest = req.headers['x-request-type'] === 'mobile';
 
     if (!email || !password) {
       return res.status(400).json({ message: 'Email et mot de passe requis' });
@@ -111,14 +188,35 @@ app.post('/api/auth/login', async (req, res) => {
         }
 
         // Vérifier le mot de passe
-        const isValid = await bcrypt.compare(password, user.password);
+        let isValid = false;
+        
+        // Si le mot de passe en base commence par $2b$, c'est un hash bcrypt
+        if (user.password.startsWith('$2b$')) {
+          isValid = await bcrypt.compare(password, user.password);
+        } else {
+          // Sinon, c'est un mot de passe en clair (pour migration)
+          isValid = password === user.password;
+          
+          // Si la connexion réussit avec un mot de passe en clair, hasher et mettre à jour
+          if (isValid) {
+            const hashedPassword = await bcrypt.hash(password, 10);
+            db.run('UPDATE users SET password = ? WHERE id = ?', [hashedPassword, user.id], (err) => {
+              if (err) {
+                console.error('Erreur lors du hashage du mot de passe:', err);
+              } else {
+                console.log(`✅ Mot de passe hashé pour l'utilisateur ${user.id}`);
+              }
+            });
+          }
+        }
         
         if (!isValid) {
           return res.status(401).json({ message: 'Email ou mot de passe incorrect' });
         }
 
-        // Vérifier que c'est un admin
-        if (user.userType !== 'admin') {
+        // Si c'est une requête mobile, accepter tous les types d'utilisateurs
+        // Sinon, vérifier que c'est un admin (pour le dashboard)
+        if (!isMobileRequest && user.userType !== 'admin') {
           return res.status(403).json({ message: 'Accès réservé aux administrateurs' });
         }
 
@@ -170,12 +268,40 @@ const authenticateToken = (req, res, next) => {
 };
 
 // Routes des utilisateurs
-app.get('/api/users', authenticateToken, (req, res) => {
-  db.all('SELECT id, name, email, phone, categorie, ville, tarif, userType FROM users WHERE userType != "admin"', (err, rows) => {
+// Route publique pour récupérer les professionnels (app mobile)
+app.get('/api/users', (req, res) => {
+  const { userType } = req.query;
+  
+  // Si userType=professionnel, route publique pour l'app mobile
+  if (userType === 'professionnel') {
+    db.all('SELECT id, name, email, phone, categorie, ville, tarif, experience, photo, userType FROM users WHERE userType = "professionnel"', (err, rows) => {
+      if (err) {
+        return res.status(500).json({ message: 'Erreur serveur' });
+      }
+      res.json(rows);
+    });
+    return;
+  }
+  
+  // Sinon, nécessite authentification (pour le dashboard)
+  const authHeader = req.headers['authorization'];
+  const token = authHeader && authHeader.split(' ')[1];
+  
+  if (!token) {
+    return res.status(401).json({ message: 'Token manquant' });
+  }
+  
+  jwt.verify(token, JWT_SECRET, (err, user) => {
     if (err) {
-      return res.status(500).json({ message: 'Erreur serveur' });
+      return res.status(403).json({ message: 'Token invalide' });
     }
-    res.json(rows);
+    
+    db.all('SELECT id, name, email, phone, categorie, ville, tarif, userType FROM users WHERE userType != "admin"', (err, rows) => {
+      if (err) {
+        return res.status(500).json({ message: 'Erreur serveur' });
+      }
+      res.json(rows);
+    });
   });
 });
 
@@ -209,18 +335,119 @@ app.get('/api/users/:id/admin', authenticateToken, (req, res) => {
 
 app.put('/api/users/:id', authenticateToken, (req, res) => {
   const { id } = req.params;
-  const { name, email, phone, categorie, ville, tarif } = req.body;
+  const { name, email, phone, categorie, ville, tarif, password, currentPassword } = req.body;
   
-  db.run(
-    'UPDATE users SET name = ?, email = ?, phone = ?, categorie = ?, ville = ?, tarif = ? WHERE id = ?',
-    [name, email, phone, categorie, ville, tarif, id],
-    function(err) {
+  // Si un nouveau mot de passe est fourni, vérifier l'ancien et hasher le nouveau
+  if (password) {
+    // Récupérer l'utilisateur actuel pour vérifier le mot de passe
+    db.get('SELECT password FROM users WHERE id = ?', [id], (err, user) => {
       if (err) {
         return res.status(500).json({ message: 'Erreur serveur' });
       }
-      res.json({ message: 'Utilisateur mis à jour' });
+      if (!user) {
+        return res.status(404).json({ message: 'Utilisateur non trouvé' });
+      }
+      
+      // Vérifier le mot de passe actuel si fourni
+      if (currentPassword) {
+        bcrypt.compare(currentPassword, user.password, (err, isMatch) => {
+          if (err || !isMatch) {
+            return res.status(401).json({ message: 'Mot de passe actuel incorrect' });
+          }
+          
+          // Hasher le nouveau mot de passe
+          bcrypt.hash(password, 10, (err, hashedPassword) => {
+            if (err) {
+              return res.status(500).json({ message: 'Erreur serveur' });
+            }
+            
+            // Mettre à jour avec le mot de passe hashé
+            const updates = { name, email, phone, categorie, ville, tarif, password: hashedPassword };
+            const fields = [];
+            const values = [];
+            
+            if (name !== undefined) { fields.push('name = ?'); values.push(name); }
+            if (email !== undefined) { fields.push('email = ?'); values.push(email); }
+            if (phone !== undefined) { fields.push('phone = ?'); values.push(phone); }
+            if (categorie !== undefined) { fields.push('categorie = ?'); values.push(categorie); }
+            if (ville !== undefined) { fields.push('ville = ?'); values.push(ville); }
+            if (tarif !== undefined) { fields.push('tarif = ?'); values.push(tarif); }
+            fields.push('password = ?'); values.push(hashedPassword);
+            values.push(id);
+            
+            db.run(
+              `UPDATE users SET ${fields.join(', ')} WHERE id = ?`,
+              values,
+              function(err) {
+                if (err) {
+                  return res.status(500).json({ message: 'Erreur serveur' });
+                }
+                res.json({ message: 'Utilisateur mis à jour' });
+              }
+            );
+          });
+        });
+      } else {
+        // Pas de vérification de l'ancien mot de passe (pour les admins)
+        bcrypt.hash(password, 10, (err, hashedPassword) => {
+          if (err) {
+            return res.status(500).json({ message: 'Erreur serveur' });
+          }
+          
+          const updates = { name, email, phone, categorie, ville, tarif, password: hashedPassword };
+          const fields = [];
+          const values = [];
+          
+          if (name !== undefined) { fields.push('name = ?'); values.push(name); }
+          if (email !== undefined) { fields.push('email = ?'); values.push(email); }
+          if (phone !== undefined) { fields.push('phone = ?'); values.push(phone); }
+          if (categorie !== undefined) { fields.push('categorie = ?'); values.push(categorie); }
+          if (ville !== undefined) { fields.push('ville = ?'); values.push(ville); }
+          if (tarif !== undefined) { fields.push('tarif = ?'); values.push(tarif); }
+          fields.push('password = ?'); values.push(hashedPassword);
+          values.push(id);
+          
+          db.run(
+            `UPDATE users SET ${fields.join(', ')} WHERE id = ?`,
+            values,
+            function(err) {
+              if (err) {
+                return res.status(500).json({ message: 'Erreur serveur' });
+              }
+              res.json({ message: 'Utilisateur mis à jour' });
+            }
+          );
+        });
+      }
+    });
+  } else {
+    // Mise à jour normale sans changement de mot de passe
+    const fields = [];
+    const values = [];
+    
+    if (name !== undefined) { fields.push('name = ?'); values.push(name); }
+    if (email !== undefined) { fields.push('email = ?'); values.push(email); }
+    if (phone !== undefined) { fields.push('phone = ?'); values.push(phone); }
+    if (categorie !== undefined) { fields.push('categorie = ?'); values.push(categorie); }
+    if (ville !== undefined) { fields.push('ville = ?'); values.push(ville); }
+    if (tarif !== undefined) { fields.push('tarif = ?'); values.push(tarif); }
+    values.push(id);
+    
+    if (fields.length === 0) {
+      return res.status(400).json({ message: 'Aucun champ à mettre à jour' });
     }
-  );
+    
+    db.run(
+      `UPDATE users SET ${fields.join(', ')} WHERE id = ?`,
+      values,
+      function(err) {
+        if (err) {
+          return res.status(500).json({ message: 'Erreur serveur' });
+        }
+        res.json({ message: 'Utilisateur mis à jour' });
+      }
+    );
+  }
 });
 
 // Routes des documents
@@ -263,6 +490,101 @@ app.post('/api/documents/:id/reject', authenticateToken, (req, res) => {
   });
 });
 
+// Route pour uploader un document
+app.post('/api/documents/upload', uploadDocument.single('file'), (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ message: 'Aucun fichier fourni' });
+    }
+
+    const { userId, type } = req.body;
+
+    if (!userId || !type) {
+      // Supprimer le fichier si les paramètres sont invalides
+      fs.unlinkSync(req.file.path);
+      return res.status(400).json({ message: 'userId et type sont requis' });
+    }
+
+    // Enregistrer le document dans la base de données
+    const filePath = `/uploads/documents/${path.basename(req.file.path)}`;
+    db.run(
+      'INSERT INTO documents (userId, type, path, status, createdAt) VALUES (?, ?, ?, "pending", datetime("now"))',
+      [userId, type, filePath],
+      function(err) {
+        if (err) {
+          // Supprimer le fichier en cas d'erreur
+          fs.unlinkSync(req.file.path);
+          console.error('Erreur insertion document:', err);
+          return res.status(500).json({ message: 'Erreur lors de l\'enregistrement du document' });
+        }
+        res.json({
+          id: this.lastID,
+          message: 'Document uploadé avec succès',
+          path: filePath,
+          url: `${req.protocol}://${req.get('host')}${filePath}`
+        });
+      }
+    );
+  } catch (error) {
+    console.error('Erreur upload document:', error);
+    if (req.file && fs.existsSync(req.file.path)) {
+      fs.unlinkSync(req.file.path);
+    }
+    res.status(500).json({ message: 'Erreur serveur lors de l\'upload' });
+  }
+});
+
+// Route pour uploader une photo de profil
+app.post('/api/users/:id/photo', uploadPhoto.single('photo'), (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ message: 'Aucune photo fournie' });
+    }
+
+    const { id } = req.params;
+    const filePath = `/uploads/photos/${path.basename(req.file.path)}`;
+    const photoUrl = `${req.protocol}://${req.get('host')}${filePath}`;
+
+    // Supprimer l'ancienne photo si elle existe
+    db.get('SELECT photo FROM users WHERE id = ?', [id], (err, user) => {
+      if (err) {
+        fs.unlinkSync(req.file.path);
+        return res.status(500).json({ message: 'Erreur serveur' });
+      }
+
+      if (user && user.photo) {
+        const oldPhotoPath = path.join(__dirname, user.photo);
+        if (fs.existsSync(oldPhotoPath)) {
+          fs.unlinkSync(oldPhotoPath);
+        }
+      }
+
+      // Mettre à jour la photo dans la base de données
+      db.run(
+        'UPDATE users SET photo = ? WHERE id = ?',
+        [photoUrl, id],
+        function(updateErr) {
+          if (updateErr) {
+            fs.unlinkSync(req.file.path);
+            console.error('Erreur mise à jour photo:', updateErr);
+            return res.status(500).json({ message: 'Erreur lors de la mise à jour de la photo' });
+          }
+          res.json({
+            message: 'Photo de profil mise à jour',
+            photo: photoUrl
+          });
+        }
+      );
+    });
+  } catch (error) {
+    console.error('Erreur upload photo:', error);
+    if (req.file && fs.existsSync(req.file.path)) {
+      fs.unlinkSync(req.file.path);
+    }
+    res.status(500).json({ message: 'Erreur serveur lors de l\'upload' });
+  }
+});
+
 // Routes des paiements
 app.get('/api/payments', authenticateToken, (req, res) => {
   db.all(`
@@ -279,6 +601,73 @@ app.get('/api/payments', authenticateToken, (req, res) => {
     }
     res.json(rows || []);
   });
+});
+
+// Route pour créer un PaymentIntent Stripe
+app.post('/api/payments/create-intent', async (req, res) => {
+  try {
+    const { amount, currency = 'eur', reservationId, userId } = req.body;
+
+    if (!amount || !reservationId || !userId) {
+      return res.status(400).json({ message: 'amount, reservationId et userId sont requis' });
+    }
+
+    // Créer un PaymentIntent avec Stripe
+    const paymentIntent = await stripe.paymentIntents.create({
+      amount: Math.round(amount * 100), // Convertir en centimes
+      currency: currency.toLowerCase(),
+      metadata: {
+        reservationId: reservationId.toString(),
+        userId: userId.toString(),
+      },
+    });
+
+    res.json({
+      clientSecret: paymentIntent.client_secret,
+      paymentIntentId: paymentIntent.id,
+    });
+  } catch (error) {
+    console.error('Erreur création PaymentIntent:', error);
+    res.status(500).json({ message: 'Erreur lors de la création du paiement', error: error.message });
+  }
+});
+
+// Route pour confirmer un paiement
+app.post('/api/payments/confirm', async (req, res) => {
+  try {
+    const { paymentIntentId, reservationId, userId, amount } = req.body;
+
+    if (!paymentIntentId || !reservationId || !userId || !amount) {
+      return res.status(400).json({ message: 'Tous les champs sont requis' });
+    }
+
+    // Récupérer le PaymentIntent depuis Stripe
+    const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId);
+
+    if (paymentIntent.status !== 'succeeded') {
+      return res.status(400).json({ message: 'Le paiement n\'a pas été confirmé' });
+    }
+
+    // Enregistrer le paiement dans la base de données
+    db.run(
+      `INSERT INTO payments (userId, reservationId, amount, status, paymentMethod, createdAt)
+       VALUES (?, ?, ?, 'completed', 'stripe', datetime("now"))`,
+      [userId, reservationId, amount],
+      function(err) {
+        if (err) {
+          console.error('Erreur enregistrement paiement:', err);
+          return res.status(500).json({ message: 'Erreur lors de l\'enregistrement du paiement' });
+        }
+        res.json({
+          id: this.lastID,
+          message: 'Paiement confirmé et enregistré',
+        });
+      }
+    );
+  } catch (error) {
+    console.error('Erreur confirmation paiement:', error);
+    res.status(500).json({ message: 'Erreur lors de la confirmation du paiement', error: error.message });
+  }
 });
 
 // Routes des badges
@@ -702,7 +1091,7 @@ app.post('/api/messages/admin', authenticateToken, (req, res) => {
 
 // Route de synchronisation de réservation depuis Flutter
 app.post('/api/reservations/sync', (req, res) => {
-  const { userId, professionnelId, date, heure, status } = req.body;
+  const { userId, professionnelId, date, dateFin, heure, status } = req.body;
 
   if (!userId || !professionnelId || !date || !heure) {
     return res.status(400).json({ message: 'Champs requis manquants' });
@@ -732,9 +1121,10 @@ app.post('/api/reservations/sync', (req, res) => {
         );
       } else {
         // Créer une nouvelle réservation
+        const dateFin = req.body.dateFin || null;
         db.run(
-          'INSERT INTO reservations (userId, professionnelId, date, heure, status, createdAt) VALUES (?, ?, ?, ?, ?, datetime("now"))',
-          [userId, professionnelId, date, heure, status || 'pending'],
+          'INSERT INTO reservations (userId, professionnelId, date, dateFin, heure, status, createdAt) VALUES (?, ?, ?, ?, ?, ?, datetime("now"))',
+          [userId, professionnelId, date, dateFin, heure, status || 'pending'],
           function(insertErr) {
             if (insertErr) {
               console.error('Erreur création réservation:', insertErr);
@@ -764,14 +1154,22 @@ app.post('/api/users/sync', (req, res) => {
     }
 
     if (existingUser) {
-      // Mettre à jour l'utilisateur existant
+      // Mettre à jour l'utilisateur existant (hasher le mot de passe si fourni)
+      const bcrypt = require('bcryptjs');
+      let hashedPassword = password;
+      
+      // Si le mot de passe n'est pas déjà hashé (ne commence pas par $2b$), le hasher
+      if (password && !password.startsWith('$2b$')) {
+        hashedPassword = await bcrypt.hash(password, 10);
+      }
+      
       db.run(
         `UPDATE users SET 
           name = ?, password = ?, phone = ?, categorie = ?, ville = ?, 
           tarif = ?, experience = ?, photo = ?, userType = ?,
           besoin = ?, preference = ?, mission = ?, particularite = ?
          WHERE email = ?`,
-        [name, password, phone || null, categorie, ville || null, tarif || null, experience || null, photo || null, userType, besoin || null, preference || null, mission || null, particularite || null, email],
+        [name, hashedPassword, phone || null, categorie, ville || null, tarif || null, experience || null, photo || null, userType, besoin || null, preference || null, mission || null, particularite || null, email],
         function(updateErr) {
           if (updateErr) {
             console.error('Erreur mise à jour:', updateErr);
@@ -821,6 +1219,86 @@ app.get('/', (req, res) => {
       reviews: '/api/reviews',
       reservations: '/api/reservations',
     },
+  });
+});
+
+// ========== ROUTES DISPONIBILITÉS ==========
+
+// Récupérer les disponibilités d'un professionnel
+app.get('/api/availabilities', (req, res) => {
+  const { professionnelId } = req.query;
+  
+  if (!professionnelId) {
+    return res.status(400).json({ message: 'professionnelId requis' });
+  }
+  
+  db.all(
+    'SELECT * FROM availabilities WHERE professionnelId = ? ORDER BY jourSemaine, heureDebut',
+    [professionnelId],
+    (err, rows) => {
+      if (err) {
+        return res.status(500).json({ message: 'Erreur serveur' });
+      }
+      res.json(rows);
+    }
+  );
+});
+
+// Créer ou mettre à jour une disponibilité
+app.post('/api/availabilities', authenticateToken, (req, res) => {
+  const { professionnelId, jourSemaine, heureDebut, heureFin } = req.body;
+  
+  if (!professionnelId || jourSemaine === undefined || !heureDebut || !heureFin) {
+    return res.status(400).json({ message: 'Tous les champs sont requis' });
+  }
+  
+  // Vérifier si une disponibilité existe déjà pour ce jour
+  db.get(
+    'SELECT id FROM availabilities WHERE professionnelId = ? AND jourSemaine = ?',
+    [professionnelId, jourSemaine],
+    (err, existing) => {
+      if (err) {
+        return res.status(500).json({ message: 'Erreur serveur' });
+      }
+      
+      if (existing) {
+        // Mettre à jour
+        db.run(
+          'UPDATE availabilities SET heureDebut = ?, heureFin = ? WHERE id = ?',
+          [heureDebut, heureFin, existing.id],
+          function(updateErr) {
+            if (updateErr) {
+              return res.status(500).json({ message: 'Erreur serveur' });
+            }
+            res.json({ id: existing.id, message: 'Disponibilité mise à jour' });
+          }
+        );
+      } else {
+        // Créer
+        db.run(
+          'INSERT INTO availabilities (professionnelId, jourSemaine, heureDebut, heureFin) VALUES (?, ?, ?, ?)',
+          [professionnelId, jourSemaine, heureDebut, heureFin],
+          function(insertErr) {
+            if (insertErr) {
+              return res.status(500).json({ message: 'Erreur serveur' });
+            }
+            res.json({ id: this.lastID, message: 'Disponibilité créée' });
+          }
+        );
+      }
+    }
+  );
+});
+
+// Supprimer une disponibilité
+app.delete('/api/availabilities/:id', authenticateToken, (req, res) => {
+  const { id } = req.params;
+  
+  db.run('DELETE FROM availabilities WHERE id = ?', [id], function(err) {
+    if (err) {
+      return res.status(500).json({ message: 'Erreur serveur' });
+    }
+    res.json({ message: 'Disponibilité supprimée' });
   });
 });
 
