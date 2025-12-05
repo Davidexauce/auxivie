@@ -47,12 +47,12 @@ rm .env
 # Créer un nouveau .env avec echo (méthode la plus sûre)
 echo "PORT=3001" > .env
 echo "NODE_ENV=production" >> .env
-echo "DB_HOST=localhost" >> .env
+echo "DB_HOST=auth-db1232.hstgr.io" >> .env
 echo "DB_USER=u133413376_root" >> .env
 echo "DB_PASSWORD=Auxivie2025" >> .env
 echo "DB_NAME=u133413376_auxivie" >> .env
 echo "DB_PORT=3306" >> .env
-echo "JWT_SECRET=une_cle_secrete_aleatoire" >> .env
+echo "JWT_SECRET=E9rT7yU6iO3pL8qW1aS2dF4gH5jK0lM" >> .env
 echo "CORS_ORIGIN=https://www.auxivie.org" >> .env
 
 # Vérifier
@@ -85,7 +85,7 @@ Contenu :
 const mysql = require('mysql2/promise');
 
 const config = {
-  host: 'localhost',
+  host: 'auth-db1232.hstgr.io',
   user: 'u133413376_root',
   password: 'Auxivie2025',
   database: 'u133413376_auxivie',

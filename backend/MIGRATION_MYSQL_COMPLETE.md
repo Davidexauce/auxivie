@@ -47,9 +47,9 @@ PORT=3001
 NODE_ENV=production
 
 # Configuration MySQL
-DB_HOST=localhost
-DB_USER=votre_utilisateur_mysql
-DB_PASSWORD=votre_mot_de_passe_mysql
+DB_HOST=auth-db1232.hstgr.io
+DB_USER=u133413376_root
+DB_PASSWORD=Auxivie2025
 DB_NAME=u133413376_auxivie
 DB_PORT=3306
 
@@ -70,7 +70,7 @@ STRIPE_SECRET_KEY=sk_test_votre_cle
    - **Database Name** : `u133413376_auxivie`
    - **Database User** : `u133413376_username`
    - **Database Password** : (celui que vous avez défini)
-   - **Host** : `localhost`
+   - **Host** : `auth-db1232.hstgr.io`
 
 ---
 

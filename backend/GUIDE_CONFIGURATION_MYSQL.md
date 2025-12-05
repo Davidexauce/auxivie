@@ -12,9 +12,9 @@ PORT=3001
 NODE_ENV=production
 
 # Configuration MySQL
-DB_HOST=localhost
-DB_USER=votre_utilisateur_mysql
-DB_PASSWORD=votre_mot_de_passe_mysql
+DB_HOST=auth-db1232.hstgr.io
+DB_USER=u133413376_root
+DB_PASSWORD=Auxivie2025
 DB_NAME=u133413376_auxivie
 DB_PORT=3306
 
@@ -45,9 +45,9 @@ UPLOADS_DIR=./uploads
 ## 📝 Exemple de Configuration
 
 ```env
-DB_HOST=localhost
-DB_USER=u133413376_auxivie_user
-DB_PASSWORD=MonMotDePasse123!
+DB_HOST=auth-db1232.hstgr.io
+DB_USER=u133413376_root
+DB_PASSWORD=Auxivie2025
 DB_NAME=u133413376_auxivie
 DB_PORT=3306
 ```

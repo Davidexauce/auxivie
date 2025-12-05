@@ -52,7 +52,7 @@ const config1 = {
 };
 
 const config2 = {
-  host: 'localhost',
+  host: 'auth-db1232.hstgr.io',
   user: 'u133413376_root',
   password: 'Auxivie2025',
   database: 'u133413376_auxivie',
