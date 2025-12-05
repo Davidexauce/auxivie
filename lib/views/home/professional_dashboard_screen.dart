@@ -41,8 +41,15 @@ class _ProfessionalDashboardScreenState extends State<ProfessionalDashboardScree
 
   @override
   Widget build(BuildContext context) {
-    return SafeArea(
-      child: RefreshIndicator(
+    // ProfessionalDashboardScreen est dans un IndexedStack, donc il n'est pas dans la pile de navigation
+    // Le bouton retour système ne devrait rien faire ici
+    return PopScope(
+      canPop: false,
+      onPopInvoked: (didPop) {
+        // Ne rien faire - on est dans un IndexedStack, le retour est géré par le HomeScreen
+      },
+      child: SafeArea(
+        child: RefreshIndicator(
         onRefresh: () async {
           _loadData();
         },
@@ -112,6 +119,7 @@ class _ProfessionalDashboardScreenState extends State<ProfessionalDashboardScree
               ),
             ],
           ),
+        ),
         ),
       ),
     );

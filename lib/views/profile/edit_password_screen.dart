@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../services/database_service.dart';
+import '../../services/backend_api_service.dart';
 
 class EditPasswordScreen extends StatefulWidget {
   final int? userId;
@@ -35,20 +35,17 @@ class _EditPasswordScreenState extends State<EditPasswordScreen> {
 
     try {
       if (widget.userId != null) {
-        final user = await DatabaseService.instance.getUserById(widget.userId!);
-        if (user != null) {
-          // Vérifier le mot de passe actuel
-          if (user.password != _currentPasswordController.text) {
-            if (mounted) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Mot de passe actuel incorrect')),
-              );
-            }
-            return;
-          }
-
-          final updatedUser = user.copyWith(password: _newPasswordController.text);
-          await DatabaseService.instance.updateUser(updatedUser);
+        // Pour le mot de passe, on doit utiliser une route spécifique si elle existe
+        // Pour l'instant, on met à jour via updateUser (le backend devra hasher)
+        final success = await BackendApiService.updateUser(
+          widget.userId!,
+          {
+            'password': _newPasswordController.text,
+            'currentPassword': _currentPasswordController.text,
+          },
+        );
+        if (!success) {
+          throw Exception('Erreur lors de la mise à jour du mot de passe');
         }
       }
 

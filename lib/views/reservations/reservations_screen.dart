@@ -5,6 +5,7 @@ import '../../viewmodels/reservation_viewmodel.dart';
 import '../../viewmodels/auth_viewmodel.dart';
 import '../../models/reservation_model.dart';
 import 'reservation_detail_screen.dart';
+import 'availability_screen.dart';
 
 /// Écran de planning/réservations
 class ReservationsScreen extends StatefulWidget {
@@ -81,7 +82,14 @@ class _ReservationsScreenState extends State<ReservationsScreen> {
     final currentUser = authViewModel.currentUser;
     final isFamily = currentUser?.userType == 'famille';
 
-    return Scaffold(
+    // ReservationsScreen est dans un IndexedStack, donc il n'est pas dans la pile de navigation
+    // Le bouton retour système ne devrait rien faire ici
+    return PopScope(
+      canPop: false,
+      onPopInvoked: (didPop) {
+        // Ne rien faire - on est dans un IndexedStack, le retour est géré par le HomeScreen
+      },
+      child: Scaffold(
       appBar: AppBar(
         title: const Text('Planning'),
         actions: [
@@ -98,6 +106,20 @@ class _ReservationsScreenState extends State<ReservationsScreen> {
                 );
               },
               tooltip: 'Nouvelle réservation',
+            ),
+          if (!isFamily && currentUser != null)
+            IconButton(
+              icon: const Icon(Icons.schedule),
+              onPressed: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (_) => AvailabilityScreen(
+                      professionnelId: currentUser.id!,
+                    ),
+                  ),
+                );
+              },
+              tooltip: 'Mes disponibilités',
             ),
         ],
       ),
@@ -219,6 +241,7 @@ class _ReservationsScreenState extends State<ReservationsScreen> {
             ],
           );
         },
+      ),
       ),
     );
   }

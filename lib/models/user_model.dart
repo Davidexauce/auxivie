@@ -60,16 +60,16 @@ class UserModel {
   factory UserModel.fromMap(Map<String, dynamic> map) {
     return UserModel(
       id: map['id'] as int?,
-      name: map['name'] as String,
-      email: map['email'] as String,
-      password: map['password'] as String,
+      name: map['name'] as String? ?? '',
+      email: map['email'] as String? ?? '',
+      password: map['password'] as String? ?? '', // Peut être absent depuis l'API
       phone: map['phone'] as String?,
-      categorie: map['categorie'] as String,
+      categorie: map['categorie'] as String? ?? 'Famille',
       ville: map['ville'] as String?,
       tarif: map['tarif'] != null ? (map['tarif'] as num).toDouble() : null,
       experience: map['experience'] as int?,
       photo: map['photo'] as String?,
-      userType: map['userType'] as String,
+      userType: map['userType'] as String? ?? 'famille',
       besoin: map['besoin'] as String?,
       preference: map['preference'] as String?,
       mission: map['mission'] as String?,

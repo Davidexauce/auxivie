@@ -146,9 +146,16 @@ class _ProfessionalsListScreenState extends State<ProfessionalsListScreen> {
   Widget build(BuildContext context) {
     final profileViewModel = Provider.of<ProfileViewModel>(context);
 
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Professionnels'),
+    // ProfessionalsListScreen est dans un IndexedStack, donc il n'est pas dans la pile de navigation
+    // Le bouton retour système ne devrait rien faire ici
+    return PopScope(
+      canPop: false,
+      onPopInvoked: (didPop) {
+        // Ne rien faire - on est dans un IndexedStack, le retour est géré par le HomeScreen
+      },
+      child: Scaffold(
+        appBar: AppBar(
+          title: const Text('Professionnels'),
         actions: [
           IconButton(
             icon: const Icon(Icons.filter_list),
@@ -306,6 +313,7 @@ class _ProfessionalsListScreenState extends State<ProfessionalsListScreen> {
                       ),
           ),
         ],
+      ),
       ),
     );
   }

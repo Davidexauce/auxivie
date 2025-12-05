@@ -39,7 +39,15 @@ class _MessagesListScreenState extends State<MessagesListScreen> {
     final currentUser = authViewModel.currentUser;
     final isFamily = currentUser?.userType == 'famille';
 
-    return Scaffold(
+    // MessagesListScreen est dans un IndexedStack, donc il n'est pas dans la pile de navigation
+    // Le bouton retour système ne devrait rien faire ici
+    return PopScope(
+      canPop: false,
+      onPopInvoked: (didPop) {
+        // Ne rien faire - on est dans un IndexedStack, le retour est géré par le HomeScreen
+        // Juste empêcher le pop pour éviter toute redirection
+      },
+      child: Scaffold(
       appBar: AppBar(
         title: const Text('Messages'),
         actions: [
@@ -139,6 +147,7 @@ class _MessagesListScreenState extends State<MessagesListScreen> {
                     },
                   ),
                 ),
+      ),
     );
   }
 }

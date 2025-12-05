@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../models/reservation_model.dart';
 import '../../viewmodels/reservation_viewmodel.dart';
-import '../../services/database_service.dart';
+import '../../services/backend_api_service.dart';
 import '../../models/user_model.dart';
 
 /// Écran de détails d'une réservation
@@ -30,9 +30,9 @@ class _ReservationDetailScreenState extends State<ReservationDetailScreen> {
   }
 
   Future<void> _loadUsers() async {
-    final db = DatabaseService.instance;
-    final user = await db.getUserById(widget.reservation.userId);
-    final professional = await db.getUserById(widget.reservation.professionnelId);
+    // Charger depuis le backend (base de données unique)
+    final user = await BackendApiService.getUserById(widget.reservation.userId);
+    final professional = await BackendApiService.getUserById(widget.reservation.professionnelId);
 
     setState(() {
       _user = user;

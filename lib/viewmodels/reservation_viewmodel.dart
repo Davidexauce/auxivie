@@ -1,11 +1,9 @@
 import 'package:flutter/foundation.dart';
 import '../models/reservation_model.dart';
-import '../services/database_service.dart';
 import '../services/backend_api_service.dart';
 
 /// ViewModel pour la gestion des réservations
 class ReservationViewModel extends ChangeNotifier {
-  final DatabaseService _db = DatabaseService.instance;
   
   List<ReservationModel> _reservations = [];
   bool _isLoading = false;
@@ -56,11 +54,12 @@ class ReservationViewModel extends ChangeNotifier {
     }
   }
 
-  /// Crée une nouvelle réservation
+  /// Crée une nouvelle réservation (peut être sur plusieurs jours)
   Future<bool> createReservation({
     required int userId,
     required int professionnelId,
     required DateTime date,
+    DateTime? dateFin,
     required String heure,
   }) async {
     _isLoading = true;
@@ -80,21 +79,64 @@ class ReservationViewModel extends ChangeNotifier {
         return false;
       }
 
-      final reservation = ReservationModel(
-        userId: userId,
-        professionnelId: professionnelId,
-        date: date,
-        heure: heure,
-        status: 'pending',
-      );
+      // Si dateFin est fournie, créer une réservation pour chaque jour
+      if (dateFin != null) {
+        final dateFinNormalized = DateTime(dateFin.year, dateFin.month, dateFin.day);
+        final dateDebutNormalized = DateTime(date.year, date.month, date.day);
+        
+        if (dateFinNormalized.isBefore(dateDebutNormalized)) {
+          _errorMessage = 'La date de fin doit être après la date de début';
+          _isLoading = false;
+          notifyListeners();
+          return false;
+        }
 
-      // Créer directement dans le backend (base de données unique)
-      final success = await BackendApiService.createReservation(reservation);
-      if (!success) {
-        _errorMessage = 'Erreur lors de la création de la réservation';
-        _isLoading = false;
-        notifyListeners();
-        return false;
+        // Créer une réservation pour chaque jour
+        bool allSuccess = true;
+        DateTime currentDate = dateDebutNormalized;
+        
+        while (!currentDate.isAfter(dateFinNormalized)) {
+          final reservation = ReservationModel(
+            userId: userId,
+            professionnelId: professionnelId,
+            date: currentDate,
+            dateFin: dateFinNormalized,
+            heure: heure,
+            status: 'pending',
+          );
+
+          final success = await BackendApiService.createReservation(reservation);
+          if (!success) {
+            allSuccess = false;
+            break;
+          }
+          
+          currentDate = currentDate.add(const Duration(days: 1));
+        }
+
+        if (!allSuccess) {
+          _errorMessage = 'Erreur lors de la création de certaines réservations';
+          _isLoading = false;
+          notifyListeners();
+          return false;
+        }
+      } else {
+        // Réservation sur un seul jour
+        final reservation = ReservationModel(
+          userId: userId,
+          professionnelId: professionnelId,
+          date: date,
+          heure: heure,
+          status: 'pending',
+        );
+
+        final success = await BackendApiService.createReservation(reservation);
+        if (!success) {
+          _errorMessage = 'Erreur lors de la création de la réservation';
+          _isLoading = false;
+          notifyListeners();
+          return false;
+        }
       }
       
       // Recharger les réservations depuis le backend

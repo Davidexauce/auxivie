@@ -43,8 +43,15 @@ class _HomeDashboardScreenState extends State<HomeDashboardScreen> {
   Widget build(BuildContext context) {
     final isProfessional = widget.currentUser.userType == 'professionnel';
 
-    return SafeArea(
-      child: RefreshIndicator(
+    // HomeDashboardScreen est dans un IndexedStack, donc il n'est pas dans la pile de navigation
+    // Le bouton retour système ne devrait rien faire ici
+    return PopScope(
+      canPop: false,
+      onPopInvoked: (didPop) {
+        // Ne rien faire - on est dans un IndexedStack, le retour est géré par le HomeScreen
+      },
+      child: SafeArea(
+        child: RefreshIndicator(
         onRefresh: () async {
           _loadData();
         },
@@ -105,6 +112,7 @@ class _HomeDashboardScreenState extends State<HomeDashboardScreen> {
               ),
             ],
           ),
+        ),
         ),
       ),
     );

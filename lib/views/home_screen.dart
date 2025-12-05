@@ -32,12 +32,20 @@ class _HomeScreenState extends State<HomeScreen> {
     final authViewModel = Provider.of<AuthViewModel>(context);
     final currentUser = authViewModel.currentUser;
 
+    // Ne rediriger que si on n'est pas déjà en train de naviguer
     if (currentUser == null) {
-      // Rediriger vers l'écran de choix si pas d'utilisateur connecté
+      // Attendre un peu avant de rediriger pour éviter les redirections lors des navigations
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        Navigator.of(context).pushReplacement(
-          MaterialPageRoute(builder: (_) => const ChoiceScreen()),
-        );
+        if (mounted && authViewModel.currentUser == null) {
+          // Vérifier qu'on n'est pas déjà sur ChoiceScreen
+          final route = ModalRoute.of(context);
+          if (route?.settings.name != '/choice') {
+            Navigator.of(context).pushAndRemoveUntil(
+              MaterialPageRoute(builder: (_) => const ChoiceScreen()),
+              (route) => false,
+            );
+          }
+        }
       });
       return const Scaffold(
         body: Center(child: CircularProgressIndicator()),
@@ -98,17 +106,12 @@ class _HomeScreenState extends State<HomeScreen> {
     ];
 
     return Scaffold(
-      backgroundColor: AppTheme.background,
-      appBar: AppBar(
+        backgroundColor: AppTheme.background,
+        appBar: AppBar(
         backgroundColor: AppTheme.cardBackground,
         elevation: 2,
         shadowColor: Colors.black.withOpacity(0.1),
-        leading: IconButton(
-          icon: const Icon(Icons.menu_rounded, color: AppTheme.textPrimary),
-          onPressed: () {
-            // Menu drawer ou autres actions
-          },
-        ),
+        automaticallyImplyLeading: false,
         title: ShaderMask(
           shaderCallback: (bounds) => AppTheme.textGradient.createShader(bounds),
           child: const Text(

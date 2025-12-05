@@ -1,22 +1,31 @@
+import 'dart:io';
+
 /// Configuration de l'application par environnement
 class AppConfig {
   // Environnement actuel
-  static const Environment _currentEnvironment = Environment.production;
+  static const Environment _currentEnvironment = Environment.development;
   
   // URLs de l'API selon l'environnement
   static String get apiBaseUrl {
     switch (_currentEnvironment) {
       case Environment.development:
-        // Pour iOS Simulator
-        return 'http://localhost:3001';
-        // Pour Android Emulator, décommentez la ligne suivante :
-        // return 'http://10.0.2.2:3001';
+        // Détection automatique de la plateforme
+        if (Platform.isAndroid) {
+          // Android Emulator utilise 10.0.2.2 pour accéder à localhost de la machine hôte
+          return 'http://10.0.2.2:3001';
+        } else if (Platform.isIOS) {
+          // iOS Simulator peut utiliser localhost directement
+          return 'http://localhost:3001';
+        } else {
+          // Pour les autres plateformes (web, desktop), utiliser localhost
+          return 'http://localhost:3001';
+        }
       
       case Environment.staging:
-        return 'https://api-staging.votre-domaine.com';
+        return 'https://api-staging.auxivie.org';
       
       case Environment.production:
-        return 'https://api.votre-domaine.com';
+        return 'https://api.auxivie.org';
     }
   }
   

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../viewmodels/auth_viewmodel.dart';
 import '../../services/database_service.dart';
+import '../../services/backend_api_service.dart';
 import '../../models/user_model.dart';
 import '../../models/document_model.dart';
 import '../../theme/app_theme.dart';
@@ -79,8 +80,8 @@ class _ProfileScreenState extends State<ProfileScreen>
 
   Future<void> _loadUser() async {
     try {
-      final db = DatabaseService.instance;
-      final u = await db.getUserById(widget.userId);
+      // Charger depuis le backend (base de données unique)
+      final u = await BackendApiService.getUserById(widget.userId);
       if (!mounted) return;
 
       setState(() {
@@ -103,7 +104,7 @@ class _ProfileScreenState extends State<ProfileScreen>
       if (mounted) {
         setState(() => _isLoading = false);
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Erreur lors du chargement du profil')),
+          SnackBar(content: Text('Erreur lors du chargement du profil: $e')),
         );
       }
     }
@@ -166,18 +167,44 @@ class _ProfileScreenState extends State<ProfileScreen>
                     final picked = await _picker.pickImage(
                         source: ImageSource.camera, imageQuality: 90);
                     if (picked == null) return;
-                    final doc = DocumentModel(
+                    
+                    // Afficher un indicateur de chargement
+                    if (!mounted) return;
+                    showDialog(
+                      context: context,
+                      barrierDismissible: false,
+                      builder: (_) => const Center(child: CircularProgressIndicator()),
+                    );
+                    
+                    // Uploader vers le backend
+                    final file = File(picked.path);
+                    final result = await BackendApiService.uploadDocument(
                       userId: widget.userId,
                       type: type,
-                      path: picked.path,
-                      createdAt: DateTime.now(),
+                      file: file,
                     );
-                    await DatabaseService.instance.addDocument(doc);
+                    
                     if (!mounted) return;
-                    await _loadDocuments();
-                    if (!mounted) return;
-                    ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Document ajouté')));
+                    Navigator.of(context).pop(); // Fermer le dialog de chargement
+                    
+                    if (result != null) {
+                      // Enregistrer aussi localement pour l'affichage
+                      final doc = DocumentModel(
+                        userId: widget.userId,
+                        type: type,
+                        path: result['path'] as String? ?? picked.path,
+                        createdAt: DateTime.now(),
+                      );
+                      await DatabaseService.instance.addDocument(doc);
+                      await _loadDocuments();
+                      if (!mounted) return;
+                      ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('Document uploadé avec succès')));
+                    } else {
+                      if (!mounted) return;
+                      ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('Erreur lors de l\'upload du document')));
+                    }
                   },
                 ),
                 ListTile(
@@ -189,18 +216,44 @@ class _ProfileScreenState extends State<ProfileScreen>
                     final picked = await _picker.pickImage(
                         source: ImageSource.gallery, imageQuality: 90);
                     if (picked == null) return;
-                    final doc = DocumentModel(
+                    
+                    // Afficher un indicateur de chargement
+                    if (!mounted) return;
+                    showDialog(
+                      context: context,
+                      barrierDismissible: false,
+                      builder: (_) => const Center(child: CircularProgressIndicator()),
+                    );
+                    
+                    // Uploader vers le backend
+                    final file = File(picked.path);
+                    final result = await BackendApiService.uploadDocument(
                       userId: widget.userId,
                       type: type,
-                      path: picked.path,
-                      createdAt: DateTime.now(),
+                      file: file,
                     );
-                    await DatabaseService.instance.addDocument(doc);
+                    
                     if (!mounted) return;
-                    await _loadDocuments();
-                    if (!mounted) return;
-                    ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Document ajouté')));
+                    Navigator.of(context).pop(); // Fermer le dialog de chargement
+                    
+                    if (result != null) {
+                      // Enregistrer aussi localement pour l'affichage
+                      final doc = DocumentModel(
+                        userId: widget.userId,
+                        type: type,
+                        path: result['path'] as String? ?? picked.path,
+                        createdAt: DateTime.now(),
+                      );
+                      await DatabaseService.instance.addDocument(doc);
+                      await _loadDocuments();
+                      if (!mounted) return;
+                      ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('Document uploadé avec succès')));
+                    } else {
+                      if (!mounted) return;
+                      ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('Erreur lors de l\'upload du document')));
+                    }
                   },
                 ),
                 ListTile(
@@ -321,11 +374,130 @@ class _ProfileScreenState extends State<ProfileScreen>
           child: Center(
             child: ClipRRect(
               borderRadius: BorderRadius.circular(12),
-              child: Image.file(File(d.path)),
+              child: d.path.startsWith('http')
+                  ? Image.network(d.path)
+                  : Image.file(File(d.path)),
             ),
           ),
         ),
       ),
+    );
+  }
+
+  Future<void> _uploadProfilePhoto() async {
+    await showModalBottomSheet<bool>(
+      context: context,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (_) {
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Center(
+                  child: Container(
+                    width: 36,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: AppTheme.borderSlate,
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Text('Changer la photo de profil',
+                    textAlign: TextAlign.center,
+                    style: Theme.of(context)
+                        .textTheme
+                        .titleMedium
+                        ?.copyWith(fontWeight: FontWeight.w600)),
+                const SizedBox(height: 16),
+                ListTile(
+                  leading: const Icon(Icons.photo_camera_rounded,
+                      color: AppTheme.accent),
+                  title: const Text('Prendre une photo'),
+                  onTap: () async {
+                    Navigator.of(context).pop(true);
+                    final picked = await _picker.pickImage(
+                        source: ImageSource.camera, imageQuality: 90);
+                    if (picked == null) return;
+                    
+                    if (!mounted) return;
+                    showDialog(
+                      context: context,
+                      barrierDismissible: false,
+                      builder: (_) => const Center(child: CircularProgressIndicator()),
+                    );
+                    
+                    final file = File(picked.path);
+                    final photoUrl = await BackendApiService.uploadProfilePhoto(
+                      userId: widget.userId,
+                      photo: file,
+                    );
+                    
+                    if (!mounted) return;
+                    Navigator.of(context).pop(); // Fermer le dialog de chargement
+                    
+                    if (photoUrl != null) {
+                      await _loadUser();
+                      if (!mounted) return;
+                      ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('Photo de profil mise à jour')));
+                    } else {
+                      if (!mounted) return;
+                      ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('Erreur lors de l\'upload de la photo')));
+                    }
+                  },
+                ),
+                ListTile(
+                  leading: const Icon(Icons.photo_library_rounded,
+                      color: AppTheme.accent),
+                  title: const Text('Depuis la galerie'),
+                  onTap: () async {
+                    Navigator.of(context).pop(true);
+                    final picked = await _picker.pickImage(
+                        source: ImageSource.gallery, imageQuality: 90);
+                    if (picked == null) return;
+                    
+                    if (!mounted) return;
+                    showDialog(
+                      context: context,
+                      barrierDismissible: false,
+                      builder: (_) => const Center(child: CircularProgressIndicator()),
+                    );
+                    
+                    final file = File(picked.path);
+                    final photoUrl = await BackendApiService.uploadProfilePhoto(
+                      userId: widget.userId,
+                      photo: file,
+                    );
+                    
+                    if (!mounted) return;
+                    Navigator.of(context).pop(); // Fermer le dialog de chargement
+                    
+                    if (photoUrl != null) {
+                      await _loadUser();
+                      if (!mounted) return;
+                      ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('Photo de profil mise à jour')));
+                    } else {
+                      if (!mounted) return;
+                      ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('Erreur lors de l\'upload de la photo')));
+                    }
+                  },
+                ),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 
@@ -337,9 +509,16 @@ class _ProfileScreenState extends State<ProfileScreen>
       return const Scaffold(
           body: Center(child: Text('Utilisateur introuvable')));
 
-    return Scaffold(
-      backgroundColor: AppTheme.background,
-      body: Container(
+    // ProfileScreen est dans un IndexedStack, donc il n'est pas dans la pile de navigation
+    // Le bouton retour système ne devrait rien faire ici
+    return PopScope(
+      canPop: false,
+      onPopInvoked: (didPop) {
+        // Ne rien faire - on est dans un IndexedStack, le retour est géré par le HomeScreen
+      },
+      child: Scaffold(
+        backgroundColor: AppTheme.background,
+        body: Container(
         decoration: const BoxDecoration(
           gradient: AppTheme.heroGradient,
         ),
@@ -362,6 +541,41 @@ class _ProfileScreenState extends State<ProfileScreen>
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
+                            // Photo de profil
+                            Center(
+                              child: Stack(
+                                children: [
+                                  CircleAvatar(
+                                    radius: 50,
+                                    backgroundColor: AppTheme.primary.withOpacity(0.1),
+                                    backgroundImage: _user!.photo != null && _user!.photo!.isNotEmpty
+                                        ? (_user!.photo!.startsWith('http')
+                                            ? NetworkImage(_user!.photo!)
+                                            : FileImage(File(_user!.photo!)) as ImageProvider)
+                                        : null,
+                                    child: _user!.photo == null || _user!.photo!.isEmpty
+                                        ? const Icon(Icons.person, size: 50, color: AppTheme.primary)
+                                        : null,
+                                  ),
+                                  Positioned(
+                                    bottom: 0,
+                                    right: 0,
+                                    child: Container(
+                                      decoration: BoxDecoration(
+                                        color: AppTheme.primary,
+                                        shape: BoxShape.circle,
+                                        border: Border.all(color: Colors.white, width: 2),
+                                      ),
+                                      child: IconButton(
+                                        icon: const Icon(Icons.camera_alt, color: Colors.white, size: 20),
+                                        onPressed: () => _uploadProfilePhoto(),
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(height: 20),
                             Row(
                               children: [
                                 Expanded(
@@ -578,6 +792,7 @@ class _ProfileScreenState extends State<ProfileScreen>
             ),
           ),
         ),
+      ),
       ),
     );
   }

@@ -22,6 +22,8 @@ class CreateReservationScreen extends StatefulWidget {
 class _CreateReservationScreenState extends State<CreateReservationScreen> {
   final _formKey = GlobalKey<FormState>();
   DateTime _selectedDate = DateTime.now();
+  DateTime? _selectedDateFin;
+  bool _isMultiDay = false;
   String _selectedTime = '09:00';
   final List<String> _timeSlots = [
     '08:00', '09:00', '10:00', '11:00', '12:00',
@@ -33,12 +35,39 @@ class _CreateReservationScreenState extends State<CreateReservationScreen> {
       return;
     }
 
+    // Validation : si multi-jours est activé, la date de fin doit être sélectionnée
+    if (_isMultiDay && _selectedDateFin == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Veuillez sélectionner une date de fin'),
+          backgroundColor: Colors.orange,
+        ),
+      );
+      return;
+    }
+
+    // Validation : la date de fin doit être après la date de début
+    if (_isMultiDay && _selectedDateFin != null) {
+      final dateDebut = DateTime(_selectedDate.year, _selectedDate.month, _selectedDate.day);
+      final dateFin = DateTime(_selectedDateFin!.year, _selectedDateFin!.month, _selectedDateFin!.day);
+      if (dateFin.isBefore(dateDebut)) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('La date de fin doit être après la date de début'),
+            backgroundColor: Colors.orange,
+          ),
+        );
+        return;
+      }
+    }
+
     final reservationViewModel = Provider.of<ReservationViewModel>(context, listen: false);
 
     final success = await reservationViewModel.createReservation(
       userId: widget.userId,
       professionnelId: widget.professional.id!,
       date: _selectedDate,
+      dateFin: _isMultiDay ? _selectedDateFin : null,
       heure: _selectedTime,
     );
 
@@ -162,6 +191,83 @@ class _CreateReservationScreenState extends State<CreateReservationScreen> {
                         _selectedDate = focusedDay;
                       });
                     },
+                  ),
+                ),
+                const SizedBox(height: 24),
+
+                // Option réservation multi-jours
+                Card(
+                  child: Padding(
+                    padding: const EdgeInsets.all(16.0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Checkbox(
+                              value: _isMultiDay,
+                              onChanged: (value) {
+                                setState(() {
+                                  _isMultiDay = value ?? false;
+                                  if (!_isMultiDay) {
+                                    _selectedDateFin = null;
+                                  } else {
+                                    _selectedDateFin = _selectedDate;
+                                  }
+                                });
+                              },
+                            ),
+                            const Text(
+                              'Réservation sur plusieurs jours',
+                              style: TextStyle(fontWeight: FontWeight.bold),
+                            ),
+                          ],
+                        ),
+                        if (_isMultiDay) ...[
+                          const SizedBox(height: 16),
+                          Text(
+                            'Date de fin',
+                            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                ),
+                          ),
+                          const SizedBox(height: 8),
+                          InkWell(
+                            onTap: () async {
+                              final picked = await showDatePicker(
+                                context: context,
+                                initialDate: _selectedDateFin ?? _selectedDate,
+                                firstDate: _selectedDate,
+                                lastDate: DateTime.now().add(const Duration(days: 90)),
+                              );
+                              if (picked != null) {
+                                setState(() {
+                                  _selectedDateFin = picked;
+                                });
+                              }
+                            },
+                            child: Container(
+                              padding: const EdgeInsets.all(16),
+                              decoration: BoxDecoration(
+                                border: Border.all(color: Colors.grey),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Text(
+                                    _selectedDateFin != null
+                                        ? '${_selectedDateFin!.day}/${_selectedDateFin!.month}/${_selectedDateFin!.year}'
+                                        : 'Sélectionner une date',
+                                  ),
+                                  const Icon(Icons.calendar_today),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
                   ),
                 ),
                 const SizedBox(height: 24),

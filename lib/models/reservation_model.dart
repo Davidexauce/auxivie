@@ -4,6 +4,7 @@ class ReservationModel {
   final int userId; // ID de la famille
   final int professionnelId; // ID du professionnel
   final DateTime date;
+  final DateTime? dateFin; // Date de fin pour les réservations multi-jours
   final String heure; // Format "HH:mm"
   final String status; // 'pending', 'confirmed', 'completed', 'cancelled'
 
@@ -12,6 +13,7 @@ class ReservationModel {
     required this.userId,
     required this.professionnelId,
     required this.date,
+    this.dateFin,
     required this.heure,
     this.status = 'pending',
   });
@@ -23,6 +25,7 @@ class ReservationModel {
       'userId': userId,
       'professionnelId': professionnelId,
       'date': date.toIso8601String(),
+      'dateFin': dateFin?.toIso8601String(),
       'heure': heure,
       'status': status,
     };
@@ -35,6 +38,7 @@ class ReservationModel {
       userId: map['userId'] as int,
       professionnelId: map['professionnelId'] as int,
       date: DateTime.parse(map['date'] as String),
+      dateFin: map['dateFin'] != null ? DateTime.parse(map['dateFin'] as String) : null,
       heure: map['heure'] as String,
       status: map['status'] as String,
     );
@@ -46,6 +50,7 @@ class ReservationModel {
     int? userId,
     int? professionnelId,
     DateTime? date,
+    DateTime? dateFin,
     String? heure,
     String? status,
   }) {
@@ -54,17 +59,9 @@ class ReservationModel {
       userId: userId ?? this.userId,
       professionnelId: professionnelId ?? this.professionnelId,
       date: date ?? this.date,
+      dateFin: dateFin ?? this.dateFin,
       heure: heure ?? this.heure,
       status: status ?? this.status,
     );
   }
 }
-
-
-
-
-
-
-
-
-

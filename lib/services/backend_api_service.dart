@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:io';
 import 'package:http/http.dart' as http;
 import '../models/user_model.dart';
 import '../models/reservation_model.dart';
@@ -116,7 +117,7 @@ class BackendApiService {
     }
   }
 
-  static Future<bool> createUser(UserModel user) async {
+  static Future<Map<String, dynamic>?> createUser(UserModel user) async {
     try {
       final response = await http.post(
         Uri.parse('$baseUrl/api/users/sync'),
@@ -135,9 +136,103 @@ class BackendApiService {
         }),
         ).timeout(AppConfig.apiTimeout);
 
-      return response.statusCode == 200 || response.statusCode == 201;
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        return json.decode(response.body);
+      } else {
+        print('❌ Erreur createUser: ${response.statusCode} - ${response.body}');
+        return null;
+      }
     } catch (e) {
       print('❌ Erreur createUser: $e');
+      return null;
+    }
+  }
+
+  static Future<bool> updateUser(int userId, Map<String, dynamic> updates) async {
+    try {
+      final response = await http.put(
+        Uri.parse('$baseUrl/api/users/$userId'),
+        headers: _getHeaders(),
+        body: jsonEncode(updates),
+        ).timeout(AppConfig.apiTimeout);
+
+      if (response.statusCode == 200) {
+        return true;
+      } else {
+        print('❌ Erreur updateUser: ${response.statusCode} - ${response.body}');
+        return false;
+      }
+    } catch (e) {
+      print('❌ Erreur updateUser: $e');
+      return false;
+    }
+  }
+
+  // ========== DISPONIBILITÉS ==========
+
+  static Future<List<Map<String, dynamic>>> getAvailabilities(int professionnelId) async {
+    try {
+      final response = await http.get(
+        Uri.parse('$baseUrl/api/availabilities?professionnelId=$professionnelId'),
+        headers: _getHeaders(),
+        ).timeout(AppConfig.apiTimeout);
+
+      if (response.statusCode == 200) {
+        final List<dynamic> data = json.decode(response.body);
+        return data.cast<Map<String, dynamic>>();
+      }
+      return [];
+    } catch (e) {
+      print('❌ Erreur getAvailabilities: $e');
+      return [];
+    }
+  }
+
+  static Future<bool> saveAvailability({
+    required int professionnelId,
+    required int jourSemaine,
+    required String heureDebut,
+    required String heureFin,
+  }) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/api/availabilities'),
+        headers: _getHeaders(),
+        body: jsonEncode({
+          'professionnelId': professionnelId,
+          'jourSemaine': jourSemaine,
+          'heureDebut': heureDebut,
+          'heureFin': heureFin,
+        }),
+        ).timeout(AppConfig.apiTimeout);
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        return true;
+      } else {
+        print('❌ Erreur saveAvailability: ${response.statusCode} - ${response.body}');
+        return false;
+      }
+    } catch (e) {
+      print('❌ Erreur saveAvailability: $e');
+      return false;
+    }
+  }
+
+  static Future<bool> deleteAvailability(int availabilityId) async {
+    try {
+      final response = await http.delete(
+        Uri.parse('$baseUrl/api/availabilities/$availabilityId'),
+        headers: _getHeaders(),
+        ).timeout(AppConfig.apiTimeout);
+
+      if (response.statusCode == 200) {
+        return true;
+      } else {
+        print('❌ Erreur deleteAvailability: ${response.statusCode} - ${response.body}');
+        return false;
+      }
+    } catch (e) {
+      print('❌ Erreur deleteAvailability: $e');
       return false;
     }
   }
@@ -209,6 +304,7 @@ class BackendApiService {
           'userId': reservation.userId,
           'professionnelId': reservation.professionnelId,
           'date': reservation.date.toIso8601String().split('T')[0],
+          'dateFin': reservation.dateFin != null ? reservation.dateFin!.toIso8601String().split('T')[0] : null,
           'heure': reservation.heure,
           'status': reservation.status,
         }),
@@ -372,6 +468,143 @@ class BackendApiService {
     } catch (e) {
       print('❌ Erreur getReviews: $e');
       return [];
+    }
+  }
+
+  // ========== UPLOAD DE FICHIERS ==========
+
+  /// Upload un document
+  static Future<Map<String, dynamic>?> uploadDocument({
+    required int userId,
+    required String type,
+    required File file,
+  }) async {
+    try {
+      final uri = Uri.parse('$baseUrl/api/documents/upload');
+      final request = http.MultipartRequest('POST', uri);
+      
+      // Ajouter les champs
+      request.fields['userId'] = userId.toString();
+      request.fields['type'] = type;
+      
+      // Ajouter le fichier
+      final fileStream = file.openRead();
+      final fileLength = await file.length();
+      final multipartFile = http.MultipartFile(
+        'file',
+        fileStream,
+        fileLength,
+        filename: file.path.split('/').last,
+      );
+      request.files.add(multipartFile);
+
+      final streamedResponse = await request.send().timeout(AppConfig.apiTimeout);
+      final response = await http.Response.fromStream(streamedResponse);
+
+      if (response.statusCode == 200) {
+        return json.decode(response.body);
+      } else {
+        print('❌ Erreur upload document: ${response.statusCode} - ${response.body}');
+        return null;
+      }
+    } catch (e) {
+      print('❌ Erreur upload document: $e');
+      return null;
+    }
+  }
+
+  /// Upload une photo de profil
+  static Future<String?> uploadProfilePhoto({
+    required int userId,
+    required File photo,
+  }) async {
+    try {
+      final uri = Uri.parse('$baseUrl/api/users/$userId/photo');
+      final request = http.MultipartRequest('POST', uri);
+      
+      // Ajouter le fichier
+      final fileStream = photo.openRead();
+      final fileLength = await photo.length();
+      final multipartFile = http.MultipartFile(
+        'photo',
+        fileStream,
+        fileLength,
+        filename: photo.path.split('/').last,
+      );
+      request.files.add(multipartFile);
+
+      final streamedResponse = await request.send().timeout(AppConfig.apiTimeout);
+      final response = await http.Response.fromStream(streamedResponse);
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        return data['photo'] as String?;
+      } else {
+        print('❌ Erreur upload photo: ${response.statusCode} - ${response.body}');
+        return null;
+      }
+    } catch (e) {
+      print('❌ Erreur upload photo: $e');
+      return null;
+    }
+  }
+
+  // ========== PAIEMENTS ==========
+
+  /// Crée un PaymentIntent Stripe
+  static Future<Map<String, dynamic>?> createPaymentIntent({
+    required int reservationId,
+    required int userId,
+    required double amount,
+    String currency = 'eur',
+  }) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/api/payments/create-intent'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'reservationId': reservationId,
+          'userId': userId,
+          'amount': amount,
+          'currency': currency,
+        }),
+      ).timeout(AppConfig.apiTimeout);
+
+      if (response.statusCode == 200) {
+        return json.decode(response.body);
+      } else {
+        print('❌ Erreur création PaymentIntent: ${response.statusCode} - ${response.body}');
+        return null;
+      }
+    } catch (e) {
+      print('❌ Erreur création PaymentIntent: $e');
+      return null;
+    }
+  }
+
+  /// Confirme un paiement
+  static Future<bool> confirmPayment({
+    required String paymentIntentId,
+    required int reservationId,
+    required int userId,
+    required double amount,
+  }) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/api/payments/confirm'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'paymentIntentId': paymentIntentId,
+          'reservationId': reservationId,
+          'userId': userId,
+          'amount': amount,
+        }),
+      ).timeout(AppConfig.apiTimeout);
+
+      return response.statusCode == 200;
+    } catch (e) {
+      print('❌ Erreur confirmation paiement: $e');
+      return false;
     }
   }
 }

@@ -39,6 +39,7 @@ class AuthViewModel extends ChangeNotifier {
         // Connexion réussie via l'API
         final userData = loginResult['user'];
         _currentUser = UserModel.fromMap(userData);
+        // Le token est déjà défini dans BackendApiService.login()
         _isLoading = false;
         notifyListeners();
         return true;
@@ -114,16 +115,25 @@ class AuthViewModel extends ChangeNotifier {
       );
 
       // Créer directement dans le backend
-      final success = await BackendApiService.createUser(user);
-      if (!success) {
+      final result = await BackendApiService.createUser(user);
+      if (result == null) {
         _errorMessage = 'Erreur lors de la création du compte';
         _isLoading = false;
         notifyListeners();
         return false;
       }
 
-      // Récupérer l'utilisateur créé depuis le backend
-      final createdUser = await BackendApiService.getUserByEmail(email);
+      // Récupérer l'ID de l'utilisateur créé depuis la réponse
+      final userId = result['id'] as int?;
+      if (userId == null) {
+        _errorMessage = 'Erreur lors de la création du compte';
+        _isLoading = false;
+        notifyListeners();
+        return false;
+      }
+
+      // Récupérer l'utilisateur créé depuis le backend avec l'ID (route publique)
+      final createdUser = await BackendApiService.getUserById(userId);
       if (createdUser == null) {
         _errorMessage = 'Erreur lors de la récupération du compte';
         _isLoading = false;

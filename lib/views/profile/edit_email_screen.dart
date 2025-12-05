@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../services/database_service.dart';
+import '../../services/backend_api_service.dart';
 
 class EditEmailScreen extends StatefulWidget {
   final String currentEmail;
@@ -39,21 +39,13 @@ class _EditEmailScreenState extends State<EditEmailScreen> {
 
     try {
       if (widget.userId != null) {
-        final user = await DatabaseService.instance.getUserById(widget.userId!);
-        if (user != null) {
-          // Vérifier si l'email existe déjà
-          final existingUser = await DatabaseService.instance.getUserByEmail(_emailController.text.trim());
-          if (existingUser != null && existingUser.id != widget.userId) {
-            if (mounted) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Cet email est déjà utilisé')),
-              );
-            }
-            return;
-          }
-
-          final updatedUser = user.copyWith(email: _emailController.text.trim());
-          await DatabaseService.instance.updateUser(updatedUser);
+        // Mettre à jour dans le backend
+        final success = await BackendApiService.updateUser(
+          widget.userId!,
+          {'email': _emailController.text.trim()},
+        );
+        if (!success) {
+          throw Exception('Erreur lors de la mise à jour');
         }
       }
 

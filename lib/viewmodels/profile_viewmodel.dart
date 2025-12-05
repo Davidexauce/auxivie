@@ -35,7 +35,8 @@ class ProfileViewModel extends ChangeNotifier {
     notifyListeners();
 
     try {
-      _professionals = await _db.getProfessionals();
+      // Charger depuis le backend (base de données unique)
+      _professionals = await BackendApiService.getProfessionals();
       _isLoading = false;
       notifyListeners();
     } catch (e) {
@@ -57,10 +58,16 @@ class ProfileViewModel extends ChangeNotifier {
     notifyListeners();
 
     try {
-      _professionals = await _db.searchProfessionals(
-        ville: ville,
-        categorie: categorie,
-      );
+      // Charger tous les professionnels depuis le backend
+      final allProfessionals = await BackendApiService.getProfessionals();
+      
+      // Appliquer les filtres localement
+      _professionals = allProfessionals.where((p) {
+        if (ville != null && p.ville != ville) return false;
+        if (categorie != null && p.categorie != categorie) return false;
+        return true;
+      }).toList();
+      
       _isLoading = false;
       notifyListeners();
     } catch (e) {
@@ -103,7 +110,8 @@ class ProfileViewModel extends ChangeNotifier {
   /// Récupère la liste des villes disponibles
   Future<List<String>> getAvailableCities() async {
     try {
-      final professionals = await _db.getProfessionals();
+      // Charger depuis le backend
+      final professionals = await BackendApiService.getProfessionals();
       final cities = professionals
           .where((p) => p.ville != null && p.ville!.isNotEmpty)
           .map((p) => p.ville!)
@@ -119,7 +127,8 @@ class ProfileViewModel extends ChangeNotifier {
   /// Récupère la liste des catégories disponibles
   Future<List<String>> getAvailableCategories() async {
     try {
-      final professionals = await _db.getProfessionals();
+      // Charger depuis le backend
+      final professionals = await BackendApiService.getProfessionals();
       final categories = professionals
           .map((p) => p.categorie)
           .toSet()

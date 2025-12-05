@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../services/database_service.dart';
+import '../../services/backend_api_service.dart';
 
 class EditTarifScreen extends StatefulWidget {
   final double? currentTarif;
@@ -41,11 +41,14 @@ class _EditTarifScreenState extends State<EditTarifScreen> {
 
     try {
       if (widget.userId != null) {
-        final user = await DatabaseService.instance.getUserById(widget.userId!);
-        if (user != null) {
-          final tarif = double.tryParse(_tarifController.text);
-          final updatedUser = user.copyWith(tarif: tarif);
-          await DatabaseService.instance.updateUser(updatedUser);
+        final tarif = double.tryParse(_tarifController.text);
+        // Mettre à jour dans le backend
+        final success = await BackendApiService.updateUser(
+          widget.userId!,
+          {'tarif': tarif},
+        );
+        if (!success) {
+          throw Exception('Erreur lors de la mise à jour');
         }
       }
 

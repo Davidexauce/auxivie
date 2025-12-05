@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../services/database_service.dart';
+import '../../services/backend_api_service.dart';
 
 class EditPhoneScreen extends StatefulWidget {
   final String currentPhone;
@@ -39,10 +39,13 @@ class _EditPhoneScreenState extends State<EditPhoneScreen> {
 
     try {
       if (widget.userId != null) {
-        final user = await DatabaseService.instance.getUserById(widget.userId!);
-        if (user != null) {
-          final updatedUser = user.copyWith(phone: _phoneController.text.trim());
-          await DatabaseService.instance.updateUser(updatedUser);
+        // Mettre à jour dans le backend
+        final success = await BackendApiService.updateUser(
+          widget.userId!,
+          {'phone': _phoneController.text.trim()},
+        );
+        if (!success) {
+          throw Exception('Erreur lors de la mise à jour');
         }
       }
 
