@@ -39,7 +39,7 @@ export const authAPI = {
 // API des utilisateurs
 export const usersAPI = {
   getAll: async () => {
-    return apiCall('/api/users/admin');
+    return apiCall('/api/users');
   },
   getById: async (id) => {
     return apiCall(`/api/users/${id}`);

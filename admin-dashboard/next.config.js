@@ -11,6 +11,9 @@ const nextConfig = {
   compress: true,
   poweredByHeader: false,
   
+  // Configuration pour Hostinger
+  output: 'standalone', // Pour un déploiement optimisé
+  
   // Headers de sécurité
   async headers() {
     return [
