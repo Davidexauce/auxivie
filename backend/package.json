@@ -4,14 +4,14 @@
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "sync": "node scripts/sync-from-flutter.js",
     "dev": "nodemon server.js",
     "start": "node server.js",
     "start:prod": "NODE_ENV=production node server.js",
     "clear-all": "node scripts/clear-all-data.js",
     "clear-flutter": "node scripts/clear-flutter-db.js",
     "backup": "node scripts/backup-db.js",
-    "migrate:postgres": "node scripts/migrate-to-postgres.js"
+    "backup:simple": "node scripts/backup-db-simple.js",
+    "export:sql": "node scripts/export-db.js"
   },
   "keywords": [],
   "author": "",
@@ -23,7 +23,9 @@
     "dotenv": "^17.2.3",
     "express": "^5.2.0",
     "jsonwebtoken": "^9.0.2",
-    "sqlite3": "^5.1.7"
+    "multer": "^2.0.2",
+    "sqlite3": "^5.1.7",
+    "stripe": "^14.21.0"
   },
   "devDependencies": {
     "nodemon": "^3.1.11"
