@@ -2,16 +2,17 @@
   "name": "auxivie-admin-dashboard",
   "version": "1.0.0",
   "description": "Dashboard d'administration Auxivie",
-  "main": "server.js",
-  "scripts": {
-    "dev": "next dev",
-    "build": "next build",
-    "start": "next start",
-    "export": "next export"
+  "type": "nextjs",
+  "build": {
+    "command": "npm install && npm run build",
+    "output": ".next"
   },
-  "engines": {
-    "node": ">=18.0.0",
-    "npm": ">=9.0.0"
+  "start": {
+    "command": "npm start",
+    "port": 3000
+  },
+  "env": {
+    "NODE_ENV": "production",
+    "NEXT_PUBLIC_API_URL": "https://api.auxivie.org"
   }
 }
-
