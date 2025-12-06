@@ -1,8 +1,26 @@
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+// Récupérer l'URL de l'API depuis les variables d'environnement
+// En Next.js, NEXT_PUBLIC_* est injecté au build time
+const getApiBaseUrl = () => {
+  if (typeof window !== 'undefined') {
+    // Côté client, utiliser la variable d'environnement ou fallback
+    return process.env.NEXT_PUBLIC_API_URL || 'https://api.auxivie.org';
+  }
+  // Côté serveur
+  return process.env.NEXT_PUBLIC_API_URL || 'https://api.auxivie.org';
+};
+
+const API_BASE_URL = getApiBaseUrl();
 
 // Fonction utilitaire pour les appels API
 async function apiCall(endpoint, options = {}) {
   const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+  
+  const fullUrl = `${API_BASE_URL}${endpoint}`;
+  
+  // Log pour débogage (uniquement en développement)
+  if (process.env.NODE_ENV !== 'production' && typeof window !== 'undefined') {
+    console.log('🔗 API Call:', fullUrl, options.method || 'GET');
+  }
   
   const headers = {
     'Content-Type': 'application/json',
@@ -13,17 +31,39 @@ async function apiCall(endpoint, options = {}) {
     headers['Authorization'] = `Bearer ${token}`;
   }
 
-  const response = await fetch(`${API_BASE_URL}${endpoint}`, {
-    ...options,
-    headers,
-  });
+  try {
+    const response = await fetch(fullUrl, {
+      ...options,
+      headers,
+    });
 
-  if (!response.ok) {
-    const error = await response.json().catch(() => ({ message: 'Erreur serveur' }));
-    throw new Error(error.message || `Erreur ${response.status}`);
+    // Log de la réponse pour débogage
+    if (process.env.NODE_ENV !== 'production' && typeof window !== 'undefined') {
+      console.log('📡 Response:', response.status, response.statusText);
+    }
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({ 
+        message: `Erreur serveur (${response.status})` 
+      }));
+      
+      // Log de l'erreur pour débogage
+      if (typeof window !== 'undefined') {
+        console.error('❌ API Error:', errorData);
+      }
+      
+      throw new Error(errorData.message || `Erreur ${response.status}`);
+    }
+
+    return response.json();
+  } catch (error) {
+    // Gestion des erreurs réseau
+    if (error.name === 'TypeError' && error.message.includes('fetch')) {
+      console.error('❌ Network Error:', error.message);
+      throw new Error('Impossible de se connecter au serveur. Vérifiez votre connexion internet.');
+    }
+    throw error;
   }
-
-  return response.json();
 }
 
 // API d'authentification

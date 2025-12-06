@@ -3,8 +3,10 @@ const nextConfig = {
   reactStrictMode: true,
   
   // Variables d'environnement publiques
+  // NEXT_PUBLIC_* sont automatiquement exposées au client
+  // Pas besoin de les redéfinir dans env si elles sont dans .env.production
   env: {
-    NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001',
+    NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL || 'https://api.auxivie.org',
   },
   
   // Optimisations de production

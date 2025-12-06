@@ -16,14 +16,18 @@ export default function Login() {
     setLoading(true);
 
     try {
+      console.log('🔐 Tentative de connexion avec:', email);
       const response = await authAPI.login(email, password);
+      console.log('✅ Connexion réussie');
+      
       if (response.token) {
         localStorage.setItem('token', response.token);
         router.push('/dashboard');
       } else {
-        setError('Erreur de connexion');
+        setError('Erreur de connexion : token manquant');
       }
     } catch (err) {
+      console.error('❌ Erreur de connexion:', err);
       setError(err.message || 'Email ou mot de passe incorrect');
     } finally {
       setLoading(false);
