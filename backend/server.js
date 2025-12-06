@@ -88,10 +88,12 @@ const corsOptions = {
   origin: process.env.CORS_ORIGIN 
     ? process.env.CORS_ORIGIN.split(',').map(origin => origin.trim())
     : process.env.NODE_ENV === 'production'
-      ? ['https://www.auxivie.org', 'https://auxivie.org', 'https://api.auxivie.org']
+      ? ['https://www.auxivie.org', 'https://auxivie.org', 'https://api.auxivie.org', 'http://178.16.131.24:3001']
       : '*', // En développement, autoriser toutes les origines
   credentials: true,
-  optionsSuccessStatus: 200
+  optionsSuccessStatus: 200,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'x-request-type']
 };
 
 // Middleware
