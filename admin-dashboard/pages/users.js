@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
 import Layout from '../components/Layout';
 import { usersAPI } from '../lib/api';
+import { exportUsersToCSV } from '../lib/export';
+import Pagination from '../components/Pagination';
 import styles from '../styles/Users.module.css';
 
 export default function Users() {
@@ -9,6 +11,9 @@ export default function Users() {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('all'); // all, professionnel, famille
+  const [searchTerm, setSearchTerm] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(25);
 
   useEffect(() => {
     const token = localStorage.getItem('token');
@@ -31,9 +36,32 @@ export default function Users() {
     }
   };
 
-  const filteredUsers = filter === 'all' 
+  const filteredUsers = (filter === 'all' 
     ? users 
-    : users.filter(u => u.userType === filter);
+    : users.filter(u => u.userType === filter)
+  ).filter(user => {
+    if (!searchTerm.trim()) return true;
+    const search = searchTerm.toLowerCase();
+    return (
+      user.name?.toLowerCase().includes(search) ||
+      user.email?.toLowerCase().includes(search) ||
+      user.categorie?.toLowerCase().includes(search) ||
+      user.ville?.toLowerCase().includes(search)
+    );
+  });
+
+  // Pagination
+  const totalPages = Math.ceil(filteredUsers.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const paginatedUsers = filteredUsers.slice(startIndex, endIndex);
+
+  // Réinitialiser la page si nécessaire
+  useEffect(() => {
+    if (currentPage > totalPages && totalPages > 0) {
+      setCurrentPage(1);
+    }
+  }, [totalPages, currentPage]);
 
   if (loading) {
     return (
@@ -47,7 +75,47 @@ export default function Users() {
     <Layout>
       <div className={styles.container}>
         <div className={styles.header}>
-          <h1 className={styles.title}>Gestion des utilisateurs</h1>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+            <h1 className={styles.title}>Gestion des utilisateurs</h1>
+            <button
+              onClick={() => exportUsersToCSV(filteredUsers)}
+              style={{
+                padding: '10px 20px',
+                backgroundColor: '#059669',
+                color: 'white',
+                border: 'none',
+                borderRadius: '8px',
+                cursor: 'pointer',
+                fontSize: '14px',
+                fontWeight: '600',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px'
+              }}
+            >
+              📥 Exporter CSV
+            </button>
+          </div>
+          <div style={{ marginBottom: '20px' }}>
+            <input
+              type="text"
+              placeholder="Rechercher par nom, email, catégorie ou ville..."
+              value={searchTerm}
+              onChange={(e) => {
+                setSearchTerm(e.target.value);
+                setCurrentPage(1); // Réinitialiser à la page 1 lors de la recherche
+              }}
+              style={{
+                width: '100%',
+                maxWidth: '500px',
+                padding: '10px 15px',
+                border: '1px solid #ddd',
+                borderRadius: '8px',
+                fontSize: '14px',
+                marginBottom: '15px'
+              }}
+            />
+          </div>
           <div className={styles.filters}>
             <button
               className={filter === 'all' ? styles.activeFilter : styles.filter}
@@ -84,10 +152,25 @@ export default function Users() {
               </tr>
             </thead>
             <tbody>
-              {filteredUsers.map((user) => (
-                <tr key={user.id}>
+              {paginatedUsers.map((user) => (
+                <tr key={user.id} style={user.suspended ? { opacity: 0.6, backgroundColor: '#fee' } : {}}>
                   <td>{user.id}</td>
-                  <td>{user.name}</td>
+                  <td>
+                    {user.name}
+                    {user.suspended && (
+                      <span style={{ 
+                        marginLeft: '8px', 
+                        padding: '2px 8px', 
+                        backgroundColor: '#ef4444', 
+                        color: 'white', 
+                        borderRadius: '4px',
+                        fontSize: '11px',
+                        fontWeight: 'bold'
+                      }}>
+                        SUSPENDU
+                      </span>
+                    )}
+                  </td>
                   <td>{user.email}</td>
                   <td>
                     <span className={styles.badge}>
@@ -111,6 +194,45 @@ export default function Users() {
                             >
                               Contacter
                             </button>
+                            {user.suspended ? (
+                              <button
+                                className={styles.actionButton}
+                                onClick={async () => {
+                                  if (confirm(`Voulez-vous réactiver l'utilisateur ${user.name} ?`)) {
+                                    try {
+                                      await usersAPI.unsuspend(user.id);
+                                      loadUsers();
+                                    } catch (error) {
+                                      console.error('Erreur:', error);
+                                      alert('Erreur lors de la réactivation');
+                                    }
+                                  }
+                                }}
+                                style={{ backgroundColor: '#10b981', color: 'white', marginLeft: '8px' }}
+                                title="Réactiver l'utilisateur"
+                              >
+                                Activer
+                              </button>
+                            ) : (
+                              <button
+                                className={styles.actionButton}
+                                onClick={async () => {
+                                  if (confirm(`Voulez-vous suspendre l'utilisateur ${user.name} ?`)) {
+                                    try {
+                                      await usersAPI.suspend(user.id);
+                                      loadUsers();
+                                    } catch (error) {
+                                      console.error('Erreur:', error);
+                                      alert('Erreur lors de la suspension');
+                                    }
+                                  }
+                                }}
+                                style={{ backgroundColor: '#ef4444', color: 'white', marginLeft: '8px' }}
+                                title="Suspendre l'utilisateur"
+                              >
+                                Suspendre
+                              </button>
+                            )}
                           </div>
                         </td>
                 </tr>
@@ -118,6 +240,20 @@ export default function Users() {
             </tbody>
           </table>
         </div>
+
+        {filteredUsers.length > 0 && (
+          <Pagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            onPageChange={setCurrentPage}
+            itemsPerPage={itemsPerPage}
+            totalItems={filteredUsers.length}
+            onItemsPerPageChange={(value) => {
+              setItemsPerPage(value);
+              setCurrentPage(1);
+            }}
+          />
+        )}
       </div>
     </Layout>
   );

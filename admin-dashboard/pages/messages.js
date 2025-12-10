@@ -25,6 +25,21 @@ export default function Messages() {
     loadData();
   }, [router]);
 
+  // Détecter le paramètre userId dans l'URL et charger la conversation
+  useEffect(() => {
+    const { userId } = router.query;
+    if (userId && users.length > 0 && !selectedConversation) {
+      const userIdNum = parseInt(userId);
+      const user = users.find(u => u.id === userIdNum);
+      if (user) {
+        // Charger la conversation (même si elle est vide)
+        loadConversation(userIdNum);
+        // Nettoyer l'URL après chargement
+        router.replace('/messages', undefined, { shallow: true });
+      }
+    }
+  }, [router.query, users, selectedConversation]);
+
   const loadData = async () => {
     try {
       setLoading(true);
@@ -54,6 +69,22 @@ export default function Messages() {
         }
       });
 
+      // Ajouter les utilisateurs qui n'ont pas encore de conversation mais qui sont dans l'URL
+      const { userId } = router.query;
+      if (userId) {
+        const userIdNum = parseInt(userId);
+        const user = usersData.find(u => u.id === userIdNum);
+        if (user && !conversationsMap.has(userIdNum)) {
+          // Ajouter l'utilisateur même sans conversation pour permettre de créer un nouveau message
+          conversationsMap.set(userIdNum, {
+            userId: userIdNum,
+            partner: user,
+            lastMessage: null,
+            unreadCount: 0,
+          });
+        }
+      }
+
       setConversations(Array.from(conversationsMap.values()));
       setUsers(usersData);
     } catch (error) {
@@ -66,18 +97,21 @@ export default function Messages() {
   const loadConversation = async (userId) => {
     try {
       const conversationData = await messagesAPI.getConversation(userId);
-      setMessages(conversationData);
+      setMessages(conversationData || []);
       setSelectedConversation(userId);
       
       // Scroll vers le bas après chargement
       setTimeout(() => {
-        const messagesList = document.getElementById('messagesList');
+        const messagesList = document.querySelector(`.${styles.messagesList}`);
         if (messagesList) {
           messagesList.scrollTop = messagesList.scrollHeight;
         }
       }, 100);
     } catch (error) {
       console.error('Erreur lors du chargement de la conversation:', error);
+      // Même en cas d'erreur, sélectionner la conversation pour permettre d'envoyer un message
+      setMessages([]);
+      setSelectedConversation(userId);
     }
   };
 
@@ -182,7 +216,7 @@ export default function Messages() {
                       </span>
                     </div>
                     <p className={styles.conversationPreview}>
-                      {conv.lastMessage?.content || 'Aucun message'}
+                      {conv.lastMessage?.content || 'Nouvelle conversation'}
                     </p>
                     <span className={styles.conversationTime}>
                       {conv.lastMessage?.timestamp

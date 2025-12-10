@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
 import Layout from '../components/Layout';
 import { paymentsAPI } from '../lib/api';
+import { exportPaymentsToCSV } from '../lib/export';
+import Pagination from '../components/Pagination';
 import styles from '../styles/Payments.module.css';
 
 export default function Payments() {
@@ -9,6 +11,8 @@ export default function Payments() {
   const [payments, setPayments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('all'); // all, pending, completed, failed
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(25);
 
   useEffect(() => {
     const token = localStorage.getItem('token');
@@ -61,10 +65,43 @@ export default function Payments() {
     );
   }
 
+  // Pagination
+  const totalPages = Math.ceil(payments.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const paginatedPayments = payments.slice(startIndex, endIndex);
+
+  // Réinitialiser la page si nécessaire
+  useEffect(() => {
+    if (currentPage > totalPages && totalPages > 0) {
+      setCurrentPage(1);
+    }
+  }, [totalPages, currentPage]);
+
   return (
     <Layout>
       <div className={styles.container}>
-        <h1 className={styles.title}>Gestion des paiements</h1>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+          <h1 className={styles.title}>Gestion des paiements</h1>
+          <button
+            onClick={() => exportPaymentsToCSV(payments)}
+            style={{
+              padding: '10px 20px',
+              backgroundColor: '#059669',
+              color: 'white',
+              border: 'none',
+              borderRadius: '8px',
+              cursor: 'pointer',
+              fontSize: '14px',
+              fontWeight: '600',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px'
+            }}
+          >
+            📥 Exporter CSV
+          </button>
+        </div>
 
         <div className={styles.filters}>
           <button
@@ -114,7 +151,7 @@ export default function Payments() {
                   </td>
                 </tr>
               ) : (
-                payments.map((payment) => (
+                paginatedPayments.map((payment) => (
                   <tr key={payment.id}>
                     <td>{payment.id}</td>
                     <td>#{payment.reservationId}</td>
@@ -135,6 +172,20 @@ export default function Payments() {
             </tbody>
           </table>
         </div>
+
+        {payments.length > 0 && (
+          <Pagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            onPageChange={setCurrentPage}
+            itemsPerPage={itemsPerPage}
+            totalItems={payments.length}
+            onItemsPerPageChange={(value) => {
+              setItemsPerPage(value);
+              setCurrentPage(1);
+            }}
+          />
+        )}
       </div>
     </Layout>
   );

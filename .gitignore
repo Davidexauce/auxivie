@@ -40,11 +40,15 @@ backend/node_modules/
 backend/.env
 backend/.env.production
 backend/.env.local
+backend/.env.backup.*
+backend/.env.bak.*
+backend/.env.production.backup.*
 backend/data/*.db
 backend/data/*.db-journal
 backend/logs/
 backend/backups/
 backend/.DS_Store
+backend/server.js.backup
 
 # Dashboard
 admin-dashboard/node_modules/
@@ -53,6 +57,8 @@ admin-dashboard/.env
 admin-dashboard/.env.local
 admin-dashboard/.env.production
 admin-dashboard/.DS_Store
+admin-dashboard/.prod_pid
+admin-dashboard/prod.log
 
 # IDE
 .idea/

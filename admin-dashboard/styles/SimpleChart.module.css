@@ -1,0 +1,71 @@
+.chart {
+  background-color: white;
+  border-radius: 8px;
+  padding: 20px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.chartTitle {
+  margin: 0 0 20px 0;
+  font-size: 18px;
+  font-weight: 600;
+  color: #111;
+}
+
+.chartContent {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.chartBar {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.barLabel {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 14px;
+}
+
+.labelName {
+  color: #666;
+  font-weight: 500;
+}
+
+.labelValue {
+  color: #111;
+  font-weight: 600;
+}
+
+.barContainer {
+  height: 30px;
+  background-color: #f3f4f6;
+  border-radius: 4px;
+  overflow: hidden;
+  position: relative;
+}
+
+.bar {
+  height: 100%;
+  border-radius: 4px;
+  transition: width 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  padding-right: 8px;
+  color: white;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.noData {
+  text-align: center;
+  color: #666;
+  padding: 40px 20px;
+  font-size: 14px;
+}
+

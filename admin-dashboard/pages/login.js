@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useRouter } from 'next/router';
+import Link from 'next/link';
 import { authAPI } from '../lib/api';
 import styles from '../styles/Login.module.css';
 
@@ -22,13 +23,18 @@ export default function Login() {
       
       if (response.token) {
         localStorage.setItem('token', response.token);
+        if (response.user) {
+          localStorage.setItem('user', JSON.stringify(response.user));
+        }
         router.push('/dashboard');
       } else {
         setError('Erreur de connexion : token manquant');
       }
     } catch (err) {
       console.error('❌ Erreur de connexion:', err);
-      setError(err.message || 'Email ou mot de passe incorrect');
+      // Améliorer l'affichage des erreurs multilignes
+      const errorMessage = err.message || 'Email ou mot de passe incorrect';
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -41,7 +47,11 @@ export default function Login() {
         <p className={styles.subtitle}>Connexion à l'espace administrateur</p>
         
         <form onSubmit={handleSubmit} className={styles.form}>
-          {error && <div className={styles.error}>{error}</div>}
+          {error && (
+            <div className={styles.error} style={{ whiteSpace: 'pre-wrap', lineHeight: '1.6' }}>
+              {error}
+            </div>
+          )}
           
           <div className={styles.inputGroup}>
             <label htmlFor="email">Email</label>
@@ -75,6 +85,23 @@ export default function Login() {
             {loading ? 'Connexion...' : 'Se connecter'}
           </button>
         </form>
+
+        <div style={{ marginTop: '24px', textAlign: 'center', fontSize: '14px', color: '#666' }}>
+          Vous n'avez pas encore de compte ?{' '}
+          <Link href="/register">
+            <span style={{ color: '#16a34a', textDecoration: 'none', fontWeight: '600', cursor: 'pointer' }}>
+              Créer un compte admin
+            </span>
+          </Link>
+        </div>
+
+        <div style={{ marginTop: '16px', textAlign: 'center', fontSize: '12px' }}>
+          <Link href="/diagnostic">
+            <span style={{ color: '#0066cc', textDecoration: 'underline', cursor: 'pointer' }}>
+              Problème de connexion? Exécuter un diagnostic
+            </span>
+          </Link>
+        </div>
       </div>
     </div>
   );

@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
 import Layout from '../components/Layout';
 import { reservationsAPI } from '../lib/api';
+import { exportReservationsToCSV } from '../lib/export';
+import Pagination from '../components/Pagination';
 import styles from '../styles/Reservations.module.css';
 
 export default function Reservations() {
@@ -9,6 +11,8 @@ export default function Reservations() {
   const [reservations, setReservations] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('all'); // all, pending, confirmed, completed, cancelled
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(25);
 
   useEffect(() => {
     const token = localStorage.getItem('token');
@@ -18,7 +22,11 @@ export default function Reservations() {
     }
 
     loadReservations();
-  }, [router, filter]);
+  }, [router]);
+
+  useEffect(() => {
+    setCurrentPage(1); // Réinitialiser la page lors du changement de filtre
+  }, [filter]);
 
   const loadReservations = async () => {
     try {
@@ -45,6 +53,19 @@ export default function Reservations() {
   const filteredReservations = filter === 'all' 
     ? reservations 
     : reservations.filter(r => r.status === filter);
+
+  // Pagination
+  const totalPages = Math.ceil(filteredReservations.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const paginatedReservations = filteredReservations.slice(startIndex, endIndex);
+
+  // Réinitialiser la page si nécessaire
+  useEffect(() => {
+    if (currentPage > totalPages && totalPages > 0) {
+      setCurrentPage(1);
+    }
+  }, [totalPages, currentPage]);
 
   const getStatusBadge = (status) => {
     const statusMap = {
@@ -79,7 +100,27 @@ export default function Reservations() {
     <Layout>
       <div className={styles.container}>
         <div className={styles.header}>
-          <h1 className={styles.title}>Réservations</h1>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', marginBottom: '20px' }}>
+            <h1 className={styles.title}>Réservations</h1>
+            <button
+              onClick={() => exportReservationsToCSV(filteredReservations)}
+              style={{
+                padding: '10px 20px',
+                backgroundColor: '#059669',
+                color: 'white',
+                border: 'none',
+                borderRadius: '8px',
+                cursor: 'pointer',
+                fontSize: '14px',
+                fontWeight: '600',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px'
+              }}
+            >
+              📥 Exporter CSV
+            </button>
+          </div>
           <div className={styles.filters}>
             <button
               className={filter === 'all' ? styles.activeFilter : styles.filter}
@@ -133,7 +174,7 @@ export default function Reservations() {
                 </tr>
               </thead>
               <tbody>
-                {filteredReservations.map((reservation) => (
+                {paginatedReservations.map((reservation) => (
                   <tr key={reservation.id}>
                     <td>#{reservation.id}</td>
                     <td>
@@ -183,6 +224,20 @@ export default function Reservations() {
                 ))}
               </tbody>
             </table>
+          )}
+
+          {filteredReservations.length > 0 && (
+            <Pagination
+              currentPage={currentPage}
+              totalPages={totalPages}
+              onPageChange={setCurrentPage}
+              itemsPerPage={itemsPerPage}
+              totalItems={filteredReservations.length}
+              onItemsPerPageChange={(value) => {
+                setItemsPerPage(value);
+                setCurrentPage(1);
+              }}
+            />
           )}
         </div>
       </div>

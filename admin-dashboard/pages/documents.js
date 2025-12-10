@@ -73,52 +73,124 @@ export default function Documents() {
                 <th>ID</th>
                 <th>Utilisateur</th>
                 <th>Type</th>
+                <th>Document</th>
                 <th>Statut</th>
                 <th>Actions</th>
               </tr>
             </thead>
             <tbody>
-              {documents.map((doc) => (
-                <tr key={doc.id}>
-                  <td>{doc.id}</td>
-                  <td>{doc.userId}</td>
-                  <td>{doc.type}</td>
-                  <td>
-                    <span className={
-                      doc.verified ? styles.verified : 
-                      doc.status === 'rejected' ? styles.rejected : 
-                      styles.pending
-                    }>
-                      {doc.verified ? 'Vérifié' : 
-                       doc.status === 'rejected' ? 'Refusé' : 
-                       'En attente'}
-                    </span>
-                  </td>
-                  <td>
-                    <div className={styles.actions}>
-                      {!doc.verified && doc.status !== 'rejected' && (
-                        <>
-                          <button
-                            className={styles.verifyButton}
-                            onClick={() => handleVerify(doc.id)}
+              {documents.map((doc) => {
+                const documentUrl = doc.path ? `https://auxivie.org${doc.path}` : null;
+                const isImage = doc.path && /\.(jpg|jpeg|png|gif)$/i.test(doc.path);
+                const isPdf = doc.path && /\.pdf$/i.test(doc.path);
+                
+                return (
+                  <tr key={doc.id}>
+                    <td>{doc.id}</td>
+                    <td>
+                      <a 
+                        href={`/users/${doc.userId}`}
+                        style={{ color: 'var(--primary)', textDecoration: 'none' }}
+                      >
+                        {doc.userName || `User ${doc.userId}`}
+                      </a>
+                    </td>
+                    <td>{doc.type}</td>
+                    <td>
+                      {documentUrl && (
+                        <div style={{ marginBottom: '8px' }}>
+                          {isImage ? (
+                            <a 
+                              href={documentUrl} 
+                              target="_blank" 
+                              rel="noopener noreferrer"
+                              style={{ 
+                                display: 'inline-block',
+                                padding: '4px 8px',
+                                backgroundColor: '#3b82f6',
+                                color: 'white',
+                                borderRadius: '4px',
+                                textDecoration: 'none',
+                                fontSize: '12px',
+                                marginRight: '8px'
+                              }}
+                            >
+                              📷 Voir l'image
+                            </a>
+                          ) : isPdf ? (
+                            <a 
+                              href={documentUrl} 
+                              target="_blank" 
+                              rel="noopener noreferrer"
+                              style={{ 
+                                display: 'inline-block',
+                                padding: '4px 8px',
+                                backgroundColor: '#ef4444',
+                                color: 'white',
+                                borderRadius: '4px',
+                                textDecoration: 'none',
+                                fontSize: '12px',
+                                marginRight: '8px'
+                              }}
+                            >
+                              📄 Voir le PDF
+                            </a>
+                          ) : null}
+                          <a 
+                            href={documentUrl} 
+                            download
+                            style={{ 
+                              display: 'inline-block',
+                              padding: '4px 8px',
+                              backgroundColor: '#666',
+                              color: 'white',
+                              borderRadius: '4px',
+                              textDecoration: 'none',
+                              fontSize: '12px'
+                            }}
                           >
-                            Valider
-                          </button>
-                          <button
-                            className={styles.rejectButton}
-                            onClick={() => handleReject(doc.id)}
-                          >
-                            Refuser
-                          </button>
-                        </>
+                            ⬇️ Télécharger
+                          </a>
+                        </div>
                       )}
-                      {doc.status === 'rejected' && (
-                        <span className={styles.rejected}>Refusé</span>
-                      )}
-                    </div>
-                  </td>
-                </tr>
-              ))}
+                    </td>
+                    <td>
+                      <span className={
+                        doc.verified ? styles.verified : 
+                        doc.status === 'rejected' ? styles.rejected : 
+                        styles.pending
+                      }>
+                        {doc.verified ? 'Vérifié' : 
+                         doc.status === 'rejected' ? 'Refusé' : 
+                         'En attente'}
+                      </span>
+                    </td>
+                    <td>
+                      <div className={styles.actions}>
+                        {!doc.verified && doc.status !== 'rejected' && (
+                          <>
+                            <button
+                              className={styles.verifyButton}
+                              onClick={() => handleVerify(doc.id)}
+                            >
+                              Valider
+                            </button>
+                            <button
+                              className={styles.rejectButton}
+                              onClick={() => handleReject(doc.id)}
+                            >
+                              Refuser
+                            </button>
+                          </>
+                        )}
+                        {doc.status === 'rejected' && (
+                          <span className={styles.rejected}>Refusé</span>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>
