@@ -10,6 +10,7 @@ const jwt = require('jsonwebtoken');
 const multer = require('multer');
 const fs = require('fs');
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY || 'sk_test_placeholder');
+const { sendAdminMessageNotification } = require('./email');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -161,10 +162,11 @@ app.post('/api/auth/login', async (req, res) => {
           }
         }
       }
-      
-      if (!isValid) {
-        return res.status(401).json({ message: 'Email ou mot de passe incorrect' });
-      }
+
+    // Route de santé
+    if (!isValid) {
+      return res.status(401).json({ message: 'Email ou mot de passe incorrect' });
+    }
 
       // Si c'est une requête mobile, accepter tous les types d'utilisateurs
       // Sinon, vérifier que c'est un admin (pour le dashboard)
@@ -198,7 +200,176 @@ app.post('/api/auth/login', async (req, res) => {
   }
 });
 
+// Redirection rapide : /login -> frontend
+app.get('/login', (req, res) => {
+  return res.redirect(301, 'https://auxivie.org/login');
+});
+
+// ========== ENDPOINT D'ENREGISTREMENT ADMIN ==========
+app.post('/api/auth/register-admin', async (req, res) => {
+  try {
+    const { email, password, name, adminKey } = req.body;
+
+    // Validation des champs requis
+    if (!email || !password || !name || !adminKey) {
+      return res.status(400).json({ message: 'Email, mot de passe, nom et clé admin requis' });
+    }
+
+    // Vérification de la clé admin (variable d'environnement)
+    const ADMIN_KEY = process.env.ADMIN_REGISTRATION_KEY || 'auxivie-admin-2025';
+    if (adminKey !== ADMIN_KEY) {
+      return res.status(403).json({ message: 'Clé admin invalide' });
+    }
+
+    // Vérifier si l'email existe déjà dans la table users
+    try {
+      const existingUser = await db.get('SELECT id FROM users WHERE email = ?', [email]);
+      if (existingUser) {
+        return res.status(409).json({ message: 'Cet email est déjà enregistré' });
+      }
+    } catch (err) {
+      console.error('Erreur vérification email:', err);
+      return res.status(500).json({ message: 'Erreur serveur' });
+    }
+
+    // Vérifier la force du mot de passe (min 8 caractères)
+    if (password.length < 8) {
+      return res.status(400).json({ message: 'Le mot de passe doit contenir au moins 8 caractères' });
+    }
+
+    // Hasher le mot de passe
+    let hashedPassword;
+    try {
+      hashedPassword = await bcrypt.hash(password, 10);
+    } catch (err) {
+      console.error('Erreur hashage:', err);
+      return res.status(500).json({ message: 'Erreur serveur' });
+    }
+
+    // Créer l'utilisateur admin dans la table users
+    try {
+      const result = await db.run(
+        'INSERT INTO users (email, password, name, userType, categorie) VALUES (?, ?, ?, ?, ?)',
+        [email, hashedPassword, name, 'admin', 'administrateur']
+      );
+
+      console.log(`✅ Admin créé avec succès: ${email} (ID: ${result.lastID})`);
+
+      // Générer le token JWT
+      const token = jwt.sign(
+        {
+          userId: result.lastID,
+          email: email,
+          userType: 'admin',
+        },
+        process.env.JWT_SECRET || 'your-secret-key',
+        { expiresIn: '7d' }
+      );
+
+      res.status(201).json({
+        message: 'Administrateur créé avec succès',
+        token,
+        user: {
+          id: result.lastID,
+          name: name,
+          email: email,
+          userType: 'admin',
+        },
+      });
+    } catch (err) {
+      console.error('Erreur création admin:', err);
+      return res.status(500).json({ message: 'Erreur serveur' });
+    }
+  } catch (error) {
+    console.error('Erreur register-admin:', error);
+    res.status(500).json({ message: 'Erreur serveur' });
+  }
+});
+
+
+
 // Route de santé
+// ========== ENDPOINT D'ENREGISTREMENT ADMIN ==========
+app.post('/api/auth/register-admin', async (req, res) => {
+  try {
+    const { email, password, name, adminKey } = req.body;
+
+    // Validation des champs requis
+    if (!email || !password || !name || !adminKey) {
+      return res.status(400).json({ message: 'Email, mot de passe, nom et clé admin requis' });
+    }
+
+    // Vérification de la clé admin (variable d'environnement)
+    const ADMIN_KEY = process.env.ADMIN_REGISTRATION_KEY || 'auxivie-admin-2025';
+    if (adminKey !== ADMIN_KEY) {
+      return res.status(403).json({ message: 'Clé admin invalide' });
+    }
+
+    // Vérifier si l'email existe déjà dans la table users
+    try {
+      const existingUser = await db.get('SELECT id FROM users WHERE email = ?', [email]);
+      if (existingUser) {
+        return res.status(409).json({ message: 'Cet email est déjà enregistré' });
+      }
+    } catch (err) {
+      console.error('Erreur vérification email:', err);
+      return res.status(500).json({ message: 'Erreur serveur' });
+    }
+
+    // Vérifier la force du mot de passe (min 8 caractères)
+    if (password.length < 8) {
+      return res.status(400).json({ message: 'Le mot de passe doit contenir au moins 8 caractères' });
+    }
+
+    // Hasher le mot de passe
+    let hashedPassword;
+    try {
+      hashedPassword = await bcrypt.hash(password, 10);
+    } catch (err) {
+      console.error('Erreur hashage:', err);
+      return res.status(500).json({ message: 'Erreur serveur' });
+    }
+
+    // Créer l'utilisateur admin dans la table users
+    try {
+      const result = await db.run(
+        'INSERT INTO users (email, password, name, userType, categorie) VALUES (?, ?, ?, ?, ?)',
+        [email, hashedPassword, name, 'admin', 'administrateur']
+      );
+
+      console.log(`✅ Admin créé avec succès: ${email} (ID: ${result.lastID})`);
+
+      // Générer le token JWT
+      const token = jwt.sign(
+        {
+          userId: result.lastID,
+          email: email,
+          userType: 'admin',
+        },
+        process.env.JWT_SECRET || 'your-secret-key',
+        { expiresIn: '7d' }
+      );
+
+      res.status(201).json({
+        message: 'Administrateur créé avec succès',
+        token,
+        user: {
+          id: result.lastID,
+          name: name,
+          email: email,
+          userType: 'admin',
+        },
+      });
+    } catch (err) {
+      console.error('Erreur création admin:', err);
+      return res.status(500).json({ message: 'Erreur serveur' });
+    }
+  } catch (error) {
+    console.error('Erreur register-admin:', error);
+    res.status(500).json({ message: 'Erreur serveur' });
+  }
+});
+
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', message: 'Auxivie API' });
 });
@@ -948,11 +1119,30 @@ app.post('/api/messages/admin', authenticateToken, async (req, res) => {
       return res.status(400).json({ message: 'receiverId et content requis' });
     }
 
-    // L'admin envoie toujours avec senderId = 0
+    // Utiliser l'ID de l'admin connecté (req.user.userId) au lieu de 0 pour éviter les contraintes de clé étrangère
+    // Note: Pour l'affichage, on considère toujours que c'est un message admin
+    const adminId = req.user.userId || 0;
     const result = await db.run(
-      'INSERT INTO messages (senderId, receiverId, content, timestamp, isRead) VALUES (0, ?, ?, NOW(), 0)',
-      [receiverId, content]
+      'INSERT INTO messages (senderId, receiverId, content, timestamp, isRead) VALUES (?, ?, ?, NOW(), 0)',
+      [adminId, receiverId, content]
     );
+
+    // Envoyer un email de notification à l'utilisateur (expéditeur: contact@auxivie.org)
+    try {
+      // Récupérer les informations de l'utilisateur destinataire
+      const user = await db.get('SELECT email, name FROM users WHERE id = ?', [receiverId]);
+      if (user && user.email) {
+        // Envoyer l'email de notification avec expéditeur contact@auxivie.org
+        await sendAdminMessageNotification(user.email, user.name, content);
+        console.log(`✅ Email de notification envoyé à ${user.email} depuis contact@auxivie.org`);
+      } else {
+        console.warn(`⚠️  Utilisateur ${receiverId} non trouvé ou sans email`);
+      }
+    } catch (emailError) {
+      // Ne pas faire échouer la requête si l'email échoue
+      console.error('❌ Erreur lors de l\'envoi de l\'email de notification:', emailError);
+    }
+
     res.json({ id: result.lastID, message: 'Message envoyé' });
   } catch (error) {
     return res.status(500).json({ message: 'Erreur serveur' });

@@ -1,0 +1,448 @@
+Error: Cannot find module './mimeScore'
+Require stack:
+- /root/auxivie/backend/node_modules/mime-types/index.js
+- /root/auxivie/backend/node_modules/express/lib/utils.js
+- /root/auxivie/backend/node_modules/express/lib/application.js
+- /root/auxivie/backend/node_modules/express/lib/express.js
+- /root/auxivie/backend/node_modules/express/index.js
+- /root/auxivie/backend/server.js
+    at Module._resolveFilename (node:internal/modules/cjs/loader:1134:15)
+    at Hook._require.Module.require (/usr/local/lib/node_modules/pm2/node_modules/require-in-the-middle/index.js:81:25)
+    at require (node:internal/modules/helpers:177:18)
+    at Object.<anonymous> (/root/auxivie/backend/node_modules/mime-types/index.js:17:17)
+    at Module._compile (node:internal/modules/cjs/loader:1356:14)
+    at Module._extensions..js (node:internal/modules/cjs/loader:1414:10)
+    at Module.load (node:internal/modules/cjs/loader:1197:32)
+    at Module._load (node:internal/modules/cjs/loader:1013:12)
+    at Module.require (node:internal/modules/cjs/loader:1225:19)
+    at Hook._require.Module.require (/usr/local/lib/node_modules/pm2/node_modules/require-in-the-middle/index.js:101:39) {
+  code: 'MODULE_NOT_FOUND',
+  requireStack: [
+    '/root/auxivie/backend/node_modules/mime-types/index.js',
+    '/root/auxivie/backend/node_modules/express/lib/utils.js',
+    '/root/auxivie/backend/node_modules/express/lib/application.js',
+    '/root/auxivie/backend/node_modules/express/lib/express.js',
+    '/root/auxivie/backend/node_modules/express/index.js',
+    '/root/auxivie/backend/server.js'
+  ]
+}
+Error: Cannot find module './mimeScore'
+Require stack:
+- /root/auxivie/backend/node_modules/mime-types/index.js
+- /root/auxivie/backend/node_modules/express/lib/utils.js
+- /root/auxivie/backend/node_modules/express/lib/application.js
+- /root/auxivie/backend/node_modules/express/lib/express.js
+- /root/auxivie/backend/node_modules/express/index.js
+- /root/auxivie/backend/server.js
+    at Module._resolveFilename (node:internal/modules/cjs/loader:1134:15)
+    at Hook._require.Module.require (/usr/local/lib/node_modules/pm2/node_modules/require-in-the-middle/index.js:81:25)
+    at require (node:internal/modules/helpers:177:18)
+    at Object.<anonymous> (/root/auxivie/backend/node_modules/mime-types/index.js:17:17)
+    at Module._compile (node:internal/modules/cjs/loader:1356:14)
+    at Module._extensions..js (node:internal/modules/cjs/loader:1414:10)
+    at Module.load (node:internal/modules/cjs/loader:1197:32)
+    at Module._load (node:internal/modules/cjs/loader:1013:12)
+    at Module.require (node:internal/modules/cjs/loader:1225:19)
+    at Hook._require.Module.require (/usr/local/lib/node_modules/pm2/node_modules/require-in-the-middle/index.js:101:39) {
+  code: 'MODULE_NOT_FOUND',
+  requireStack: [
+    '/root/auxivie/backend/node_modules/mime-types/index.js',
+    '/root/auxivie/backend/node_modules/express/lib/utils.js',
+    '/root/auxivie/backend/node_modules/express/lib/application.js',
+    '/root/auxivie/backend/node_modules/express/lib/express.js',
+    '/root/auxivie/backend/node_modules/express/index.js',
+    '/root/auxivie/backend/server.js'
+  ]
+}
+Error: Cannot find module './mimeScore'
+Require stack:
+- /root/auxivie/backend/node_modules/mime-types/index.js
+- /root/auxivie/backend/node_modules/express/lib/utils.js
+- /root/auxivie/backend/node_modules/express/lib/application.js
+- /root/auxivie/backend/node_modules/express/lib/express.js
+- /root/auxivie/backend/node_modules/express/index.js
+- /root/auxivie/backend/server.js
+    at Module._resolveFilename (node:internal/modules/cjs/loader:1134:15)
+    at Hook._require.Module.require (/usr/local/lib/node_modules/pm2/node_modules/require-in-the-middle/index.js:81:25)
+    at require (node:internal/modules/helpers:177:18)
+    at Object.<anonymous> (/root/auxivie/backend/node_modules/mime-types/index.js:17:17)
+    at Module._compile (node:internal/modules/cjs/loader:1356:14)
+    at Module._extensions..js (node:internal/modules/cjs/loader:1414:10)
+    at Module.load (node:internal/modules/cjs/loader:1197:32)
+    at Module._load (node:internal/modules/cjs/loader:1013:12)
+    at Module.require (node:internal/modules/cjs/loader:1225:19)
+    at Hook._require.Module.require (/usr/local/lib/node_modules/pm2/node_modules/require-in-the-middle/index.js:101:39) {
+  code: 'MODULE_NOT_FOUND',
+  requireStack: [
+    '/root/auxivie/backend/node_modules/mime-types/index.js',
+    '/root/auxivie/backend/node_modules/express/lib/utils.js',
+    '/root/auxivie/backend/node_modules/express/lib/application.js',
+    '/root/auxivie/backend/node_modules/express/lib/express.js',
+    '/root/auxivie/backend/node_modules/express/index.js',
+    '/root/auxivie/backend/server.js'
+  ]
+}
+Error: Cannot find module './mimeScore'
+Require stack:
+- /root/auxivie/backend/node_modules/mime-types/index.js
+- /root/auxivie/backend/node_modules/express/lib/utils.js
+- /root/auxivie/backend/node_modules/express/lib/application.js
+- /root/auxivie/backend/node_modules/express/lib/express.js
+- /root/auxivie/backend/node_modules/express/index.js
+- /root/auxivie/backend/server.js
+    at Module._resolveFilename (node:internal/modules/cjs/loader:1134:15)
+    at Hook._require.Module.require (/usr/local/lib/node_modules/pm2/node_modules/require-in-the-middle/index.js:81:25)
+    at require (node:internal/modules/helpers:177:18)
+    at Object.<anonymous> (/root/auxivie/backend/node_modules/mime-types/index.js:17:17)
+    at Module._compile (node:internal/modules/cjs/loader:1356:14)
+    at Module._extensions..js (node:internal/modules/cjs/loader:1414:10)
+    at Module.load (node:internal/modules/cjs/loader:1197:32)
+    at Module._load (node:internal/modules/cjs/loader:1013:12)
+    at Module.require (node:internal/modules/cjs/loader:1225:19)
+    at Hook._require.Module.require (/usr/local/lib/node_modules/pm2/node_modules/require-in-the-middle/index.js:101:39) {
+  code: 'MODULE_NOT_FOUND',
+  requireStack: [
+    '/root/auxivie/backend/node_modules/mime-types/index.js',
+    '/root/auxivie/backend/node_modules/express/lib/utils.js',
+    '/root/auxivie/backend/node_modules/express/lib/application.js',
+    '/root/auxivie/backend/node_modules/express/lib/express.js',
+    '/root/auxivie/backend/node_modules/express/index.js',
+    '/root/auxivie/backend/server.js'
+  ]
+}
+Error: Cannot find module './mimeScore'
+Require stack:
+- /root/auxivie/backend/node_modules/mime-types/index.js
+- /root/auxivie/backend/node_modules/express/lib/utils.js
+- /root/auxivie/backend/node_modules/express/lib/application.js
+- /root/auxivie/backend/node_modules/express/lib/express.js
+- /root/auxivie/backend/node_modules/express/index.js
+- /root/auxivie/backend/server.js
+    at Module._resolveFilename (node:internal/modules/cjs/loader:1134:15)
+    at Hook._require.Module.require (/usr/local/lib/node_modules/pm2/node_modules/require-in-the-middle/index.js:81:25)
+    at require (node:internal/modules/helpers:177:18)
+    at Object.<anonymous> (/root/auxivie/backend/node_modules/mime-types/index.js:17:17)
+    at Module._compile (node:internal/modules/cjs/loader:1356:14)
+    at Module._extensions..js (node:internal/modules/cjs/loader:1414:10)
+    at Module.load (node:internal/modules/cjs/loader:1197:32)
+    at Module._load (node:internal/modules/cjs/loader:1013:12)
+    at Module.require (node:internal/modules/cjs/loader:1225:19)
+    at Hook._require.Module.require (/usr/local/lib/node_modules/pm2/node_modules/require-in-the-middle/index.js:101:39) {
+  code: 'MODULE_NOT_FOUND',
+  requireStack: [
+    '/root/auxivie/backend/node_modules/mime-types/index.js',
+    '/root/auxivie/backend/node_modules/express/lib/utils.js',
+    '/root/auxivie/backend/node_modules/express/lib/application.js',
+    '/root/auxivie/backend/node_modules/express/lib/express.js',
+    '/root/auxivie/backend/node_modules/express/index.js',
+    '/root/auxivie/backend/server.js'
+  ]
+}
+Error: Cannot find module './mimeScore'
+Require stack:
+- /root/auxivie/backend/node_modules/mime-types/index.js
+- /root/auxivie/backend/node_modules/express/lib/utils.js
+- /root/auxivie/backend/node_modules/express/lib/application.js
+- /root/auxivie/backend/node_modules/express/lib/express.js
+- /root/auxivie/backend/node_modules/express/index.js
+- /root/auxivie/backend/server.js
+    at Module._resolveFilename (node:internal/modules/cjs/loader:1134:15)
+    at Hook._require.Module.require (/usr/local/lib/node_modules/pm2/node_modules/require-in-the-middle/index.js:81:25)
+    at require (node:internal/modules/helpers:177:18)
+    at Object.<anonymous> (/root/auxivie/backend/node_modules/mime-types/index.js:17:17)
+    at Module._compile (node:internal/modules/cjs/loader:1356:14)
+    at Module._extensions..js (node:internal/modules/cjs/loader:1414:10)
+    at Module.load (node:internal/modules/cjs/loader:1197:32)
+    at Module._load (node:internal/modules/cjs/loader:1013:12)
+    at Module.require (node:internal/modules/cjs/loader:1225:19)
+    at Hook._require.Module.require (/usr/local/lib/node_modules/pm2/node_modules/require-in-the-middle/index.js:101:39) {
+  code: 'MODULE_NOT_FOUND',
+  requireStack: [
+    '/root/auxivie/backend/node_modules/mime-types/index.js',
+    '/root/auxivie/backend/node_modules/express/lib/utils.js',
+    '/root/auxivie/backend/node_modules/express/lib/application.js',
+    '/root/auxivie/backend/node_modules/express/lib/express.js',
+    '/root/auxivie/backend/node_modules/express/index.js',
+    '/root/auxivie/backend/server.js'
+  ]
+}
+Error: Cannot find module './mimeScore'
+Require stack:
+- /root/auxivie/backend/node_modules/mime-types/index.js
+- /root/auxivie/backend/node_modules/express/lib/utils.js
+- /root/auxivie/backend/node_modules/express/lib/application.js
+- /root/auxivie/backend/node_modules/express/lib/express.js
+- /root/auxivie/backend/node_modules/express/index.js
+- /root/auxivie/backend/server.js
+    at Module._resolveFilename (node:internal/modules/cjs/loader:1134:15)
+    at Hook._require.Module.require (/usr/local/lib/node_modules/pm2/node_modules/require-in-the-middle/index.js:81:25)
+    at require (node:internal/modules/helpers:177:18)
+    at Object.<anonymous> (/root/auxivie/backend/node_modules/mime-types/index.js:17:17)
+    at Module._compile (node:internal/modules/cjs/loader:1356:14)
+    at Module._extensions..js (node:internal/modules/cjs/loader:1414:10)
+    at Module.load (node:internal/modules/cjs/loader:1197:32)
+    at Module._load (node:internal/modules/cjs/loader:1013:12)
+    at Module.require (node:internal/modules/cjs/loader:1225:19)
+    at Hook._require.Module.require (/usr/local/lib/node_modules/pm2/node_modules/require-in-the-middle/index.js:101:39) {
+  code: 'MODULE_NOT_FOUND',
+  requireStack: [
+    '/root/auxivie/backend/node_modules/mime-types/index.js',
+    '/root/auxivie/backend/node_modules/express/lib/utils.js',
+    '/root/auxivie/backend/node_modules/express/lib/application.js',
+    '/root/auxivie/backend/node_modules/express/lib/express.js',
+    '/root/auxivie/backend/node_modules/express/index.js',
+    '/root/auxivie/backend/server.js'
+  ]
+}
+Error: Cannot find module './mimeScore'
+Require stack:
+- /root/auxivie/backend/node_modules/mime-types/index.js
+- /root/auxivie/backend/node_modules/express/lib/utils.js
+- /root/auxivie/backend/node_modules/express/lib/application.js
+- /root/auxivie/backend/node_modules/express/lib/express.js
+- /root/auxivie/backend/node_modules/express/index.js
+- /root/auxivie/backend/server.js
+    at Module._resolveFilename (node:internal/modules/cjs/loader:1134:15)
+    at Hook._require.Module.require (/usr/local/lib/node_modules/pm2/node_modules/require-in-the-middle/index.js:81:25)
+    at require (node:internal/modules/helpers:177:18)
+    at Object.<anonymous> (/root/auxivie/backend/node_modules/mime-types/index.js:17:17)
+    at Module._compile (node:internal/modules/cjs/loader:1356:14)
+    at Module._extensions..js (node:internal/modules/cjs/loader:1414:10)
+    at Module.load (node:internal/modules/cjs/loader:1197:32)
+    at Module._load (node:internal/modules/cjs/loader:1013:12)
+    at Module.require (node:internal/modules/cjs/loader:1225:19)
+    at Hook._require.Module.require (/usr/local/lib/node_modules/pm2/node_modules/require-in-the-middle/index.js:101:39) {
+  code: 'MODULE_NOT_FOUND',
+  requireStack: [
+    '/root/auxivie/backend/node_modules/mime-types/index.js',
+    '/root/auxivie/backend/node_modules/express/lib/utils.js',
+    '/root/auxivie/backend/node_modules/express/lib/application.js',
+    '/root/auxivie/backend/node_modules/express/lib/express.js',
+    '/root/auxivie/backend/node_modules/express/index.js',
+    '/root/auxivie/backend/server.js'
+  ]
+}
+Error: Cannot find module './mimeScore'
+Require stack:
+- /root/auxivie/backend/node_modules/mime-types/index.js
+- /root/auxivie/backend/node_modules/express/lib/utils.js
+- /root/auxivie/backend/node_modules/express/lib/application.js
+- /root/auxivie/backend/node_modules/express/lib/express.js
+- /root/auxivie/backend/node_modules/express/index.js
+- /root/auxivie/backend/server.js
+    at Module._resolveFilename (node:internal/modules/cjs/loader:1134:15)
+    at Hook._require.Module.require (/usr/local/lib/node_modules/pm2/node_modules/require-in-the-middle/index.js:81:25)
+    at require (node:internal/modules/helpers:177:18)
+    at Object.<anonymous> (/root/auxivie/backend/node_modules/mime-types/index.js:17:17)
+    at Module._compile (node:internal/modules/cjs/loader:1356:14)
+    at Module._extensions..js (node:internal/modules/cjs/loader:1414:10)
+    at Module.load (node:internal/modules/cjs/loader:1197:32)
+    at Module._load (node:internal/modules/cjs/loader:1013:12)
+    at Module.require (node:internal/modules/cjs/loader:1225:19)
+    at Hook._require.Module.require (/usr/local/lib/node_modules/pm2/node_modules/require-in-the-middle/index.js:101:39) {
+  code: 'MODULE_NOT_FOUND',
+  requireStack: [
+    '/root/auxivie/backend/node_modules/mime-types/index.js',
+    '/root/auxivie/backend/node_modules/express/lib/utils.js',
+    '/root/auxivie/backend/node_modules/express/lib/application.js',
+    '/root/auxivie/backend/node_modules/express/lib/express.js',
+    '/root/auxivie/backend/node_modules/express/index.js',
+    '/root/auxivie/backend/server.js'
+  ]
+}
+Error: Cannot find module './mimeScore'
+Require stack:
+- /root/auxivie/backend/node_modules/mime-types/index.js
+- /root/auxivie/backend/node_modules/express/lib/utils.js
+- /root/auxivie/backend/node_modules/express/lib/application.js
+- /root/auxivie/backend/node_modules/express/lib/express.js
+- /root/auxivie/backend/node_modules/express/index.js
+- /root/auxivie/backend/server.js
+    at Module._resolveFilename (node:internal/modules/cjs/loader:1134:15)
+    at Hook._require.Module.require (/usr/local/lib/node_modules/pm2/node_modules/require-in-the-middle/index.js:81:25)
+    at require (node:internal/modules/helpers:177:18)
+    at Object.<anonymous> (/root/auxivie/backend/node_modules/mime-types/index.js:17:17)
+    at Module._compile (node:internal/modules/cjs/loader:1356:14)
+    at Module._extensions..js (node:internal/modules/cjs/loader:1414:10)
+    at Module.load (node:internal/modules/cjs/loader:1197:32)
+    at Module._load (node:internal/modules/cjs/loader:1013:12)
+    at Module.require (node:internal/modules/cjs/loader:1225:19)
+    at Hook._require.Module.require (/usr/local/lib/node_modules/pm2/node_modules/require-in-the-middle/index.js:101:39) {
+  code: 'MODULE_NOT_FOUND',
+  requireStack: [
+    '/root/auxivie/backend/node_modules/mime-types/index.js',
+    '/root/auxivie/backend/node_modules/express/lib/utils.js',
+    '/root/auxivie/backend/node_modules/express/lib/application.js',
+    '/root/auxivie/backend/node_modules/express/lib/express.js',
+    '/root/auxivie/backend/node_modules/express/index.js',
+    '/root/auxivie/backend/server.js'
+  ]
+}
+Error: Cannot find module './mimeScore'
+Require stack:
+- /root/auxivie/backend/node_modules/mime-types/index.js
+- /root/auxivie/backend/node_modules/express/lib/utils.js
+- /root/auxivie/backend/node_modules/express/lib/application.js
+- /root/auxivie/backend/node_modules/express/lib/express.js
+- /root/auxivie/backend/node_modules/express/index.js
+- /root/auxivie/backend/server.js
+    at Module._resolveFilename (node:internal/modules/cjs/loader:1134:15)
+    at Hook._require.Module.require (/usr/local/lib/node_modules/pm2/node_modules/require-in-the-middle/index.js:81:25)
+    at require (node:internal/modules/helpers:177:18)
+    at Object.<anonymous> (/root/auxivie/backend/node_modules/mime-types/index.js:17:17)
+    at Module._compile (node:internal/modules/cjs/loader:1356:14)
+    at Module._extensions..js (node:internal/modules/cjs/loader:1414:10)
+    at Module.load (node:internal/modules/cjs/loader:1197:32)
+    at Module._load (node:internal/modules/cjs/loader:1013:12)
+    at Module.require (node:internal/modules/cjs/loader:1225:19)
+    at Hook._require.Module.require (/usr/local/lib/node_modules/pm2/node_modules/require-in-the-middle/index.js:101:39) {
+  code: 'MODULE_NOT_FOUND',
+  requireStack: [
+    '/root/auxivie/backend/node_modules/mime-types/index.js',
+    '/root/auxivie/backend/node_modules/express/lib/utils.js',
+    '/root/auxivie/backend/node_modules/express/lib/application.js',
+    '/root/auxivie/backend/node_modules/express/lib/express.js',
+    '/root/auxivie/backend/node_modules/express/index.js',
+    '/root/auxivie/backend/server.js'
+  ]
+}
+Error: Cannot find module './mimeScore'
+Require stack:
+- /root/auxivie/backend/node_modules/mime-types/index.js
+- /root/auxivie/backend/node_modules/express/lib/utils.js
+- /root/auxivie/backend/node_modules/express/lib/application.js
+- /root/auxivie/backend/node_modules/express/lib/express.js
+- /root/auxivie/backend/node_modules/express/index.js
+- /root/auxivie/backend/server.js
+    at Module._resolveFilename (node:internal/modules/cjs/loader:1134:15)
+    at Hook._require.Module.require (/usr/local/lib/node_modules/pm2/node_modules/require-in-the-middle/index.js:81:25)
+    at require (node:internal/modules/helpers:177:18)
+    at Object.<anonymous> (/root/auxivie/backend/node_modules/mime-types/index.js:17:17)
+    at Module._compile (node:internal/modules/cjs/loader:1356:14)
+    at Module._extensions..js (node:internal/modules/cjs/loader:1414:10)
+    at Module.load (node:internal/modules/cjs/loader:1197:32)
+    at Module._load (node:internal/modules/cjs/loader:1013:12)
+    at Module.require (node:internal/modules/cjs/loader:1225:19)
+    at Hook._require.Module.require (/usr/local/lib/node_modules/pm2/node_modules/require-in-the-middle/index.js:101:39) {
+  code: 'MODULE_NOT_FOUND',
+  requireStack: [
+    '/root/auxivie/backend/node_modules/mime-types/index.js',
+    '/root/auxivie/backend/node_modules/express/lib/utils.js',
+    '/root/auxivie/backend/node_modules/express/lib/application.js',
+    '/root/auxivie/backend/node_modules/express/lib/express.js',
+    '/root/auxivie/backend/node_modules/express/index.js',
+    '/root/auxivie/backend/server.js'
+  ]
+}
+Error: Cannot find module './mimeScore'
+Require stack:
+- /root/auxivie/backend/node_modules/mime-types/index.js
+- /root/auxivie/backend/node_modules/express/lib/utils.js
+- /root/auxivie/backend/node_modules/express/lib/application.js
+- /root/auxivie/backend/node_modules/express/lib/express.js
+- /root/auxivie/backend/node_modules/express/index.js
+- /root/auxivie/backend/server.js
+    at Module._resolveFilename (node:internal/modules/cjs/loader:1134:15)
+    at Hook._require.Module.require (/usr/local/lib/node_modules/pm2/node_modules/require-in-the-middle/index.js:81:25)
+    at require (node:internal/modules/helpers:177:18)
+    at Object.<anonymous> (/root/auxivie/backend/node_modules/mime-types/index.js:17:17)
+    at Module._compile (node:internal/modules/cjs/loader:1356:14)
+    at Module._extensions..js (node:internal/modules/cjs/loader:1414:10)
+    at Module.load (node:internal/modules/cjs/loader:1197:32)
+    at Module._load (node:internal/modules/cjs/loader:1013:12)
+    at Module.require (node:internal/modules/cjs/loader:1225:19)
+    at Hook._require.Module.require (/usr/local/lib/node_modules/pm2/node_modules/require-in-the-middle/index.js:101:39) {
+  code: 'MODULE_NOT_FOUND',
+  requireStack: [
+    '/root/auxivie/backend/node_modules/mime-types/index.js',
+    '/root/auxivie/backend/node_modules/express/lib/utils.js',
+    '/root/auxivie/backend/node_modules/express/lib/application.js',
+    '/root/auxivie/backend/node_modules/express/lib/express.js',
+    '/root/auxivie/backend/node_modules/express/index.js',
+    '/root/auxivie/backend/server.js'
+  ]
+}
+Error: Cannot find module './mimeScore'
+Require stack:
+- /root/auxivie/backend/node_modules/mime-types/index.js
+- /root/auxivie/backend/node_modules/express/lib/utils.js
+- /root/auxivie/backend/node_modules/express/lib/application.js
+- /root/auxivie/backend/node_modules/express/lib/express.js
+- /root/auxivie/backend/node_modules/express/index.js
+- /root/auxivie/backend/server.js
+    at Module._resolveFilename (node:internal/modules/cjs/loader:1134:15)
+    at Hook._require.Module.require (/usr/local/lib/node_modules/pm2/node_modules/require-in-the-middle/index.js:81:25)
+    at require (node:internal/modules/helpers:177:18)
+    at Object.<anonymous> (/root/auxivie/backend/node_modules/mime-types/index.js:17:17)
+    at Module._compile (node:internal/modules/cjs/loader:1356:14)
+    at Module._extensions..js (node:internal/modules/cjs/loader:1414:10)
+    at Module.load (node:internal/modules/cjs/loader:1197:32)
+    at Module._load (node:internal/modules/cjs/loader:1013:12)
+    at Module.require (node:internal/modules/cjs/loader:1225:19)
+    at Hook._require.Module.require (/usr/local/lib/node_modules/pm2/node_modules/require-in-the-middle/index.js:101:39) {
+  code: 'MODULE_NOT_FOUND',
+  requireStack: [
+    '/root/auxivie/backend/node_modules/mime-types/index.js',
+    '/root/auxivie/backend/node_modules/express/lib/utils.js',
+    '/root/auxivie/backend/node_modules/express/lib/application.js',
+    '/root/auxivie/backend/node_modules/express/lib/express.js',
+    '/root/auxivie/backend/node_modules/express/index.js',
+    '/root/auxivie/backend/server.js'
+  ]
+}
+Error: Cannot find module './mimeScore'
+Require stack:
+- /root/auxivie/backend/node_modules/mime-types/index.js
+- /root/auxivie/backend/node_modules/express/lib/utils.js
+- /root/auxivie/backend/node_modules/express/lib/application.js
+- /root/auxivie/backend/node_modules/express/lib/express.js
+- /root/auxivie/backend/node_modules/express/index.js
+- /root/auxivie/backend/server.js
+    at Module._resolveFilename (node:internal/modules/cjs/loader:1134:15)
+    at Hook._require.Module.require (/usr/local/lib/node_modules/pm2/node_modules/require-in-the-middle/index.js:81:25)
+    at require (node:internal/modules/helpers:177:18)
+    at Object.<anonymous> (/root/auxivie/backend/node_modules/mime-types/index.js:17:17)
+    at Module._compile (node:internal/modules/cjs/loader:1356:14)
+    at Module._extensions..js (node:internal/modules/cjs/loader:1414:10)
+    at Module.load (node:internal/modules/cjs/loader:1197:32)
+    at Module._load (node:internal/modules/cjs/loader:1013:12)
+    at Module.require (node:internal/modules/cjs/loader:1225:19)
+    at Hook._require.Module.require (/usr/local/lib/node_modules/pm2/node_modules/require-in-the-middle/index.js:101:39) {
+  code: 'MODULE_NOT_FOUND',
+  requireStack: [
+    '/root/auxivie/backend/node_modules/mime-types/index.js',
+    '/root/auxivie/backend/node_modules/express/lib/utils.js',
+    '/root/auxivie/backend/node_modules/express/lib/application.js',
+    '/root/auxivie/backend/node_modules/express/lib/express.js',
+    '/root/auxivie/backend/node_modules/express/index.js',
+    '/root/auxivie/backend/server.js'
+  ]
+}
+Error: Cannot find module './mimeScore'
+Require stack:
+- /root/auxivie/backend/node_modules/mime-types/index.js
+- /root/auxivie/backend/node_modules/express/lib/utils.js
+- /root/auxivie/backend/node_modules/express/lib/application.js
+- /root/auxivie/backend/node_modules/express/lib/express.js
+- /root/auxivie/backend/node_modules/express/index.js
+- /root/auxivie/backend/server.js
+    at Module._resolveFilename (node:internal/modules/cjs/loader:1134:15)
+    at Hook._require.Module.require (/usr/local/lib/node_modules/pm2/node_modules/require-in-the-middle/index.js:81:25)
+    at require (node:internal/modules/helpers:177:18)
+    at Object.<anonymous> (/root/auxivie/backend/node_modules/mime-types/index.js:17:17)
+    at Module._compile (node:internal/modules/cjs/loader:1356:14)
+    at Module._extensions..js (node:internal/modules/cjs/loader:1414:10)
+    at Module.load (node:internal/modules/cjs/loader:1197:32)
+    at Module._load (node:internal/modules/cjs/loader:1013:12)
+    at Module.require (node:internal/modules/cjs/loader:1225:19)
+    at Hook._require.Module.require (/usr/local/lib/node_modules/pm2/node_modules/require-in-the-middle/index.js:101:39) {
+  code: 'MODULE_NOT_FOUND',
+  requireStack: [
+    '/root/auxivie/backend/node_modules/mime-types/index.js',
+    '/root/auxivie/backend/node_modules/express/lib/utils.js',
+    '/root/auxivie/backend/node_modules/express/lib/application.js',
+    '/root/auxivie/backend/node_modules/express/lib/express.js',
+    '/root/auxivie/backend/node_modules/express/index.js',
+    '/root/auxivie/backend/server.js'
+  ]
+}

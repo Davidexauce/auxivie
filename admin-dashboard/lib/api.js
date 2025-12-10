@@ -1,17 +1,20 @@
 // Récupérer l'URL de l'API depuis les variables d'environnement
-// En Next.js, NEXT_PUBLIC_* est injecté au build time
+// SOLUTION RADICALE: Utiliser UNIQUEMENT le domaine principal (auxivie.org)
+// Cela élimine complètement les problèmes de blocage de sous-domaines
 const getApiBaseUrl = () => {
   if (typeof window !== 'undefined') {
-    // Côté client, utiliser la variable d'environnement ou fallback
-    return process.env.NEXT_PUBLIC_API_URL || 'https://api.auxivie.org';
+    // Côté client: toujours utiliser le même domaine
+    // Les routes API commencent par /api/ et seront ajoutées après
+    return 'https://auxivie.org';
   }
-  // Côté serveur
-  return process.env.NEXT_PUBLIC_API_URL || 'https://api.auxivie.org';
+  // Côté serveur: même chose
+  return 'https://auxivie.org';
 };
 
 const API_BASE_URL = getApiBaseUrl();
 
-// Fonction utilitaire pour les appels API
+// Fonction utilitaire pour les appels API - Version simple et radicale
+// Pas de fallback compliqué, juste un domaine unique qui fonctionne toujours
 async function apiCall(endpoint, options = {}) {
   const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
   
@@ -32,10 +35,24 @@ async function apiCall(endpoint, options = {}) {
   }
 
   try {
-    const response = await fetch(fullUrl, {
+    // Configuration CORS
+    const fetchOptions = {
       ...options,
       headers,
+      mode: 'cors',
+      credentials: 'include',
+    };
+
+    // Timeout de 10 secondes
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 10000);
+
+    const response = await fetch(fullUrl, {
+      ...fetchOptions,
+      signal: controller.signal,
     });
+
+    clearTimeout(timeoutId);
 
     // Log de la réponse pour débogage
     if (process.env.NODE_ENV !== 'production' && typeof window !== 'undefined') {
@@ -58,9 +75,22 @@ async function apiCall(endpoint, options = {}) {
     return response.json();
   } catch (error) {
     // Gestion des erreurs réseau
-    if (error.name === 'TypeError' && error.message.includes('fetch')) {
+    if (error.name === 'TypeError' || error.message.includes('Failed to fetch') || error.name === 'AbortError') {
       console.error('❌ Network Error:', error.message);
-      throw new Error('Impossible de se connecter au serveur. Vérifiez votre connexion internet.');
+      console.error('URL:', fullUrl);
+      
+      let diagnosticMessage = 'Impossible de se connecter au serveur. ';
+      
+      diagnosticMessage += 'Causes possibles:\n' +
+        '• Vérifiez votre connexion internet\n' +
+        '• Vérifiez que auxivie.org est accessible\n' +
+        '• Votre navigateur ou réseau bloque les connexions\n\n' +
+        'Solutions:\n' +
+        '• Essayez sur un autre navigateur\n' +
+        '• Essayez sur un autre réseau ou avec un VPN\n' +
+        '• Visitez https://auxivie.org/diagnostic pour tester la connexion';
+      
+      throw new Error(diagnosticMessage);
     }
     throw error;
   }
@@ -74,7 +104,14 @@ export const authAPI = {
       body: JSON.stringify({ email, password }),
     });
   },
+  registerAdmin: async (email, password, name, adminKey) => {
+    return apiCall('/api/auth/register-admin', {
+      method: 'POST',
+      body: JSON.stringify({ email, password, name, adminKey }),
+    });
+  },
 };
+
 
 // API des utilisateurs
 export const usersAPI = {

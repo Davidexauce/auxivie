@@ -1,12 +1,23 @@
 import { useRouter } from 'next/router';
 import Link from 'next/link';
+import { useEffect, useState } from 'react';
+import NotificationCenter from './NotificationCenter';
 import styles from '../styles/Layout.module.css';
 
 export default function Layout({ children }) {
   const router = useRouter();
+  const [user, setUser] = useState(null);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const u = localStorage.getItem('user');
+      if (u) setUser(JSON.parse(u));
+    }
+  }, []);
 
   const handleLogout = () => {
     localStorage.removeItem('token');
+    localStorage.removeItem('user');
     router.push('/login');
   };
 
@@ -15,9 +26,12 @@ export default function Layout({ children }) {
       <header className={styles.header}>
         <div className={styles.headerContent}>
           <h1 className={styles.logo}>Auxivie Admin</h1>
-          <button onClick={handleLogout} className={styles.logoutButton}>
-            Déconnexion
-          </button>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+            <NotificationCenter />
+            <button onClick={handleLogout} className={styles.logoutButton}>
+              Déconnexion
+            </button>
+          </div>
         </div>
         <nav className={styles.nav}>
           <Link 
@@ -61,6 +75,18 @@ export default function Layout({ children }) {
             className={router.pathname === '/messages' ? styles.active : ''}
           >
             Messages
+          </Link>
+          <Link 
+            href="/settings" 
+            className={router.pathname === '/settings' ? styles.active : ''}
+          >
+            Paramètres
+          </Link>
+          <Link 
+            href="/profile" 
+            className={router.pathname === '/profile' ? styles.active : ''}
+          >
+            Mon Profil
           </Link>
         </nav>
       </header>
