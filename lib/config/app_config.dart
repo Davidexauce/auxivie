@@ -3,7 +3,7 @@ import 'dart:io';
 /// Configuration de l'application par environnement
 class AppConfig {
   // Environnement actuel
-  static const Environment _currentEnvironment = Environment.development;
+  static const Environment _currentEnvironment = Environment.production;
   
   // URLs de l'API selon l'environnement
   static String get apiBaseUrl {
