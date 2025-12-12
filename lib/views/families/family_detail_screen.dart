@@ -3,16 +3,61 @@ import 'package:provider/provider.dart';
 import '../../models/user_model.dart';
 import '../../viewmodels/auth_viewmodel.dart';
 import '../../theme/app_theme.dart';
+import '../../services/backend_api_service.dart';
 import '../messages/chat_screen.dart';
+import '../profile/report_user_modal.dart';
 
 /// Écran de détails d'une famille (pour les professionnels)
-class FamilyDetailScreen extends StatelessWidget {
+class FamilyDetailScreen extends StatefulWidget {
   final UserModel family;
 
   const FamilyDetailScreen({
     super.key,
     required this.family,
   });
+
+  @override
+  State<FamilyDetailScreen> createState() => _FamilyDetailScreenState();
+}
+
+class _FamilyDetailScreenState extends State<FamilyDetailScreen> {
+  bool _isLoadingReviews = false;
+  Map<String, dynamic>? _rating;
+  List<Map<String, dynamic>> _reviews = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadReviews();
+  }
+
+  Future<void> _loadReviews() async {
+    if (widget.family.id == null) return;
+
+    setState(() => _isLoadingReviews = true);
+
+    try {
+      final rating = await BackendApiService.getRating(widget.family.id!);
+      final reviews = await BackendApiService.getReviews(widget.family.id!);
+
+      setState(() {
+        _rating = rating?.toMap();
+        _reviews = reviews.map((r) => r.toMap()).toList();
+        _isLoadingReviews = false;
+      });
+    } catch (e) {
+      setState(() => _isLoadingReviews = false);
+    }
+  }
+
+  String _formatDate(String dateString) {
+    try {
+      final date = DateTime.parse(dateString);
+      return '${date.day}/${date.month}/${date.year}';
+    } catch (e) {
+      return dateString;
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -25,6 +70,23 @@ class FamilyDetailScreen extends StatelessWidget {
         title: const Text('Profil de la famille'),
         backgroundColor: AppTheme.primary,
         foregroundColor: Colors.white,
+        actions: [
+          if (currentUser != null && currentUser.id != widget.family.id)
+            IconButton(
+              icon: const Icon(Icons.flag_outlined),
+              tooltip: 'Signaler',
+              onPressed: () {
+                showDialog<bool>(
+                  context: context,
+                  builder: (context) => ReportUserModal(
+                    reportedUser: widget.family,
+                    currentUserId: currentUser.id!,
+                  ),
+                );
+                // Le modal gère déjà l'affichage du message de succès
+              },
+            ),
+        ],
       ),
       body: SingleChildScrollView(
         child: Column(
@@ -39,7 +101,7 @@ class FamilyDetailScreen extends StatelessWidget {
                   end: Alignment.bottomRight,
                   colors: [
                     AppTheme.primary,
-                    AppTheme.primary.withOpacity(0.8),
+                    AppTheme.primary.withValues(alpha: 0.8),
                   ],
                 ),
               ),
@@ -49,7 +111,7 @@ class FamilyDetailScreen extends StatelessWidget {
                     radius: 50,
                     backgroundColor: Colors.white,
                     child: Text(
-                      family.name[0].toUpperCase(),
+                      widget.family.name[0].toUpperCase(),
                       style: const TextStyle(
                         fontSize: 40,
                         fontWeight: FontWeight.bold,
@@ -59,14 +121,14 @@ class FamilyDetailScreen extends StatelessWidget {
                   ),
                   const SizedBox(height: 16),
                   Text(
-                    family.name,
+                    widget.family.name,
                     style: const TextStyle(
                       fontSize: 24,
                       fontWeight: FontWeight.bold,
                       color: Colors.white,
                     ),
                   ),
-                  if (family.ville != null) ...[
+                  if (widget.family.ville != null) ...[
                     const SizedBox(height: 8),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
@@ -74,7 +136,7 @@ class FamilyDetailScreen extends StatelessWidget {
                         const Icon(Icons.location_on, color: Colors.white70, size: 18),
                         const SizedBox(width: 4),
                         Text(
-                          family.ville!,
+                          widget.family.ville!,
                           style: const TextStyle(
                             fontSize: 16,
                             color: Colors.white70,
@@ -97,18 +159,18 @@ class FamilyDetailScreen extends StatelessWidget {
                   _SectionCard(
                     title: 'Informations de contact',
                     children: [
-                      if (family.email.isNotEmpty)
+                      if (widget.family.email.isNotEmpty)
                         _InfoRow(
                           icon: Icons.email,
                           label: 'Email',
-                          value: family.email,
+                          value: widget.family.email,
                         ),
-                      if (family.phone != null && family.phone!.isNotEmpty) ...[
+                      if (widget.family.phone != null && widget.family.phone!.isNotEmpty) ...[
                         const SizedBox(height: 12),
                         _InfoRow(
                           icon: Icons.phone,
                           label: 'Téléphone',
-                          value: family.phone!,
+                          value: widget.family.phone!,
                         ),
                       ],
                     ],
@@ -117,57 +179,57 @@ class FamilyDetailScreen extends StatelessWidget {
                   const SizedBox(height: 16),
 
                   // Besoins
-                  if (family.besoin != null && family.besoin!.isNotEmpty)
+                  if (widget.family.besoin != null && widget.family.besoin!.isNotEmpty)
                     _SectionCard(
                       title: 'Besoins',
                       children: [
                         Text(
-                          family.besoin!,
+                          widget.family.besoin!,
                           style: Theme.of(context).textTheme.bodyLarge,
                         ),
                       ],
                     ),
 
-                  if (family.besoin != null && family.besoin!.isNotEmpty)
+                  if (widget.family.besoin != null && widget.family.besoin!.isNotEmpty)
                     const SizedBox(height: 16),
 
                   // Préférences
-                  if (family.preference != null && family.preference!.isNotEmpty)
+                  if (widget.family.preference != null && widget.family.preference!.isNotEmpty)
                     _SectionCard(
                       title: 'Préférences',
                       children: [
                         Text(
-                          family.preference!,
+                          widget.family.preference!,
                           style: Theme.of(context).textTheme.bodyLarge,
                         ),
                       ],
                     ),
 
-                  if (family.preference != null && family.preference!.isNotEmpty)
+                  if (widget.family.preference != null && widget.family.preference!.isNotEmpty)
                     const SizedBox(height: 16),
 
                   // Mission demandée
-                  if (family.mission != null && family.mission!.isNotEmpty)
+                  if (widget.family.mission != null && widget.family.mission!.isNotEmpty)
                     _SectionCard(
                       title: 'Mission demandée',
                       children: [
                         Text(
-                          family.mission!,
+                          widget.family.mission!,
                           style: Theme.of(context).textTheme.bodyLarge,
                         ),
                       ],
                     ),
 
-                  if (family.mission != null && family.mission!.isNotEmpty)
+                  if (widget.family.mission != null && widget.family.mission!.isNotEmpty)
                     const SizedBox(height: 16),
 
                   // Particularités
-                  if (family.particularite != null && family.particularite!.isNotEmpty)
+                  if (widget.family.particularite != null && widget.family.particularite!.isNotEmpty)
                     _SectionCard(
                       title: 'Particularités',
                       children: [
                         Text(
-                          family.particularite!,
+                          widget.family.particularite!,
                           style: Theme.of(context).textTheme.bodyLarge,
                         ),
                       ],
@@ -186,7 +248,7 @@ class FamilyDetailScreen extends StatelessWidget {
                             MaterialPageRoute(
                               builder: (_) => ChatScreen(
                                 currentUserId: currentUser.id!,
-                                otherUserId: family.id!,
+                                otherUserId: widget.family.id!,
                               ),
                             ),
                           );

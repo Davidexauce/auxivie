@@ -6,6 +6,7 @@ import '../../services/backend_api_service.dart';
 import '../../theme/app_theme.dart';
 import '../messages/chat_screen.dart';
 import '../reservations/create_reservation_screen.dart';
+import '../profile/report_user_modal.dart';
 
 /// Écran de détails d'un professionnel
 class ProfessionalDetailScreen extends StatefulWidget {
@@ -91,6 +92,23 @@ class _ProfessionalDetailScreenState extends State<ProfessionalDetailScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Détails du professionnel'),
+        actions: [
+          if (currentUser != null && currentUser.id != widget.professional.id)
+            IconButton(
+              icon: const Icon(Icons.flag_outlined),
+              tooltip: 'Signaler',
+              onPressed: () async {
+                final result = await showDialog<bool>(
+                  context: context,
+                  builder: (context) => ReportUserModal(
+                    reportedUser: widget.professional,
+                    currentUserId: currentUser.id!,
+                  ),
+                );
+                // Le modal gère déjà l'affichage du message de succès
+              },
+            ),
+        ],
       ),
       body: SingleChildScrollView(
         child: Column(
@@ -285,75 +303,179 @@ class _ProfessionalDetailScreenState extends State<ProfessionalDetailScreen> {
                     const SizedBox(height: 24),
                   ],
 
-                  // Avis
-                  if (!_isLoading && _reviews.isNotEmpty) ...[
+                  // Avis et Note moyenne
+                  if (!_isLoading && (_rating != null || _reviews.isNotEmpty)) ...[
                     Text(
-                      'Avis (${_reviews.length})',
+                      'Avis et notes',
                       style: Theme.of(context).textTheme.titleMedium?.copyWith(
                         fontWeight: FontWeight.bold,
                         color: AppTheme.textPrimary,
                       ),
                     ),
                     const SizedBox(height: 12),
-                    ..._reviews.take(5).map((review) {
-                      return Container(
-                        margin: const EdgeInsets.only(bottom: 12),
+                    
+                    // Note moyenne
+                    if (_rating != null && _rating!['totalRatings'] > 0) ...[
+                      Container(
                         padding: const EdgeInsets.all(16),
                         decoration: BoxDecoration(
-                          color: AppTheme.cardBackground,
+                          color: AppTheme.green50,
                           borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: AppTheme.borderLight),
+                          border: Border.all(color: AppTheme.green200),
                         ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
+                        child: Row(
                           children: [
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
-                                  review['userName'] ?? 'Utilisateur',
-                                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                                  (_rating!['averageRating'] as num).toStringAsFixed(1),
+                                  style: const TextStyle(
+                                    fontSize: 32,
                                     fontWeight: FontWeight.bold,
-                                    color: AppTheme.textPrimary,
+                                    color: AppTheme.textGreen,
                                   ),
                                 ),
                                 Row(
-                                  children: [
-                                    ...List.generate(5, (index) {
-                                      return Icon(
-                                        index < (review['rating'] as int? ?? 0)
-                                            ? Icons.star
-                                            : Icons.star_border,
-                                        size: 16,
-                                        color: Colors.amber,
-                                      );
-                                    }),
-                                  ],
+                                  children: List.generate(5, (index) {
+                                    final avgRating = (_rating!['averageRating'] as num).toDouble();
+                                    return Icon(
+                                      index < avgRating.round()
+                                          ? Icons.star
+                                          : (index < avgRating ? Icons.star_half : Icons.star_border),
+                                      size: 20,
+                                      color: Colors.amber,
+                                    );
+                                  }),
                                 ),
                               ],
                             ),
-                            if (review['comment'] != null && review['comment'].toString().isNotEmpty) ...[
-                              const SizedBox(height: 8),
-                              Text(
-                                review['comment'].toString(),
-                                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                  color: AppTheme.textSecondary,
-                                ),
+                            const SizedBox(width: 24),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    '${_rating!['totalRatings']} ${(_rating!['totalRatings'] as int) > 1 ? 'avis' : 'avis'}',
+                                    style: const TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w600,
+                                      color: AppTheme.textPrimary,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    'Basé sur les avis des utilisateurs',
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      color: AppTheme.textTertiary,
+                                    ),
+                                  ),
+                                ],
                               ),
-                            ],
-                            if (review['createdAt'] != null) ...[
-                              const SizedBox(height: 8),
-                              Text(
-                                _formatDate(review['createdAt'].toString()),
-                                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                  color: AppTheme.textTertiary,
-                                ),
-                              ),
-                            ],
+                            ),
                           ],
                         ),
-                      );
-                    }).toList(),
+                      ),
+                      const SizedBox(height: 16),
+                    ],
+                    
+                    // Liste des avis
+                    if (_reviews.isNotEmpty) ...[
+                      ..._reviews.take(10).map((review) {
+                        return Container(
+                          margin: const EdgeInsets.only(bottom: 12),
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            color: AppTheme.cardBackground,
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: AppTheme.borderLight),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Expanded(
+                                    child: Text(
+                                      review['userName'] ?? 'Utilisateur anonyme',
+                                      style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                                        fontWeight: FontWeight.bold,
+                                        color: AppTheme.textPrimary,
+                                      ),
+                                    ),
+                                  ),
+                                  Row(
+                                    children: [
+                                      ...List.generate(5, (index) {
+                                        return Icon(
+                                          index < (review['rating'] as int? ?? 0)
+                                              ? Icons.star
+                                              : Icons.star_border,
+                                          size: 18,
+                                          color: Colors.amber,
+                                        );
+                                      }),
+                                    ],
+                                  ),
+                                ],
+                              ),
+                              if (review['comment'] != null && review['comment'].toString().isNotEmpty) ...[
+                                const SizedBox(height: 8),
+                                Text(
+                                  review['comment'].toString(),
+                                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                    color: AppTheme.textSecondary,
+                                  ),
+                                ),
+                              ],
+                              if (review['createdAt'] != null) ...[
+                                const SizedBox(height: 8),
+                                Text(
+                                  _formatDate(review['createdAt'].toString()),
+                                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                    color: AppTheme.textTertiary,
+                                  ),
+                                ),
+                              ],
+                            ],
+                          ),
+                        );
+                      }).toList(),
+                      if (_reviews.length > 10)
+                        Padding(
+                          padding: const EdgeInsets.only(top: 8),
+                          child: Text(
+                            'Et ${_reviews.length - 10} autre${_reviews.length - 10 > 1 ? 's' : ''} avis...',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: AppTheme.textTertiary,
+                              fontStyle: FontStyle.italic,
+                            ),
+                          ),
+                        ),
+                    ] else if (_rating == null || (_rating!['totalRatings'] as int) == 0) ...[
+                      Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: AppTheme.green50,
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Row(
+                          children: [
+                            Icon(Icons.info_outline, color: AppTheme.textTertiary, size: 20),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Text(
+                                'Aucun avis pour le moment',
+                                style: TextStyle(color: AppTheme.textSecondary),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
                     const SizedBox(height: 24),
                   ],
 

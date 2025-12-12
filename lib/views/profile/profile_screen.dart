@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../viewmodels/auth_viewmodel.dart';
 import '../../services/backend_api_service.dart';
+import '../../config/app_config.dart';
 import '../../models/user_model.dart';
 import '../../models/document_model.dart';
 import '../../theme/app_theme.dart';
@@ -17,6 +18,7 @@ import 'edit_language_screen.dart';
 import 'legal_info_screen.dart';
 import 'edit_personal_info_screen.dart';
 import 'family_members_screen.dart';
+import 'my_reports_screen.dart';
 
 /// Page Profile modernisée, intégrée à BackendApiService + Provider
 /// - Thème dégradé vert
@@ -110,14 +112,22 @@ class _ProfileScreenState extends State<ProfileScreen>
   }
 
   Future<void> _loadDocuments() async {
-    // Les documents sont stockés sur le backend
-    // Pour l'instant, on ne charge pas les documents depuis l'API
-    // car l'endpoint GET /documents n'est pas documenté dans le guide
-    // TODO: Implémenter la récupération des documents depuis l'API si l'endpoint existe
     if (!mounted) return;
-    setState(() {
-      _docsIdentite = [];
-    });
+    try {
+      final documents = await BackendApiService.getDocuments(widget.userId);
+      if (!mounted) return;
+      setState(() {
+        _docsIdentite = documents.where((doc) => doc.type == 'identity').toList();
+      });
+    } catch (e) {
+      if (AppConfig.enableLogging) {
+        print('❌ Erreur lors du chargement des documents: $e');
+      }
+      if (!mounted) return;
+      setState(() {
+        _docsIdentite = [];
+      });
+    }
   }
 
 
@@ -290,7 +300,7 @@ class _ProfileScreenState extends State<ProfileScreen>
   }
 
   Widget _tile(String title, IconData icon,
-      {VoidCallback? onTap, Color? leadingColor}) {
+      {VoidCallback? onTap, Color? leadingColor, Widget? trailing}) {
     return ListTile(
       leading: Container(
         width: 42,
@@ -303,9 +313,19 @@ class _ProfileScreenState extends State<ProfileScreen>
       ),
       title: Text(title,
           style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),
-      trailing: const Icon(Icons.chevron_right_rounded),
+      trailing: trailing ?? const Icon(Icons.chevron_right_rounded),
       onTap: onTap,
     );
+  }
+
+  Future<int> _getOpenReportsCount() async {
+    try {
+      // Plus besoin de passer userId, le backend filtre automatiquement via le token JWT
+      final reports = await BackendApiService.getMyReports();
+      return reports.where((r) => r.status == 'open').length;
+    } catch (e) {
+      return 0;
+    }
   }
 
   String _extractFirstName(String fullName) {
@@ -346,9 +366,10 @@ class _ProfileScreenState extends State<ProfileScreen>
   }
 
   void _openPreview(DocumentModel d) {
+    final imageUrl = d.documentUrl ?? d.path;
     showDialog(
       context: context,
-      barrierColor: Colors.black.withOpacity(0.85),
+      barrierColor: Colors.black.withValues(alpha: 0.85),
       builder: (_) => GestureDetector(
         onTap: () => Navigator.of(context).pop(),
         child: InteractiveViewer(
@@ -357,9 +378,11 @@ class _ProfileScreenState extends State<ProfileScreen>
           child: Center(
             child: ClipRRect(
               borderRadius: BorderRadius.circular(12),
-              child: d.path.startsWith('http')
-                  ? Image.network(d.path)
-                  : Image.file(File(d.path)),
+              child: imageUrl != null && (imageUrl.startsWith('http') || imageUrl.startsWith('https'))
+                  ? Image.network(imageUrl)
+                  : imageUrl != null
+                      ? Image.file(File(imageUrl))
+                      : const Icon(Icons.description, size: 100),
             ),
           ),
         ),
@@ -669,6 +692,49 @@ class _ProfileScreenState extends State<ProfileScreen>
                       );
                     }),
                   ]),
+                  _sectionTitle('Support'),
+                  _card([
+                    FutureBuilder<int>(
+                      future: _getOpenReportsCount(),
+                      builder: (context, snapshot) {
+                        final count = snapshot.data ?? 0;
+                        return _tile('Mes signalements', Icons.report_problem,
+                            leadingColor: Colors.orange, onTap: () {
+                          Navigator.of(context).push(
+                            MaterialPageRoute(
+                          builder: (_) => const MyReportsScreen(),
+                        ),
+                      );
+                      
+                      // Recharger le badge après retour de MyReportsScreen
+                      // (au cas où un signalement aurait été créé depuis un autre écran)
+                      if (mounted) {
+                        setState(() {
+                          // Le badge se rechargera automatiquement via _getOpenReportsCount()
+                        });
+                      }
+                        },
+                        trailing: count > 0
+                            ? Container(
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 8, vertical: 4),
+                                decoration: BoxDecoration(
+                                  color: Colors.orange,
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: Text(
+                                  count.toString(),
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 12,
+                                  ),
+                                ),
+                              )
+                            : null);
+                      },
+                    ),
+                  ]),
                   _sectionTitle('Confidentialité'),
                   _card([
                     _tile('Informations légales', Icons.info_outline,
@@ -728,29 +794,11 @@ class _ProfileScreenState extends State<ProfileScreen>
                     ),
                     if (_docsIdentite.isNotEmpty) ...[
                       const Divider(),
-                      SizedBox(
-                        height: 100,
-                        child: ListView.builder(
-                          scrollDirection: Axis.horizontal,
-                          itemCount: _docsIdentite.length,
-                          itemBuilder: (_, i) {
-                            final d = _docsIdentite[i];
-                            return Padding(
-                              padding: const EdgeInsets.all(8.0),
-                              child: GestureDetector(
-                                onTap: () => _openPreview(d),
-                                child: ClipRRect(
-                                  borderRadius: BorderRadius.circular(12),
-                                  child: Image.file(File(d.path),
-                                      width: 120,
-                                      height: 100,
-                                      fit: BoxFit.cover),
-                                ),
-                              ),
-                            );
-                          },
-                        ),
-                      )
+                      ..._docsIdentite.map((doc) => _DocumentCard(
+                        document: doc,
+                        onTap: () => _openPreview(doc),
+                        onReupload: doc.isRejected ? () => _addDocument(doc.type) : null,
+                      )),
                     ]
                   ]),
                   const SizedBox(height: 20),
@@ -778,5 +826,175 @@ class _ProfileScreenState extends State<ProfileScreen>
       ),
       ),
     );
+  }
+}
+
+/// Widget pour afficher un document avec son statut
+class _DocumentCard extends StatelessWidget {
+  final DocumentModel document;
+  final VoidCallback onTap;
+  final VoidCallback? onReupload;
+
+  const _DocumentCard({
+    required this.document,
+    required this.onTap,
+    this.onReupload,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final imageUrl = document.documentUrl ?? document.path;
+    
+    // Couleur et icône selon le statut
+    Color statusColor;
+    IconData statusIcon;
+    String statusText;
+    
+    switch (document.status) {
+      case 'verified':
+        statusColor = AppTheme.emerald;
+        statusIcon = Icons.check_circle;
+        statusText = 'Vérifié';
+        break;
+      case 'rejected':
+        statusColor = AppTheme.error;
+        statusIcon = Icons.cancel;
+        statusText = 'Rejeté';
+        break;
+      case 'pending':
+      default:
+        statusColor = Colors.orange;
+        statusIcon = Icons.access_time;
+        statusText = 'En attente';
+    }
+
+    return Card(
+      margin: const EdgeInsets.only(bottom: 12),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(12),
+        child: Padding(
+          padding: const EdgeInsets.all(12),
+          child: Row(
+            children: [
+              // Miniature du document
+              Container(
+                width: 60,
+                height: 60,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(8),
+                  color: Colors.grey[200],
+                ),
+                child: imageUrl != null && (imageUrl.startsWith('http') || imageUrl.startsWith('https'))
+                    ? ClipRRect(
+                        borderRadius: BorderRadius.circular(8),
+                        child: Image.network(
+                          imageUrl,
+                          fit: BoxFit.cover,
+                          errorBuilder: (_, __, ___) => Icon(Icons.description, color: Colors.grey[400]),
+                        ),
+                      )
+                    : imageUrl != null
+                        ? ClipRRect(
+                            borderRadius: BorderRadius.circular(8),
+                            child: Image.file(
+                              File(imageUrl),
+                              fit: BoxFit.cover,
+                              errorBuilder: (_, __, ___) => Icon(Icons.description, color: Colors.grey[400]),
+                            ),
+                          )
+                        : Icon(Icons.description, color: Colors.grey[400]),
+              ),
+              const SizedBox(width: 12),
+              
+              // Informations du document
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Icon(statusIcon, size: 16, color: statusColor),
+                        const SizedBox(width: 6),
+                        Text(
+                          statusText,
+                          style: TextStyle(
+                            color: statusColor,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 14,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      _getDocumentTypeName(document.type),
+                      style: Theme.of(context).textTheme.bodyMedium,
+                    ),
+                    // Afficher la raison de rejet si présente
+                    if (document.isRejected && document.rejectReason != null) ...[
+                      const SizedBox(height: 8),
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: AppTheme.error.withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Row(
+                          children: [
+                            Icon(Icons.info_outline, size: 16, color: AppTheme.error),
+                            const SizedBox(width: 6),
+                            Expanded(
+                              child: Text(
+                                document.rejectReason!,
+                                style: TextStyle(
+                                  color: AppTheme.error,
+                                  fontSize: 12,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      if (onReupload != null)
+                        SizedBox(
+                          width: double.infinity,
+                          child: ElevatedButton.icon(
+                            onPressed: onReupload,
+                            icon: const Icon(Icons.upload, size: 16),
+                            label: const Text('Téléverser à nouveau'),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: AppTheme.primary,
+                              foregroundColor: Colors.white,
+                              padding: const EdgeInsets.symmetric(vertical: 8),
+                            ),
+                          ),
+                        ),
+                    ],
+                  ],
+                ),
+              ),
+              const Icon(Icons.chevron_right, color: Colors.grey),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  String _getDocumentTypeName(String type) {
+    switch (type) {
+      case 'identity':
+        return 'Pièce d\'identité';
+      case 'kbis':
+        return 'KBIS';
+      case 'insurance':
+        return 'Assurance';
+      case 'diploma':
+        return 'Diplôme/Certification';
+      default:
+        return 'Document';
+    }
   }
 }

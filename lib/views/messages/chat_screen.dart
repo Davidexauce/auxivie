@@ -3,6 +3,8 @@ import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import '../../viewmodels/message_viewmodel.dart';
 import '../../services/backend_api_service.dart';
+import '../../services/message_validator.dart';
+import '../../theme/app_theme.dart';
 import '../professionals/professional_detail_screen.dart';
 import '../families/family_detail_screen.dart';
 
@@ -42,7 +44,79 @@ class _ChatScreenState extends State<ChatScreen> {
   }
 
   Future<void> _sendMessage() async {
-    if (_messageController.text.trim().isEmpty) {
+    final messageText = _messageController.text.trim();
+    
+    if (messageText.isEmpty) {
+      return;
+    }
+
+    // Valider le message pour détecter les données privées
+    final validationError = MessageValidator.validateMessage(messageText);
+    if (validationError != null) {
+      if (mounted) {
+        // Afficher une alerte explicative
+        showDialog(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: Row(
+              children: [
+                Icon(Icons.security, color: AppTheme.error, size: 28),
+                const SizedBox(width: 12),
+                const Expanded(
+                  child: Text(
+                    'Protection des données',
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  ),
+                ),
+              ],
+            ),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  validationError,
+                  style: const TextStyle(fontSize: 15),
+                ),
+                const SizedBox(height: 16),
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: AppTheme.primary.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        '💡 Pourquoi cette restriction ?',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 14,
+                        ),
+                      ),
+                      SizedBox(height: 8),
+                      Text(
+                        '• Protéger vos données personnelles\n'
+                        '• Assurer la sécurité des transactions\n'
+                        '• Garantir le suivi des prestations\n'
+                        '• Respecter les conditions d\'utilisation',
+                        style: TextStyle(fontSize: 13),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(),
+                child: const Text('J\'ai compris'),
+              ),
+            ],
+          ),
+        );
+      }
       return;
     }
 
@@ -51,7 +125,7 @@ class _ChatScreenState extends State<ChatScreen> {
     final success = await messageViewModel.sendMessage(
       senderId: widget.currentUserId,
       receiverId: widget.otherUserId,
-      content: _messageController.text.trim(),
+      content: messageText,
     );
 
     if (success && mounted) {
@@ -249,7 +323,7 @@ class _ChatScreenState extends State<ChatScreen> {
               color: Theme.of(context).scaffoldBackgroundColor,
               boxShadow: [
                 BoxShadow(
-                  color: Colors.grey.withOpacity(0.2),
+                  color: Colors.grey.withValues(alpha: 0.2),
                   spreadRadius: 1,
                   blurRadius: 4,
                   offset: const Offset(0, -2),
@@ -264,6 +338,12 @@ class _ChatScreenState extends State<ChatScreen> {
                       controller: _messageController,
                       decoration: InputDecoration(
                         hintText: 'Tapez votre message...',
+                        helperText: '💬 Communiquez via la plateforme pour votre sécurité',
+                        helperStyle: TextStyle(
+                          fontSize: 11,
+                          color: Colors.grey[600],
+                          fontStyle: FontStyle.italic,
+                        ),
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(24),
                         ),
@@ -284,7 +364,7 @@ class _ChatScreenState extends State<ChatScreen> {
                       color: Theme.of(context).primaryColor,
                     ),
                     style: IconButton.styleFrom(
-                      backgroundColor: Theme.of(context).primaryColor.withOpacity(0.1),
+                      backgroundColor: Theme.of(context).primaryColor.withValues(alpha: 0.1),
                       padding: const EdgeInsets.all(12),
                     ),
                   ),
@@ -320,7 +400,7 @@ class _MessageBubble extends StatelessWidget {
           if (!isFromCurrentUser) ...[
             CircleAvatar(
               radius: 16,
-              backgroundColor: Theme.of(context).primaryColor.withOpacity(0.3),
+                      backgroundColor: Theme.of(context).primaryColor.withValues(alpha: 0.3),
               child: Text(
                 'U',
                 style: TextStyle(
@@ -369,7 +449,7 @@ class _MessageBubble extends StatelessWidget {
             const SizedBox(width: 8),
             CircleAvatar(
               radius: 16,
-              backgroundColor: Theme.of(context).primaryColor.withOpacity(0.3),
+                      backgroundColor: Theme.of(context).primaryColor.withValues(alpha: 0.3),
               child: Text(
                 'Moi',
                 style: TextStyle(

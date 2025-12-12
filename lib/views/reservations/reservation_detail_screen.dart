@@ -5,6 +5,9 @@ import '../../viewmodels/reservation_viewmodel.dart';
 import '../../viewmodels/auth_viewmodel.dart';
 import '../../services/backend_api_service.dart';
 import '../../models/user_model.dart';
+import '../../theme/app_theme.dart';
+import '../reports/create_report_from_reservation_screen.dart';
+import '../reviews/create_review_modal.dart';
 
 /// Écran de détails d'une réservation
 class ReservationDetailScreen extends StatefulWidget {
@@ -86,6 +89,61 @@ class _ReservationDetailScreenState extends State<ReservationDetailScreen> {
     }
   }
 
+  Future<void> _navigateToCreateReport() async {
+    final authViewModel = Provider.of<AuthViewModel>(context, listen: false);
+    final currentUser = authViewModel.currentUser;
+    
+    if (currentUser == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Utilisateur non connecté'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+    
+    // Déterminer quel utilisateur signaler
+    UserModel? reportedUser;
+    if (currentUser.userType == 'professionnel') {
+      // Si le professionnel signale, c'est la famille qui est signalée
+      reportedUser = _user;
+    } else {
+      // Si la famille signale, c'est le professionnel qui est signalé
+      reportedUser = _professional;
+    }
+    
+    if (reportedUser == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Impossible de déterminer l\'utilisateur à signaler'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+    
+    final result = await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => CreateReportFromReservationScreen(
+          currentUserId: currentUser.id!,
+          reservation: widget.reservation,
+          reportedUser: reportedUser,
+        ),
+      ),
+    );
+
+    if (result == true && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('✅ Signalement envoyé'),
+          backgroundColor: Colors.green,
+        ),
+      );
+    }
+  }
+
   Future<void> _cancelReservation() async {
     final confirmed = await showDialog<bool>(
       context: context,
@@ -153,8 +211,91 @@ class _ReservationDetailScreenState extends State<ReservationDetailScreen> {
     }
   }
 
+  Future<bool> _hasReviewedUser() async {
+    final authViewModel = Provider.of<AuthViewModel>(context, listen: false);
+    final currentUser = authViewModel.currentUser;
+    
+    if (currentUser == null) return false;
+    
+    // Déterminer quel utilisateur a été noté
+    UserModel? reviewedUser;
+    if (currentUser.userType == 'professionnel') {
+      reviewedUser = _user; // Le professionnel note la famille
+    } else {
+      reviewedUser = _professional; // La famille note le professionnel
+    }
+    
+    if (reviewedUser == null) return false;
+    
+    // Vérifier si un avis existe déjà pour cette réservation et cet utilisateur
+    try {
+      final reviews = await BackendApiService.getReviews(reviewedUser.id);
+      return reviews.any((review) => review.reservationId == widget.reservation.id);
+    } catch (e) {
+      return false;
+    }
+  }
+
+  Future<void> _navigateToCreateReview() async {
+    final authViewModel = Provider.of<AuthViewModel>(context, listen: false);
+    final currentUser = authViewModel.currentUser;
+    
+    if (currentUser == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Utilisateur non connecté'),
+          backgroundColor: AppTheme.error,
+        ),
+      );
+      return;
+    }
+    
+    // Déterminer quel utilisateur noter
+    UserModel? reviewedUser;
+    bool isProfessionalReviewingFamily = false;
+    
+    if (currentUser.userType == 'professionnel') {
+      reviewedUser = _user; // Le professionnel note la famille
+      isProfessionalReviewingFamily = true;
+    } else {
+      reviewedUser = _professional; // La famille note le professionnel
+    }
+    
+    if (reviewedUser == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Impossible de déterminer l\'utilisateur à noter'),
+          backgroundColor: AppTheme.error,
+        ),
+      );
+      return;
+    }
+    
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (context) => CreateReviewModal(
+        reviewedUser: reviewedUser!,
+        reservationId: widget.reservation.id,
+        isProfessionalReviewingFamily: isProfessionalReviewingFamily,
+      ),
+    );
+
+    if (result == true && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text('✅ Avis envoyé avec succès'),
+          backgroundColor: AppTheme.emerald,
+        ),
+      );
+      // Recharger pour mettre à jour l'affichage
+      setState(() {});
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
+    final authViewModel = Provider.of<AuthViewModel>(context, listen: false);
+    final currentUser = authViewModel.currentUser;
     final statusColors = {
       'pending': Colors.orange,
       'confirmed': Colors.green,
@@ -193,7 +334,7 @@ class _ReservationDetailScreenState extends State<ReservationDetailScreen> {
                           Container(
                             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                             decoration: BoxDecoration(
-                              color: color.withOpacity(0.2),
+                              color: color.withValues(alpha: 0.2),
                               borderRadius: BorderRadius.circular(20),
                             ),
                             child: Text(
@@ -365,6 +506,62 @@ class _ReservationDetailScreenState extends State<ReservationDetailScreen> {
 
                   const SizedBox(height: 32),
 
+                  // Bouton pour créer un avis (si réservation terminée ou confirmée)
+                  if ((widget.reservation.status == 'completed' || widget.reservation.status == 'confirmed') && currentUser != null) ...[
+                    FutureBuilder<bool>(
+                      future: _hasReviewedUser(),
+                      builder: (context, snapshot) {
+                        if (snapshot.connectionState == ConnectionState.waiting) {
+                          return const SizedBox.shrink();
+                        }
+                        
+                        final hasReviewed = snapshot.data ?? false;
+                        if (hasReviewed) {
+                          return Container(
+                            padding: const EdgeInsets.all(16),
+                            decoration: BoxDecoration(
+                              color: AppTheme.green50,
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(color: AppTheme.green200),
+                            ),
+                            child: Row(
+                              children: [
+                                Icon(Icons.check_circle, color: AppTheme.emerald, size: 24),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: Text(
+                                    'Vous avez déjà donné un avis pour cette réservation',
+                                    style: TextStyle(color: AppTheme.textGreen),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          );
+                        }
+                        
+                        return SizedBox(
+                          width: double.infinity,
+                          child: OutlinedButton.icon(
+                            onPressed: _navigateToCreateReview,
+                            icon: const Icon(Icons.star_outline),
+                            label: Text(
+                              currentUser.userType == 'professionnel'
+                                  ? 'Noter la famille'
+                                  : 'Noter le professionnel',
+                            ),
+                            style: OutlinedButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(vertical: 16),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                    const SizedBox(height: 16),
+                  ],
+
                   // Actions
                   if (widget.reservation.status == 'pending') ...[
                     SizedBox(
@@ -391,6 +588,25 @@ class _ReservationDetailScreenState extends State<ReservationDetailScreen> {
                         padding: const EdgeInsets.symmetric(vertical: 16),
                       ),
                       child: const Text('Annuler la réservation'),
+                    ),
+                  ),
+                  
+                  // Bouton signaler un problème
+                  const SizedBox(height: 16),
+                  SizedBox(
+                    width: double.infinity,
+                    height: 50,
+                    child: OutlinedButton.icon(
+                      onPressed: _navigateToCreateReport,
+                      icon: const Icon(Icons.report_problem),
+                      label: const Text('Signaler un problème'),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: Colors.orange,
+                        side: const BorderSide(color: Colors.orange, width: 2),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
                     ),
                   ),
                 ],

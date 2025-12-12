@@ -8,6 +8,9 @@ import '../models/message_model.dart';
 import '../models/badge_model.dart';
 import '../models/rating_model.dart';
 import '../models/review_model.dart';
+import '../models/document_model.dart';
+import '../models/report_model.dart';
+import '../models/settings_model.dart';
 import '../config/app_config.dart';
 
 /// Service pour les appels API vers le backend Dashboard Auxivie
@@ -38,10 +41,25 @@ class BackendApiService {
 
   /// Récupère le token depuis SharedPreferences
   static Future<String?> getToken() async {
-    if (_token != null) return _token;
+    if (_token != null) {
+      // Nettoyer le token en mémoire aussi
+      if (_token!.trim().startsWith('Bearer ')) {
+        _token = _token!.trim().substring(7).trim();
+      }
+      return _token;
+    }
     try {
       final prefs = await SharedPreferences.getInstance();
       _token = prefs.getString(_tokenKey);
+      // Nettoyer le token récupéré s'il contient "Bearer "
+      if (_token != null && _token!.trim().startsWith('Bearer ')) {
+        _token = _token!.trim().substring(7).trim();
+        // Réenregistrer le token nettoyé
+        await prefs.setString(_tokenKey, _token!);
+        if (AppConfig.enableLogging) {
+          print('⚠️ [TOKEN] Token nettoyé lors de la récupération (suppression de "Bearer ")');
+        }
+      }
     } catch (e) {
       if (AppConfig.enableLogging) {
         print('⚠️ Erreur lors de la récupération du token: $e');
@@ -53,13 +71,20 @@ class BackendApiService {
 
   /// Sauvegarde le token dans SharedPreferences
   static Future<void> setToken(String? token) async {
+    // Nettoyer le token si "Bearer " est déjà présent (ne stocker que le token JWT pur)
+    if (token != null && token.trim().startsWith('Bearer ')) {
+      token = token.trim().substring(7).trim();
+      if (AppConfig.enableLogging) {
+        print('⚠️ [TOKEN] Token nettoyé: "Bearer " supprimé du début avant stockage');
+      }
+    }
     _token = token;
     try {
       final prefs = await SharedPreferences.getInstance();
       if (token != null) {
         await prefs.setString(_tokenKey, token);
         if (AppConfig.enableLogging) {
-          print('✅ Token sauvegardé dans SharedPreferences');
+          print('✅ Token sauvegardé dans SharedPreferences (${token.length} caractères)');
         }
       } else {
         await prefs.remove(_tokenKey);
@@ -102,9 +127,27 @@ class BackendApiService {
       'x-request-type': 'mobile',
     };
     if (token != null) {
-      headers['Authorization'] = 'Bearer $token';
+      // Nettoyer le token si "Bearer " est déjà présent
+      final cleanToken = token.trim().startsWith('Bearer ') 
+          ? token.trim().substring(7).trim() 
+          : token.trim();
+      headers['Authorization'] = 'Bearer $cleanToken';
     }
     return headers;
+  }
+
+  /// Gère les erreurs d'authentification (401/403) en déconnectant l'utilisateur
+  static Future<void> _handleAuthError(int statusCode, String? message) async {
+    if (statusCode == 401 || statusCode == 403) {
+      if (AppConfig.enableLogging) {
+        print('🔐 [AUTH ERROR] Erreur d\'authentification ($statusCode): ${message ?? "Token invalide ou expiré"}');
+        print('🔐 [AUTH ERROR] Déconnexion automatique...');
+      }
+      // Supprimer le token invalide
+      await clearToken();
+      // Note: La redirection vers l'écran de connexion doit être gérée au niveau de l'UI
+      // via un callback ou un stream d'événements
+    }
   }
 
   /// Sauvegarde l'utilisateur actuel
@@ -135,6 +178,47 @@ class BackendApiService {
     return null;
   }
 
+  /// Décode le payload d'un token JWT pour diagnostiquer son contenu
+  /// Retourne null si le token est invalide
+  static Map<String, dynamic>? _decodeJwtPayload(String token) {
+    try {
+      // Un JWT est composé de 3 parties séparées par des points : header.payload.signature
+      final parts = token.split('.');
+      if (parts.length != 3) {
+        return null;
+      }
+      
+      // Décoder le payload (2ème partie)
+      final payload = parts[1];
+      
+      // Base64URL decode (JWT utilise Base64URL, pas Base64 standard)
+      // Remplacer les caractères spéciaux Base64URL
+      String normalized = payload.replaceAll('-', '+').replaceAll('_', '/');
+      
+      // Ajouter le padding si nécessaire
+      switch (normalized.length % 4) {
+        case 1:
+          normalized += '===';
+          break;
+        case 2:
+          normalized += '==';
+          break;
+        case 3:
+          normalized += '=';
+          break;
+      }
+      
+      // Décoder Base64
+      final decoded = utf8.decode(base64Decode(normalized));
+      return jsonDecode(decoded) as Map<String, dynamic>;
+    } catch (e) {
+      if (AppConfig.enableLogging) {
+        print('⚠️ [JWT DECODE] Erreur lors du décodage du token: $e');
+      }
+      return null;
+    }
+  }
+
   // ========== AUTHENTIFICATION ==========
 
   static Future<Map<String, dynamic>?> login(String email, String password) async {
@@ -143,7 +227,7 @@ class BackendApiService {
         Uri.parse('$baseUrl/auth/login'),
         headers: _getPublicHeaders(),
         body: jsonEncode({'email': email, 'password': password}),
-      ).timeout(AppConfig.apiTimeout);
+        ).timeout(AppConfig.apiTimeout);
 
       // Vérifier que la réponse est bien du JSON
       final contentType = response.headers['content-type'] ?? '';
@@ -161,13 +245,13 @@ class BackendApiService {
       if (response.statusCode == 200) {
         try {
           final data = json.decode(response.body) as Map<String, dynamic>;
-          if (data['token'] != null) {
+        if (data['token'] != null) {
             await setToken(data['token'] as String);
             if (data['user'] != null) {
               await saveCurrentUser(data['user'] as Map<String, dynamic>);
             }
-          }
-          return data;
+        }
+        return data;
         } on FormatException catch (e) {
           if (AppConfig.enableLogging) {
             print('❌ Erreur parsing JSON login: $e');
@@ -193,7 +277,7 @@ class BackendApiService {
       }
     } catch (e) {
       if (AppConfig.enableLogging) {
-        print('❌ Erreur login: $e');
+      print('❌ Erreur login: $e');
       }
       rethrow;
     }
@@ -211,7 +295,7 @@ class BackendApiService {
       final response = await http.get(
         Uri.parse('$baseUrl/users/$id'),
         headers: _getPublicHeaders(),
-      ).timeout(AppConfig.apiTimeout);
+        ).timeout(AppConfig.apiTimeout);
 
       if (response.statusCode == 200) {
         return UserModel.fromMap(json.decode(response.body) as Map<String, dynamic>);
@@ -230,7 +314,7 @@ class BackendApiService {
       final response = await http.get(
         Uri.parse('$baseUrl/users?userType=professionnel'),
         headers: _getPublicHeaders(),
-      ).timeout(AppConfig.apiTimeout);
+        ).timeout(AppConfig.apiTimeout);
 
       // Vérifier que la réponse est bien du JSON
       final contentType = response.headers['content-type'] ?? '';
@@ -247,7 +331,7 @@ class BackendApiService {
 
       if (response.statusCode == 200) {
         try {
-          final List<dynamic> data = json.decode(response.body);
+        final List<dynamic> data = json.decode(response.body);
           if (AppConfig.enableLogging) {
             print('✅ ${data.length} professionnel(s) récupéré(s) depuis l\'API');
           }
@@ -304,7 +388,7 @@ class BackendApiService {
       return [];
     } catch (e) {
       if (AppConfig.enableLogging) {
-        print('❌ Erreur getProfessionals: $e');
+      print('❌ Erreur getProfessionals: $e');
       }
       return [];
     }
@@ -317,7 +401,7 @@ class BackendApiService {
         Uri.parse('$baseUrl/users/sync'),
         headers: _getPublicHeaders(),
         body: jsonEncode(userData),
-      ).timeout(AppConfig.apiTimeout);
+        ).timeout(AppConfig.apiTimeout);
 
       // Vérifier que la réponse est bien du JSON
       final contentType = response.headers['content-type'] ?? '';
@@ -424,7 +508,7 @@ class BackendApiService {
       final response = await http.get(
         Uri.parse('$baseUrl/availabilities?professionnelId=$professionnelId'),
         headers: _getPublicHeaders(),
-      ).timeout(AppConfig.apiTimeout);
+        ).timeout(AppConfig.apiTimeout);
 
       if (response.statusCode == 200) {
         final List<dynamic> data = json.decode(response.body);
@@ -433,7 +517,7 @@ class BackendApiService {
       return [];
     } catch (e) {
       if (AppConfig.enableLogging) {
-        print('❌ Erreur getAvailabilities: $e');
+      print('❌ Erreur getAvailabilities: $e');
       }
       return [];
     }
@@ -456,12 +540,12 @@ class BackendApiService {
           'heureDebut': heureDebut,
           'heureFin': heureFin,
         }),
-      ).timeout(AppConfig.apiTimeout);
+        ).timeout(AppConfig.apiTimeout);
 
       return response.statusCode == 200 || response.statusCode == 201;
     } catch (e) {
       if (AppConfig.enableLogging) {
-        print('❌ Erreur saveAvailability: $e');
+      print('❌ Erreur saveAvailability: $e');
       }
       return false;
     }
@@ -473,12 +557,12 @@ class BackendApiService {
       final response = await http.delete(
         Uri.parse('$baseUrl/availabilities/$availabilityId'),
         headers: _getPublicHeaders(),
-      ).timeout(AppConfig.apiTimeout);
+        ).timeout(AppConfig.apiTimeout);
 
       return response.statusCode == 200;
     } catch (e) {
       if (AppConfig.enableLogging) {
-        print('❌ Erreur deleteAvailability: $e');
+      print('❌ Erreur deleteAvailability: $e');
       }
       return false;
     }
@@ -498,7 +582,7 @@ class BackendApiService {
       final response = await http.get(
         Uri.parse(url),
         headers: _getPublicHeaders(),
-      ).timeout(AppConfig.apiTimeout);
+        ).timeout(AppConfig.apiTimeout);
 
       if (response.statusCode == 200) {
         final List<dynamic> data = json.decode(response.body);
@@ -525,7 +609,7 @@ class BackendApiService {
               dateFin = DateTime(int.parse(parts[0]), int.parse(parts[1]), int.parse(parts[2]));
             }
           }
-
+          
           return ReservationModel(
             id: m['id'] as int?,
             userId: m['userId'] as int,
@@ -582,14 +666,14 @@ class BackendApiService {
 
   static Future<bool> createReservation(ReservationModel reservation) async {
     final result = await syncReservation({
-      'userId': reservation.userId,
-      'professionnelId': reservation.professionnelId,
-      'date': reservation.date.toIso8601String().split('T')[0],
-      'dateFin': reservation.dateFin != null ? reservation.dateFin!.toIso8601String().split('T')[0] : null,
-      'heure': reservation.heure,
+          'userId': reservation.userId,
+          'professionnelId': reservation.professionnelId,
+          'date': reservation.date.toIso8601String().split('T')[0],
+          'dateFin': reservation.dateFin != null ? reservation.dateFin!.toIso8601String().split('T')[0] : null,
+          'heure': reservation.heure,
       'heureFin': reservation.heureFin,
       'besoins': reservation.besoins,
-      'status': reservation.status,
+          'status': reservation.status,
     });
     return result != null;
   }
@@ -635,7 +719,7 @@ class BackendApiService {
       'heure': reservation.heure,
       'heureFin': reservation.heureFin,
       'besoins': reservation.besoins,
-      'status': reservation.status,
+          'status': reservation.status,
     });
     return result != null;
   }
@@ -647,7 +731,7 @@ class BackendApiService {
       final response = await http.get(
         Uri.parse('$baseUrl/messages?userId=$userId&partnerId=$partnerId'),
         headers: _getPublicHeaders(),
-      ).timeout(AppConfig.apiTimeout);
+        ).timeout(AppConfig.apiTimeout);
 
       if (response.statusCode == 200) {
         final List<dynamic> data = json.decode(response.body);
@@ -660,7 +744,7 @@ class BackendApiService {
           } catch (e) {
             timestamp = DateTime.now();
           }
-
+          
           return MessageModel(
             id: m['id'] as int?,
             senderId: m['senderId'] as int,
@@ -674,7 +758,7 @@ class BackendApiService {
       return [];
     } catch (e) {
       if (AppConfig.enableLogging) {
-        print('❌ Erreur getConversation: $e');
+      print('❌ Erreur getConversation: $e');
       }
       return [];
     }
@@ -686,7 +770,7 @@ class BackendApiService {
       final response = await http.get(
         Uri.parse('$baseUrl/messages/partners?userId=$userId'),
         headers: _getPublicHeaders(),
-      ).timeout(AppConfig.apiTimeout);
+        ).timeout(AppConfig.apiTimeout);
 
       if (response.statusCode == 200) {
         final List<dynamic> data = json.decode(response.body);
@@ -695,7 +779,7 @@ class BackendApiService {
       return [];
     } catch (e) {
       if (AppConfig.enableLogging) {
-        print('❌ Erreur getConversationPartners: $e');
+      print('❌ Erreur getConversationPartners: $e');
       }
       return [];
     }
@@ -712,7 +796,7 @@ class BackendApiService {
           'receiverId': receiverId,
           'content': content,
         }),
-      ).timeout(AppConfig.apiTimeout);
+        ).timeout(AppConfig.apiTimeout);
 
       if (response.statusCode == 200 || response.statusCode == 201) {
         return json.decode(response.body) as Map<String, dynamic>;
@@ -725,7 +809,7 @@ class BackendApiService {
       }
     } catch (e) {
       if (AppConfig.enableLogging) {
-        print('❌ Erreur sendMessage: $e');
+      print('❌ Erreur sendMessage: $e');
       }
       return null;
     }
@@ -745,7 +829,7 @@ class BackendApiService {
       final response = await http.get(
         Uri.parse('$baseUrl/reviews'),
         headers: _getPublicHeaders(),
-      ).timeout(AppConfig.apiTimeout);
+        ).timeout(AppConfig.apiTimeout);
 
       if (response.statusCode == 200) {
         final List<dynamic> data = json.decode(response.body);
@@ -764,42 +848,274 @@ class BackendApiService {
     }
   }
 
+  /// Récupérer tous les avis d'un professionnel
+  static Future<List<ReviewModel>> getProfessionalReviews(int professionalId) async {
+    try {
+      final response = await http.get(
+        Uri.parse('$baseUrl/reviews/professional/$professionalId'),
+        headers: _getPublicHeaders(),
+      ).timeout(AppConfig.apiTimeout);
+
+      if (response.statusCode == 200) {
+        final List<dynamic> data = json.decode(response.body);
+        return data.map((review) => ReviewModel.fromMap(review as Map<String, dynamic>)).toList();
+      }
+      return [];
+    } catch (e) {
+      if (AppConfig.enableLogging) {
+        print('❌ Erreur getProfessionalReviews: $e');
+      }
+      return [];
+    }
+  }
+
+  /// Récupérer tous les avis de l'utilisateur connecté
+  static Future<List<ReviewModel>> getUserReviews() async {
+    try {
+      final headers = await _getAuthHeaders();
+      final response = await http.get(
+        Uri.parse('$baseUrl/reviews/my'),
+        headers: headers,
+      ).timeout(AppConfig.apiTimeout);
+
+      if (response.statusCode == 200) {
+        final List<dynamic> data = json.decode(response.body);
+        return data.map((review) => ReviewModel.fromMap(review as Map<String, dynamic>)).toList();
+      }
+      return [];
+    } catch (e) {
+      if (AppConfig.enableLogging) {
+        print('❌ Erreur getUserReviews: $e');
+      }
+      return [];
+    }
+  }
+
+  /// Supprimer un avis
+  static Future<bool> deleteReview(int reviewId) async {
+    try {
+      final headers = await _getAuthHeaders();
+      final response = await http.delete(
+        Uri.parse('$baseUrl/reviews/$reviewId'),
+        headers: headers,
+      ).timeout(AppConfig.apiTimeout);
+
+      return response.statusCode == 200 || response.statusCode == 204;
+    } catch (e) {
+      if (AppConfig.enableLogging) {
+        print('❌ Erreur deleteReview: $e');
+      }
+      return false;
+    }
+  }
+
+  /// Vérifier si l'utilisateur a déjà noté une réservation
+  static Future<bool> hasUserReviewedReservation(int reservationId) async {
+    try {
+      final headers = await _getAuthHeaders();
+      final response = await http.get(
+        Uri.parse('$baseUrl/reviews/check/$reservationId'),
+        headers: headers,
+      ).timeout(AppConfig.apiTimeout);
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        return data['hasReviewed'] == true;
+      }
+      return false;
+    } catch (e) {
+      if (AppConfig.enableLogging) {
+        print('❌ Erreur hasUserReviewedReservation: $e');
+      }
+      return false;
+    }
+  }
+
+  /// Obtenir les statistiques d'un professionnel
+  static Future<Map<String, dynamic>?> getProfessionalStats(int professionalId) async {
+    try {
+      final response = await http.get(
+        Uri.parse('$baseUrl/reviews/stats/$professionalId'),
+        headers: _getPublicHeaders(),
+      ).timeout(AppConfig.apiTimeout);
+
+      if (response.statusCode == 200) {
+        return json.decode(response.body) as Map<String, dynamic>;
+      }
+      return null;
+    } catch (e) {
+      if (AppConfig.enableLogging) {
+        print('❌ Erreur getProfessionalStats: $e');
+      }
+      return null;
+    }
+  }
+
   /// Crée un avis (authentifié)
+  /// Le userId (reviewerId - utilisateur qui donne l'avis) est automatiquement extrait du token JWT côté backend
+  /// Le backend utilise req.user.userId extrait du token JWT (même configuration que createReport)
   static Future<Map<String, dynamic>?> createReview({
-    required int professionalId,
-    required int userId,
+    required int professionalId, // L'utilisateur noté (peut être un professionnel ou une famille)
     required int rating,
     String? comment,
-    String? userName,
     int? reservationId,
   }) async {
     try {
+      final token = await getToken();
+      
+      // Vérifier que le token est présent
+      if (token == null) {
+        if (AppConfig.enableLogging) {
+          print('❌ [REVIEW] Erreur: Token d\'authentification manquant');
+        }
+        return null;
+      }
+
       final headers = await _getAuthHeaders();
+      
+      // Configuration identique à createReport :
+      // - Le reviewerId (userId de l'utilisateur qui donne l'avis) est extrait automatiquement du token JWT côté backend
+      // - Le backend utilise req.user.userId extrait du token JWT
+      // - On envoie uniquement les données nécessaires (professionalId, rating, reservationId, comment)
+      final payload = <String, dynamic>{
+        'professionalId': professionalId, // L'utilisateur noté (professionnel ou famille)
+        'rating': rating,
+      };
+      
+      if (reservationId != null && reservationId > 0) {
+        payload['reservationId'] = reservationId;
+      }
+      
+      if (comment != null && comment.trim().isNotEmpty) {
+        payload['comment'] = comment.trim();
+      }
+      
+      // Décoder le token JWT pour diagnostiquer
+      Map<String, dynamic>? jwtPayload;
+      if (token != null) {
+        jwtPayload = _decodeJwtPayload(token);
+      }
+      
+      if (AppConfig.enableLogging) {
+        print('📡 [REVIEW] Création avis (même config que createReport):');
+        print('   professionalId (utilisateur noté): $professionalId');
+        print('   rating: $rating');
+        if (reservationId != null && reservationId > 0) {
+          print('   reservationId: $reservationId');
+        }
+        if (comment != null && comment.trim().isNotEmpty) {
+          print('   comment: ${comment.trim().length > 50 ? comment.trim().substring(0, 50) + "..." : comment.trim()}');
+        }
+        print('   Le reviewerId (userId qui donne l\'avis) sera extrait du token JWT côté backend');
+        print('   Le backend utilise req.user.userId (comme pour createReport)');
+        
+        // Afficher le contenu du token JWT pour diagnostic
+        if (jwtPayload != null) {
+          final userId = jwtPayload['userId'] ?? jwtPayload['id'];
+          final email = jwtPayload['email'];
+          print('   🔍 [DIAGNOSTIC] Contenu du token JWT:');
+          print('      - userId dans le token: $userId (${userId?.runtimeType})');
+          print('      - id dans le token: ${jwtPayload['id']}');
+          print('      - email dans le token: $email');
+          print('      - Toutes les clés du token: ${jwtPayload.keys.join(", ")}');
+          print('   ⚠️ [DIAGNOSTIC] Le backend doit utiliser ce userId pour l\'insertion dans reviews');
+          print('   ⚠️ [DIAGNOSTIC] Si userId est null ou invalide, le backend doit gérer cette erreur');
+        } else {
+          print('   ⚠️ [DIAGNOSTIC] Impossible de décoder le token JWT');
+        }
+        
+        print('📡 [REVIEW] Payload JSON: ${jsonEncode(payload)}');
+        print('📡 [REVIEW] URL: $baseUrl/reviews');
+        print('📡 [REVIEW] Headers: ${headers.keys.join(", ")}');
+        print('📡 [REVIEW] Token présent: ${headers.containsKey('Authorization')}');
+        if (headers.containsKey('Authorization')) {
+          final authHeader = headers['Authorization']!;
+          final previewLength = authHeader.length > 30 ? 30 : authHeader.length;
+          print('📡 [REVIEW] Authorization header (premiers $previewLength chars): ${authHeader.substring(0, previewLength)}...');
+        }
+      }
+      
       final response = await http.post(
         Uri.parse('$baseUrl/reviews'),
         headers: headers,
-        body: jsonEncode({
-          'professionalId': professionalId,
-          'userId': userId,
-          'rating': rating,
-          'comment': comment,
-          'userName': userName,
-          'reservationId': reservationId ?? 0,
-        }),
+        body: jsonEncode(payload),
       ).timeout(AppConfig.apiTimeout);
 
+      if (AppConfig.enableLogging) {
+        print('📡 [REVIEW] Status Code: ${response.statusCode}');
+        print('📡 [REVIEW] Response Headers: ${response.headers}');
+      }
+
+      // Gérer les erreurs d'authentification (même logique que createReport)
+      if (response.statusCode == 401 || response.statusCode == 403) {
+        try {
+          final errorData = json.decode(response.body);
+          final errorMessage = errorData['message'] as String?;
+          await _handleAuthError(response.statusCode, errorMessage);
+        } catch (e) {
+          await _handleAuthError(response.statusCode, 'Token invalide ou expiré');
+        }
+        
+        if (AppConfig.enableLogging) {
+          print('❌ [REVIEW] Token invalide - L\'utilisateur doit se reconnecter pour créer un avis');
+        }
+        return null;
+      }
+
       if (response.statusCode == 200 || response.statusCode == 201) {
+        if (AppConfig.enableLogging) {
+          print('✅ [REVIEW] Avis créé avec succès');
+          print('📡 [REVIEW] Response Body: ${response.body}');
+        }
         return json.decode(response.body) as Map<String, dynamic>;
       } else {
-        final error = json.decode(response.body);
-        if (AppConfig.enableLogging) {
-          print('❌ Erreur createReview: ${response.statusCode} - ${error['message'] ?? response.body}');
+        // Vérifier le Content-Type
+        final contentType = response.headers['content-type'] ?? '';
+        if (!contentType.contains('application/json') && response.body.isNotEmpty) {
+          if (AppConfig.enableLogging) {
+            print('❌ [REVIEW] Erreur createReview: Le serveur a retourné du HTML');
+            print('Réponse: ${response.body.substring(0, response.body.length > 500 ? 500 : response.body.length)}');
+          }
+          return null;
+        }
+        
+        try {
+          final error = json.decode(response.body);
+          final errorMessage = error['message'] ?? response.body;
+          final errorDetails = error['error'] as String?;
+          
+          if (AppConfig.enableLogging) {
+            print('❌ [REVIEW] Erreur createReview: ${response.statusCode} - $errorMessage');
+            if (errorDetails != null) {
+              print('❌ [REVIEW] Détails de l\'erreur: $errorDetails');
+            }
+            print('📡 [REVIEW] Response Body complet:');
+            print('${response.body}');
+            
+            // Analyser l'erreur de contrainte de clé étrangère (même diagnostic que createReport)
+            if (errorDetails != null && errorDetails.contains('foreign key constraint')) {
+              print('⚠️ [REVIEW] PROBLÈME: Contrainte de clé étrangère échouée');
+              print('⚠️ [REVIEW] Cela signifie que le userId extrait du token JWT n\'existe pas dans la table users');
+              print('⚠️ [REVIEW] Solutions côté backend (identique à createReport):');
+              print('   1. Vérifier que le backend utilise req.user.userId (et non req.user.id)');
+              print('   2. Vérifier que req.user.userId existe dans la table users avant insertion');
+              print('   3. Le token JWT doit contenir userId (comme pour createReport)');
+              print('⚠️ [REVIEW] Solutions côté client:');
+              print('   1. Se reconnecter pour obtenir un nouveau token valide');
+              print('   2. Vérifier que l\'utilisateur est bien connecté');
+            }
+          }
+        } catch (parseError) {
+          if (AppConfig.enableLogging) {
+            print('❌ [REVIEW] Erreur parsing JSON: $parseError');
+            print('❌ [REVIEW] Réponse brute: ${response.body}');
+          }
         }
         return null;
       }
     } catch (e) {
       if (AppConfig.enableLogging) {
-        print('❌ Erreur createReview: $e');
+        print('❌ [REVIEW] Erreur createReview: $e');
       }
       return null;
     }
@@ -812,7 +1128,7 @@ class BackendApiService {
       final response = await http.get(
         Uri.parse('$baseUrl/ratings?userId=$userId'),
         headers: _getPublicHeaders(),
-      ).timeout(AppConfig.apiTimeout);
+        ).timeout(AppConfig.apiTimeout);
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
@@ -823,7 +1139,7 @@ class BackendApiService {
       return null;
     } catch (e) {
       if (AppConfig.enableLogging) {
-        print('❌ Erreur getRating: $e');
+      print('❌ Erreur getRating: $e');
       }
       return null;
     }
@@ -836,7 +1152,7 @@ class BackendApiService {
       final response = await http.get(
         Uri.parse('$baseUrl/badges?userId=$userId'),
         headers: _getPublicHeaders(),
-      ).timeout(AppConfig.apiTimeout);
+        ).timeout(AppConfig.apiTimeout);
 
       if (response.statusCode == 200) {
         final List<dynamic> data = json.decode(response.body);
@@ -862,11 +1178,11 @@ class BackendApiService {
     try {
       final uri = Uri.parse('$baseUrl/documents/upload');
       final request = http.MultipartRequest('POST', uri);
-
+      
       request.fields['userId'] = userId.toString();
-      request.fields['type'] = type;
+      request.fields['documentType'] = type;
       request.headers['x-request-type'] = 'mobile';
-
+      
       final fileStream = file.openRead();
       final fileLength = await file.length();
       final multipartFile = http.MultipartFile(
@@ -891,9 +1207,61 @@ class BackendApiService {
       }
     } catch (e) {
       if (AppConfig.enableLogging) {
-        print('❌ Erreur upload document: $e');
+      print('❌ Erreur upload document: $e');
       }
       return null;
+    }
+  }
+
+  // ========== DOCUMENTS ==========
+
+  /// Récupère les documents d'un utilisateur
+  static Future<List<DocumentModel>> getDocuments(int userId) async {
+    try {
+      final response = await http.get(
+        Uri.parse('$baseUrl/documents?userId=$userId'),
+        headers: _getPublicHeaders(),
+      ).timeout(AppConfig.apiTimeout);
+
+      if (response.statusCode == 200) {
+        final List<dynamic> data = json.decode(response.body);
+        return data.map((map) => DocumentModel.fromMap(map as Map<String, dynamic>)).toList();
+      }
+      return [];
+    } catch (e) {
+      if (AppConfig.enableLogging) {
+        print('❌ Erreur getDocuments: $e');
+      }
+      return [];
+    }
+  }
+
+  /// Récupère les documents d'un utilisateur par type
+  static Future<List<DocumentModel>> getDocumentsByType({
+    required int userId,
+    String? documentType,
+  }) async {
+    try {
+      String url = '$baseUrl/documents?userId=$userId';
+      if (documentType != null) {
+        url += '&documentType=$documentType';
+      }
+      
+      final response = await http.get(
+        Uri.parse(url),
+        headers: _getPublicHeaders(),
+      ).timeout(AppConfig.apiTimeout);
+
+      if (response.statusCode == 200) {
+        final List<dynamic> data = json.decode(response.body);
+        return data.map((map) => DocumentModel.fromMap(map as Map<String, dynamic>)).toList();
+      }
+      return [];
+    } catch (e) {
+      if (AppConfig.enableLogging) {
+        print('❌ Erreur getDocumentsByType: $e');
+      }
+      return [];
     }
   }
 
@@ -905,7 +1273,7 @@ class BackendApiService {
     try {
       final uri = Uri.parse('$baseUrl/users/$userId/photo');
       final request = http.MultipartRequest('POST', uri);
-
+      
       request.headers['x-request-type'] = 'mobile';
 
       final fileStream = photo.openRead();
@@ -933,7 +1301,509 @@ class BackendApiService {
       }
     } catch (e) {
       if (AppConfig.enableLogging) {
-        print('❌ Erreur upload photo: $e');
+      print('❌ Erreur upload photo: $e');
+      }
+      return null;
+    }
+  }
+
+  // ========== SIGNALEMENTS (REPORTS) ==========
+
+  /// Créer un signalement
+  /// Le reporterId (userId de l'utilisateur qui signale) est automatiquement extrait du token JWT côté backend
+  /// Le backend utilise req.user.userId extrait du token JWT
+  static Future<ReportModel?> createReport({
+    required int reportedUserId, // L'utilisateur signalé (userId)
+    required String reason, // Le type/raison du signalement
+    String? description, // La description/message
+  }) async {
+    try {
+      final token = await getToken();
+      
+      // Vérifier que le token est présent
+      if (token == null) {
+        print('❌ [REPORT] Erreur: Token d\'authentification manquant');
+        return null;
+      }
+      
+      // Validation: le message est requis
+      final messageText = description?.trim() ?? '';
+      if (messageText.isEmpty) {
+        print('❌ [REPORT] Erreur: Le message (description) est requis');
+        return null;
+      }
+      
+      // Le backend attend: reportedUserId (utilisateur signalé), type, message
+      // Le userId (utilisateur qui signale) est extrait automatiquement du token JWT côté backend
+      final payload = <String, dynamic>{
+        'reportedUserId': reportedUserId, // L'utilisateur signalé
+        'type': reason, // Le type/raison du signalement
+        'message': messageText, // La description (requis et non vide)
+      };
+      
+      print('📡 [REPORT] Payload adapté à la structure backend (reportedUserId, type, message)');
+      print('📡 [REPORT] Le userId (celui qui signale) sera extrait automatiquement du token JWT côté backend');
+      
+      print('📡 [REPORT] Création signalement:');
+      print('   userId (celui qui signale): (sera extrait du token JWT côté backend)');
+      print('   reportedUserId (utilisateur signalé): $reportedUserId');
+      print('   type: $reason');
+      if (description != null && description.trim().isNotEmpty) {
+        final desc = description.trim();
+        print('   message: ${desc.length > 50 ? desc.substring(0, 50) + '...' : desc}');
+      } else {
+        print('   message: (vide - peut causer une erreur)');
+      }
+      
+      final headers = await _getAuthHeaders();
+      
+      // Toujours logger les informations critiques
+      print('📡 [REPORT] URL complète: $baseUrl/reports');
+      print('📡 [REPORT] Headers: ${headers.keys.join(", ")}');
+      print('📡 [REPORT] Token présent: ${headers.containsKey('Authorization')}');
+      print('📡 [REPORT] Token (premiers 20 chars): ${token.substring(0, token.length > 20 ? 20 : token.length)}...');
+      print('📡 [REPORT] Payload JSON: ${jsonEncode(payload)}');
+      
+      final response = await http.post(
+        Uri.parse('$baseUrl/reports'),
+        headers: headers,
+        body: jsonEncode(payload),
+      ).timeout(AppConfig.apiTimeout);
+
+      // Toujours logger le status code pour le diagnostic
+      print('📡 [REPORT] Status Code: ${response.statusCode}');
+      print('📡 [REPORT] Response Headers: ${response.headers}');
+
+      // Vérifier le Content-Type
+      final contentType = response.headers['content-type'] ?? '';
+      if (!contentType.contains('application/json') && response.body.isNotEmpty) {
+        if (response.body.trim().startsWith('<!DOCTYPE') || response.body.trim().startsWith('<html')) {
+          if (AppConfig.enableLogging) {
+            print('❌ Erreur createReport: Le serveur a retourné du HTML');
+            print('Réponse: ${response.body.substring(0, response.body.length > 500 ? 500 : response.body.length)}');
+          }
+          return null;
+        }
+      }
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        print('✅ [REPORT] Signalement créé avec succès - Status: ${response.statusCode}');
+        print('📡 [REPORT] Réponse complète du backend:');
+        print('${response.body}');
+        
+        try {
+          final data = json.decode(response.body) as Map<String, dynamic>;
+          
+          // Logs détaillés pour vérifier la sauvegarde en base
+          print('📊 [REPORT] ========== ANALYSE RÉPONSE CRÉATION ==========');
+          print('📊 [REPORT] Données brutes retournées par le backend:');
+          print('   🔑 ID du signalement: ${data['id']} ${data['id'] != null ? "✅" : "❌ MANQUANT"}');
+          print('   👤 reporterId: ${data['reporterId']} ${data['reporterId'] != null ? "✅" : "❌ MANQUANT"}');
+          print('   🎯 reportedUserId: ${data['reportedUserId'] ?? data['userId']} ${(data['reportedUserId'] ?? data['userId']) != null ? "✅" : "❌ MANQUANT"}');
+          print('   📝 reason/type: ${data['reason'] ?? data['type']} ${(data['reason'] ?? data['type']) != null ? "✅" : "❌ MANQUANT"}');
+          print('   📄 description/message: ${(data['description'] ?? data['message'] ?? '').toString().substring(0, (data['description'] ?? data['message'] ?? '').toString().length > 50 ? 50 : (data['description'] ?? data['message'] ?? '').toString().length)}... ${(data['description'] ?? data['message']) != null ? "✅" : "❌ MANQUANT"}');
+          print('   📊 status: ${data['status']} ${data['status'] != null ? "✅" : "❌ MANQUANT"}');
+          print('   📅 createdAt: ${data['createdAt']} ${data['createdAt'] != null ? "✅" : "❌ MANQUANT"}');
+          
+          // Vérifier si le signalement a bien été sauvegardé en base
+          if (data['id'] != null) {
+            print('✅ [REPORT] Signalement sauvegardé en base avec ID: ${data['id']}');
+          } else {
+            print('❌ [REPORT] PROBLÈME: L\'ID du signalement est manquant - Le signalement n\'a peut-être pas été sauvegardé en base');
+          }
+          
+          if (data['reporterId'] != null && data['reporterId'] != 0) {
+            print('✅ [REPORT] reporterId correctement sauvegardé: ${data['reporterId']}');
+          } else {
+            print('⚠️ [REPORT] ATTENTION: reporterId est ${data['reporterId']} - Le backend ne l\'a peut-être pas sauvegardé correctement');
+          }
+          
+          print('📊 [REPORT] ===============================================');
+          
+          final report = ReportModel.fromMap(data);
+          
+          if (AppConfig.enableLogging) {
+            print('✅ [REPORT] Signalement parsé avec succès:');
+            print('   ID: ${report.id}');
+            print('   reporterId: ${report.reporterId}');
+            print('   reportedUserId: ${report.reportedUserId}');
+            print('   status: ${report.status}');
+            
+            if (report.reporterId == 0) {
+              print('⚠️ [REPORT] ATTENTION: reporterId parsé est 0 - le backend ne l\'a peut-être pas retourné dans la réponse');
+            }
+            
+            // Vérifier immédiatement si on peut récupérer le signalement via /api/reports/my
+            print('🔍 [REPORT] Vérification: Test de récupération via /api/reports/my dans 2 secondes...');
+            Future.delayed(const Duration(seconds: 2), () async {
+              if (report.id != null) {
+                print('🔍 [REPORT] Vérification en cours...');
+                final allMyReports = await getMyReports();
+                final foundReport = allMyReports.firstWhere(
+                  (r) => r.id == report.id,
+                  orElse: () => ReportModel(
+                    id: null,
+                    reporterId: 0,
+                    reportedUserId: 0,
+                    reason: '',
+                    createdAt: DateTime.now(),
+                  ),
+                );
+                
+                if (foundReport.id != null && foundReport.id == report.id) {
+                  print('✅ [REPORT] ✅✅✅ VÉRIFICATION RÉUSSIE ✅✅✅');
+                  print('   Le signalement #${report.id} est bien accessible via /api/reports/my');
+                  print('   reporterId dans le signalement récupéré: ${foundReport.reporterId}');
+                  print('   status: ${foundReport.status}');
+                } else {
+                  print('❌ [REPORT] ❌❌❌ PROBLÈME DÉTECTÉ ❌❌❌');
+                  print('   Le signalement #${report.id} N\'EST PAS retourné par /api/reports/my');
+                  print('   Nombre total de signalements retournés: ${allMyReports.length}');
+                  if (allMyReports.isNotEmpty) {
+                    print('   IDs des signalements retournés: ${allMyReports.map((r) => r.id).join(", ")}');
+                  }
+                  print('   ⚠️ Cela suggère que le backend ne filtre pas correctement par reporterId');
+                }
+              }
+            });
+          }
+          
+          return report;
+        } catch (e, stackTrace) {
+          if (AppConfig.enableLogging) {
+            print('❌ [REPORT] Erreur lors du parsing de la réponse: $e');
+            print('   Stack trace: $stackTrace');
+            print('📡 Body brut: ${response.body}');
+          }
+          return null;
+        }
+      } else {
+        // Toujours logger les erreurs pour le diagnostic
+        print('❌ [REPORT] Erreur createReport: ${response.statusCode}');
+        print('📡 [REPORT] Response Body complet:');
+        print('${response.body}');
+        print('📡 [REPORT] Response Body length: ${response.body.length}');
+        try {
+          final error = json.decode(response.body) as Map<String, dynamic>;
+          final errorMessage = error['message'] ?? error['error'] ?? 'Erreur inconnue';
+          print('❌ [REPORT] Message: $errorMessage');
+          print('❌ [REPORT] Détails complets: $error');
+          if (error.containsKey('stack')) {
+            print('❌ [REPORT] Stack trace serveur: ${error['stack']}');
+          }
+          // Si c'est une erreur 500, suggérer de vérifier les logs serveur
+          if (response.statusCode == 500) {
+            print('⚠️ [REPORT] Erreur 500 - Vérifiez les logs serveur pour plus de détails');
+            print('⚠️ [REPORT] Causes possibles:');
+            print('   1. La table "reports" n\'existe pas dans la base de données');
+            print('   2. La fonction NOW() n\'est pas supportée (utiliser datetime(\'now\') pour SQLite)');
+            print('   3. Erreur SQL dans la requête INSERT');
+            print('   4. Problème de connexion à la base de données');
+          }
+        } catch (parseError) {
+          print('❌ [REPORT] Erreur parsing JSON: $parseError');
+          print('❌ [REPORT] Réponse brute (500 premiers chars):');
+          final bodyPreview = response.body.length > 500 
+              ? response.body.substring(0, 500) + '...'
+              : response.body;
+          print(bodyPreview);
+        }
+        return null;
+      }
+    } catch (e, stackTrace) {
+      if (AppConfig.enableLogging) {
+        print('❌ Erreur createReport (exception): $e');
+        print('   Stack: $stackTrace');
+      }
+      return null;
+    }
+  }
+
+  /// Récupère les signalements de l'utilisateur connecté
+  static Future<List<ReportModel>> getReports() async {
+    try {
+      final headers = await _getAuthHeaders();
+      final response = await http.get(
+        Uri.parse('$baseUrl/reports'),
+        headers: headers,
+      ).timeout(AppConfig.apiTimeout);
+
+      if (response.statusCode == 200) {
+        final List<dynamic> data = json.decode(response.body);
+        return data.map((map) => ReportModel.fromMap(map as Map<String, dynamic>)).toList();
+      }
+      return [];
+    } catch (e) {
+      if (AppConfig.enableLogging) {
+        print('❌ Erreur getReports: $e');
+      }
+      return [];
+    }
+  }
+
+  /// Récupérer mes signalements envoyés
+  /// Utilise le token JWT pour identifier automatiquement l'utilisateur connecté
+  /// Le backend filtre automatiquement via la route /api/reports/my
+  /// Le backend utilise req.user.userId extrait du token JWT
+  /// Fallback vers /api/reports avec filtrage côté client si la nouvelle route échoue (compatibilité)
+  static Future<List<ReportModel>> getMyReports() async {
+    try {
+      final headers = await _getAuthHeaders();
+      final url = '$baseUrl/reports/my';
+      
+      if (AppConfig.enableLogging) {
+        print('📡 [GET MY REPORTS] Appel de la route sécurisée: $url');
+        print('📡 [GET MY REPORTS] Token présent: ${headers.containsKey('Authorization')}');
+        if (headers.containsKey('Authorization')) {
+          final authHeader = headers['Authorization']!;
+          final previewLength = authHeader.length > 30 ? 30 : authHeader.length;
+          print('📡 [GET MY REPORTS] Authorization header (premiers $previewLength chars): ${authHeader.substring(0, previewLength)}...');
+          // Vérifier que le format est correct (doit commencer par "Bearer ")
+          if (!authHeader.startsWith('Bearer ')) {
+            print('⚠️ [GET MY REPORTS] ATTENTION: Le header Authorization ne commence pas par "Bearer "');
+          } else {
+            print('✅ [GET MY REPORTS] Format du header Authorization correct');
+          }
+          print('📡 [GET MY REPORTS] Le backend extraira userId depuis le token JWT');
+        } else {
+          print('❌ [GET MY REPORTS] PROBLÈME: Pas de header Authorization dans les headers');
+        }
+      }
+      
+      final response = await http.get(
+        Uri.parse(url), // Nouvelle route qui filtre par token JWT
+        headers: headers,
+      ).timeout(AppConfig.apiTimeout);
+
+      if (AppConfig.enableLogging) {
+        print('📡 [GET MY REPORTS] Status Code: ${response.statusCode}');
+      }
+
+      // Gérer les erreurs d'authentification
+      if (response.statusCode == 401 || response.statusCode == 403) {
+        try {
+          final errorData = json.decode(response.body);
+          final errorMessage = errorData['message'] as String?;
+          await _handleAuthError(response.statusCode, errorMessage);
+        } catch (e) {
+          await _handleAuthError(response.statusCode, 'Token invalide ou expiré');
+        }
+        
+        if (AppConfig.enableLogging) {
+          print('❌ [GET MY REPORTS] Token invalide - L\'utilisateur doit se reconnecter');
+        }
+        
+        // Essayer le fallback avant de retourner vide
+        return await _getMyReportsFallback();
+      }
+
+      // Si la nouvelle route fonctionne (200), retourner les résultats
+      if (response.statusCode == 200) {
+        final List<dynamic> data = json.decode(response.body);
+        
+        if (AppConfig.enableLogging) {
+          print('📡 [GET MY REPORTS] Nombre de signalements reçus: ${data.length}');
+          if (data.isNotEmpty) {
+            print('📡 [GET MY REPORTS] Premier signalement brut (échantillon):');
+            print('   ${jsonEncode(data[0])}');
+          }
+        }
+        
+        // Parser tous les signalements (le backend a déjà filtré par utilisateur)
+        final reports = data
+            .map((json) {
+              try {
+                final map = json as Map<String, dynamic>;
+                if (AppConfig.enableLogging) {
+                  print('📡 [GET MY REPORTS] Signalement brut:');
+                  print('   ID: ${map['id']}');
+                  print('   reporterId: ${map['reporterId']}');
+                  print('   reportedUserId: ${map['reportedUserId'] ?? map['userId']}');
+                  print('   reason/type: ${map['reason'] ?? map['type']}');
+                  print('   status: ${map['status']}');
+                }
+                final report = ReportModel.fromMap(map);
+                if (AppConfig.enableLogging) {
+                  print('✅ [GET MY REPORTS] Signalement parsé - ID: ${report.id}, reporterId: ${report.reporterId}, status: ${report.status}');
+                }
+                return report;
+              } catch (e) {
+                if (AppConfig.enableLogging) {
+                  print('❌ [GET MY REPORTS] Erreur parsing signalement: $e');
+                  print('   Données: $json');
+                }
+                return null;
+              }
+            })
+            .whereType<ReportModel>()
+            .toList();
+        
+        if (AppConfig.enableLogging) {
+          print('✅ [GET MY REPORTS] ${reports.length} signalement(s) retourné(s) pour l\'utilisateur connecté');
+          if (reports.isNotEmpty) {
+            for (final report in reports) {
+              print('   - Signalement #${report.id}: reporterId=${report.reporterId}, reportedUserId=${report.reportedUserId}, status=${report.status}');
+            }
+          }
+        }
+        
+        return reports;
+      }
+      
+      // Si la nouvelle route échoue (404 ou 500), essayer avec l'ancienne route + filtrage client
+      if (response.statusCode == 404 || response.statusCode == 500) {
+        if (AppConfig.enableLogging) {
+          print('⚠️ [GET MY REPORTS] Nouvelle route échoue (${response.statusCode}), fallback vers ancienne route');
+          if (response.statusCode == 404) {
+            print('   ⚠️ La route /api/reports/my n\'existe pas encore sur le backend');
+          } else if (response.statusCode == 500) {
+            print('   ⚠️ Erreur serveur sur /api/reports/my - Vérifiez les logs du backend');
+          }
+          print('   🔄 Utilisation de l\'ancienne méthode avec filtrage côté client...');
+        }
+        
+        // Fallback: utiliser l'ancienne route et récupérer userId depuis le token ou currentUser
+        return await _getMyReportsFallback();
+      }
+      
+      // Autre erreur
+      if (AppConfig.enableLogging) {
+        print('❌ [GET MY REPORTS] Erreur HTTP: ${response.statusCode}');
+        print('   URL appelée: $url');
+        print('   Réponse complète: ${response.body}');
+      }
+      return [];
+    } catch (e, stackTrace) {
+      if (AppConfig.enableLogging) {
+        print('❌ [GET MY REPORTS] Exception lors de l\'appel à la nouvelle route: $e');
+        print('   Stack: $stackTrace');
+        print('   🔄 Tentative avec l\'ancienne méthode...');
+      }
+      
+      // En cas d'exception, essayer le fallback
+      try {
+        return await _getMyReportsFallback();
+      } catch (fallbackError) {
+        if (AppConfig.enableLogging) {
+          print('❌ [GET MY REPORTS] Le fallback a également échoué: $fallbackError');
+        }
+        return [];
+      }
+    }
+  }
+  
+  /// Méthode de fallback utilisant l'ancienne route /api/reports avec filtrage côté client
+  /// Utilisée si la nouvelle route /api/reports/my n'est pas disponible
+  static Future<List<ReportModel>> _getMyReportsFallback() async {
+    try {
+      // Récupérer l'userId depuis l'utilisateur sauvegardé
+      final currentUser = await getCurrentUser();
+      if (currentUser == null || currentUser['id'] == null) {
+        if (AppConfig.enableLogging) {
+          print('⚠️ [GET MY REPORTS FALLBACK] Impossible de récupérer userId, retour de liste vide');
+        }
+        return [];
+      }
+      
+      final userId = currentUser['id'] as int;
+      
+      if (AppConfig.enableLogging) {
+        print('📡 [GET MY REPORTS FALLBACK] Utilisation de l\'ancienne route pour userId: $userId');
+      }
+      
+      final headers = await _getAuthHeaders();
+      final response = await http.get(
+        Uri.parse('$baseUrl/reports'),
+        headers: headers,
+      ).timeout(AppConfig.apiTimeout);
+
+      if (response.statusCode == 200) {
+        final List<dynamic> data = json.decode(response.body);
+        
+        // Filtrer côté client par reporterId
+        final reports = data
+            .map((json) {
+              try {
+                final map = json as Map<String, dynamic>;
+                return ReportModel.fromMap(map);
+              } catch (e) {
+                return null;
+              }
+            })
+            .whereType<ReportModel>()
+            .where((report) => report.reporterId == userId)
+            .toList();
+        
+        if (AppConfig.enableLogging) {
+          print('✅ [GET MY REPORTS FALLBACK] ${reports.length} signalement(s) filtré(s) côté client');
+        }
+        
+        return reports;
+      }
+      
+      return [];
+    } catch (e) {
+      if (AppConfig.enableLogging) {
+        print('❌ [GET MY REPORTS FALLBACK] Erreur: $e');
+      }
+      return [];
+    }
+  }
+
+  /// Récupérer les détails d'un signalement
+  static Future<ReportModel?> getReportById(int reportId) async {
+    try {
+      final headers = await _getAuthHeaders();
+      final response = await http.get(
+        Uri.parse('$baseUrl/reports/$reportId'),
+        headers: headers,
+      ).timeout(AppConfig.apiTimeout);
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body) as Map<String, dynamic>;
+        return ReportModel.fromMap(data);
+      }
+      return null;
+    } catch (e) {
+      if (AppConfig.enableLogging) {
+        print('❌ Erreur récupération signalement: $e');
+      }
+      return null;
+    }
+  }
+
+  // ========== PARAMÈTRES SYSTÈME ==========
+
+  static SettingsModel? _cachedSettings;
+  static DateTime? _settingsCacheTime;
+  static const Duration _settingsCacheDuration = Duration(hours: 24);
+
+  /// Récupère les paramètres système (avec cache de 24h)
+  static Future<SettingsModel?> getSettings({bool forceRefresh = false}) async {
+    // Vérifier le cache
+    if (!forceRefresh &&
+        _cachedSettings != null &&
+        _settingsCacheTime != null &&
+        DateTime.now().difference(_settingsCacheTime!) < _settingsCacheDuration) {
+      return _cachedSettings;
+    }
+
+    try {
+      final response = await http.get(
+        Uri.parse('$baseUrl/settings'),
+        headers: _getPublicHeaders(),
+      ).timeout(AppConfig.apiTimeout);
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body) as Map<String, dynamic>;
+        _cachedSettings = SettingsModel.fromMap(data);
+        _settingsCacheTime = DateTime.now();
+        return _cachedSettings;
+      }
+      return null;
+    } catch (e) {
+      if (AppConfig.enableLogging) {
+        print('❌ Erreur getSettings: $e');
       }
       return null;
     }
@@ -954,8 +1824,8 @@ class BackendApiService {
       final requestBody = {
         'amount': amount, // Montant en euros
         'currency': currency,
-        'reservationId': reservationId,
-        'userId': userId,
+          'reservationId': reservationId,
+          'userId': userId,
       };
       
       if (AppConfig.enableLogging) {
@@ -1009,7 +1879,7 @@ class BackendApiService {
       }
     } catch (e, stackTrace) {
       if (AppConfig.enableLogging) {
-        print('❌ Erreur création PaymentIntent: $e');
+      print('❌ Erreur création PaymentIntent: $e');
         print('Stack: $stackTrace');
       }
       return null;
@@ -1046,7 +1916,47 @@ class BackendApiService {
       }
     } catch (e) {
       if (AppConfig.enableLogging) {
-        print('❌ Erreur confirmation paiement: $e');
+      print('❌ Erreur confirmation paiement: $e');
+      }
+      return null;
+    }
+  }
+
+  /// Demande un remboursement Stripe
+  static Future<Map<String, dynamic>?> requestRefund({
+    required String paymentIntentId,
+    double? amount, // Montant partiel en euros (optionnel, sinon remboursement total)
+    String reason = 'requested_by_customer', // 'requested_by_customer' | 'duplicate' | 'fraudulent'
+  }) async {
+    try {
+      final requestBody = <String, dynamic>{
+        'paymentIntentId': paymentIntentId,
+        'reason': reason,
+      };
+      
+      if (amount != null) {
+        requestBody['amount'] = amount; // Montant en euros
+      }
+
+      final headers = await _getAuthHeaders();
+      final response = await http.post(
+        Uri.parse('$baseUrl/stripe/refund'),
+        headers: headers,
+        body: jsonEncode(requestBody),
+      ).timeout(AppConfig.apiTimeout);
+
+      if (response.statusCode == 200) {
+        return json.decode(response.body) as Map<String, dynamic>;
+      } else {
+        final error = json.decode(response.body);
+        if (AppConfig.enableLogging) {
+          print('❌ Erreur remboursement: ${response.statusCode} - ${error['message'] ?? response.body}');
+        }
+        return null;
+      }
+    } catch (e) {
+      if (AppConfig.enableLogging) {
+        print('❌ Erreur remboursement: $e');
       }
       return null;
     }
