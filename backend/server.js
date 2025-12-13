@@ -13,6 +13,13 @@ const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY || 'sk_test_place
 const { sendAdminMessageNotification } = require('./email');
 
 const app = express();
+
+// Routes Stripe
+const stripeRoutes = require('./routes/stripe');
+const reportsRoutes = require('./routes/reports');
+const reviewsRoutes = require('./routes/reviews');
+const protectedUsersRoutes = require('./routes/protected-users');
+
 const PORT = process.env.PORT || 3001;
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-in-production';
 
@@ -101,6 +108,13 @@ const corsOptions = {
 app.use(cors(corsOptions));
 app.use(express.json());
 
+// Utiliser les routes Stripe
+app.use('/api/stripe', stripeRoutes);
+app.use('/api/reports', reportsRoutes);
+app.use('/api/reviews', reviewsRoutes);
+app.use('/api/protected-users', protectedUsersRoutes);
+
+
 // Servir les fichiers statiques (photos et documents)
 app.use('/uploads', express.static(uploadsDir));
 
@@ -133,8 +147,56 @@ app.post('/api/auth/login', async (req, res) => {
       return res.status(400).json({ message: 'Email et mot de passe requis' });
     }
 
-    // Récupérer l'utilisateur
+    // Essayer d'abord de trouver l'utilisateur dans la table admins (pour le dashboard)
     try {
+      const admin = await db.get('SELECT * FROM admins WHERE email = ?', [email]);
+
+      if (admin) {
+        // Vérifier le mot de passe admin
+        let isValid = false;
+        
+        // Si le mot de passe en base commence par $2b$ ou $2a$, c'est un hash bcrypt
+        if (admin.password.startsWith('$2b$') || admin.password.startsWith('$2a$')) {
+          isValid = await bcrypt.compare(password, admin.password);
+        } else {
+          // Sinon, c'est un mot de passe en clair (pour migration)
+          isValid = password === admin.password;
+          
+          // Si la connexion réussit avec un mot de passe en clair, hasher et mettre à jour
+          if (isValid) {
+            const hashedPassword = await bcrypt.hash(password, 10);
+            try {
+              await db.run('UPDATE admins SET password = ? WHERE id = ?', [hashedPassword, admin.id]);
+              console.log(`✅ Mot de passe hashé pour l'admin ${admin.id}`);
+            } catch (err) {
+              console.error('Erreur lors du hashage du mot de passe:', err);
+            }
+          }
+        }
+
+        if (!isValid) {
+          return res.status(401).json({ message: 'Email ou mot de passe incorrect' });
+        }
+
+        // Générer le token JWT pour l'admin
+        const token = jwt.sign(
+          { userId: admin.id, email: admin.email, userType: 'admin', isAdmin: true },
+          JWT_SECRET,
+          { expiresIn: '24h' }
+        );
+
+        return res.json({
+          token,
+          user: {
+            id: admin.id,
+            name: admin.name,
+            email: admin.email,
+            userType: 'admin',
+          },
+        });
+      }
+
+      // Si pas trouvé dans admins, chercher dans users
       const user = await db.get('SELECT * FROM users WHERE email = ?', [email]);
 
       if (!user) {
@@ -163,10 +225,9 @@ app.post('/api/auth/login', async (req, res) => {
         }
       }
 
-    // Route de santé
-    if (!isValid) {
-      return res.status(401).json({ message: 'Email ou mot de passe incorrect' });
-    }
+      if (!isValid) {
+        return res.status(401).json({ message: 'Email ou mot de passe incorrect' });
+      }
 
       // Si c'est une requête mobile, accepter tous les types d'utilisateurs
       // Sinon, vérifier que c'est un admin (pour le dashboard)
@@ -199,6 +260,7 @@ app.post('/api/auth/login', async (req, res) => {
     res.status(500).json({ message: 'Erreur serveur' });
   }
 });
+
 
 // Redirection rapide : /login -> frontend
 app.get('/login', (req, res) => {
@@ -246,11 +308,11 @@ app.post('/api/auth/register-admin', async (req, res) => {
       return res.status(500).json({ message: 'Erreur serveur' });
     }
 
-    // Créer l'utilisateur admin dans la table users
+    // Créer l'administrateur dans la table admins
     try {
       const result = await db.run(
-        'INSERT INTO users (email, password, name, userType, categorie) VALUES (?, ?, ?, ?, ?)',
-        [email, hashedPassword, name, 'admin', 'administrateur']
+        'INSERT INTO admins (email, password, name, createdAt) VALUES (?, ?, ?, NOW())',
+        [email, hashedPassword, name]
       );
 
       console.log(`✅ Admin créé avec succès: ${email} (ID: ${result.lastID})`);
@@ -285,6 +347,8 @@ app.post('/api/auth/register-admin', async (req, res) => {
     res.status(500).json({ message: 'Erreur serveur' });
   }
 });
+
+
 
 
 
@@ -330,11 +394,11 @@ app.post('/api/auth/register-admin', async (req, res) => {
       return res.status(500).json({ message: 'Erreur serveur' });
     }
 
-    // Créer l'utilisateur admin dans la table users
+    // Créer l'administrateur dans la table admins
     try {
       const result = await db.run(
-        'INSERT INTO users (email, password, name, userType, categorie) VALUES (?, ?, ?, ?, ?)',
-        [email, hashedPassword, name, 'admin', 'administrateur']
+        'INSERT INTO admins (email, password, name, createdAt) VALUES (?, ?, ?, NOW())',
+        [email, hashedPassword, name]
       );
 
       console.log(`✅ Admin créé avec succès: ${email} (ID: ${result.lastID})`);
@@ -392,6 +456,38 @@ const authenticateToken = (req, res, next) => {
   });
 };
 
+// ========== GESTION DES ADMINISTRATEURS ==========
+// Liste des administrateurs
+app.get('/api/admins', async (req, res) => {
+  try {
+    const admins = await db.all('SELECT id, email, name, age, phone, address, createdAt FROM admins ORDER BY id');
+    res.json(admins);
+  } catch (error) {
+    console.error('Erreur:', error);
+    res.status(500).json({ message: 'Erreur serveur' });
+  }
+});
+
+// Supprimer un administrateur
+app.delete('/api/admins/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    // Vérifier qu'il reste au moins un admin
+    const admins = await db.all('SELECT id FROM admins');
+    if (admins.length <= 1) {
+      return res.status(400).json({ message: 'Impossible de supprimer le dernier administrateur' });
+    }
+    
+    // Supprimer l'admin
+    await db.run('DELETE FROM admins WHERE id = ?', [id]);
+    res.json({ message: 'Administrateur supprimé' });
+  } catch (error) {
+    console.error('Erreur:', error);
+    res.status(500).json({ message: 'Erreur serveur' });
+  }
+});
+
 // Routes des utilisateurs
 // Route publique pour récupérer les professionnels (app mobile)
 app.get('/api/users', async (req, res) => {
@@ -433,7 +529,7 @@ app.get('/api/users', async (req, res) => {
 app.get('/api/users/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    const row = await db.get('SELECT id, name, email, phone, categorie, ville, tarif, experience, photo, userType, besoin, preference, mission, particularite FROM users WHERE id = ?', [id]);
+    const row = await db.get('SELECT id, name, firstName, lastName, email, phone, dateOfBirth, address, categorie, ville, tarif, experience, photo, userType, besoin, preference, mission, particularite FROM users WHERE id = ?', [id]);
     if (!row) {
       return res.status(404).json({ message: 'Utilisateur non trouvé' });
     }
@@ -447,7 +543,7 @@ app.get('/api/users/:id', async (req, res) => {
 app.get('/api/users/:id/admin', authenticateToken, async (req, res) => {
   try {
     const { id } = req.params;
-    const row = await db.get('SELECT id, name, email, phone, categorie, ville, tarif, userType FROM users WHERE id = ?', [id]);
+    const row = await db.get('SELECT id, name, firstName, lastName, email, phone, dateOfBirth, address, categorie, ville, tarif, experience, photo, userType, suspended, createdAt FROM users WHERE id = ?', [id]);
     if (!row) {
       return res.status(404).json({ message: 'Utilisateur non trouvé' });
     }
@@ -800,101 +896,101 @@ app.put('/api/ratings/:userId', authenticateToken, async (req, res) => {
     return res.status(500).json({ message: 'Erreur serveur' });
   }
 });
-
-// Routes des avis
-// Route publique pour l'application mobile
-app.get('/api/reviews', async (req, res) => {
-  try {
-    const rows = await db.all(`
-      SELECT 
-        r.id,
-        r.reservationId,
-        r.userId,
-        r.professionalId,
-        r.rating,
-        r.comment,
-        r.createdAt,
-        COALESCE(r.userName, u.name) as userName,
-        p.name as professionalName
-      FROM reviews r
-      LEFT JOIN users u ON r.userId = u.id
-      LEFT JOIN users p ON r.professionalId = p.id
-      ORDER BY r.createdAt DESC
-    `);
-    res.json(rows);
-  } catch (error) {
-    console.error('Erreur récupération reviews:', error);
-    // Si la table n'existe pas, retourner un tableau vide
-    return res.json([]);
-  }
-});
-
-app.post('/api/reviews', authenticateToken, async (req, res) => {
-  try {
-    const { professionalId, userId, rating, comment, userName, reservationId } = req.body;
-
-    if (!professionalId || !rating) {
-      return res.status(400).json({ message: 'professionalId et rating sont requis' });
-    }
-
-    if (rating < 1 || rating > 5) {
-      return res.status(400).json({ message: 'La note doit être entre 1 et 5' });
-    }
-
-    // Si userName est fourni, on l'utilise, sinon on cherche le nom de l'utilisateur
-    let finalUserName = userName;
-    if (!finalUserName && userId && userId !== 0) {
-      try {
-        const user = await db.get('SELECT name FROM users WHERE id = ?', [userId]);
-        if (user) {
-          finalUserName = user.name;
-        }
-      } catch (err) {
-        // Ignorer l'erreur
-      }
-    }
-
-    // reservationId est NOT NULL, donc on utilise 0 si non fourni (avis système/admin)
-    const finalReservationId = reservationId || 0;
-    
-    const result = await db.run(
-      `INSERT INTO reviews (professionalId, userId, rating, comment, reservationId, createdAt) 
-       VALUES (?, ?, ?, ?, ?, NOW())`,
-      [professionalId, userId || 0, rating, comment || null, finalReservationId]
-    );
-    
-    // Si userName est fourni et que la colonne existe, mettre à jour
-    if (finalUserName) {
-      try {
-        await db.run('UPDATE reviews SET userName = ? WHERE id = ?', [finalUserName, result.lastID]);
-      } catch (updateErr) {
-        // Ignorer les erreurs si la colonne n'existe pas
-        if (!updateErr.message.includes('Unknown column')) {
-          console.error('Erreur mise à jour userName:', updateErr);
-        }
-      }
-    }
-    
-    res.json({ id: result.lastID, message: 'Avis créé avec succès' });
-  } catch (error) {
-    console.error('Erreur création avis:', error);
-    return res.status(500).json({ 
-      message: 'Erreur serveur lors de la création de l\'avis',
-      error: error.message 
-    });
-  }
-});
-
-app.delete('/api/reviews/:id', authenticateToken, async (req, res) => {
-  try {
-    const { id } = req.params;
-    await db.run('DELETE FROM reviews WHERE id = ?', [id]);
-    res.json({ message: 'Avis supprimé' });
-  } catch (error) {
-    return res.status(500).json({ message: 'Erreur serveur' });
-  }
-});
-
+// ANCIENNE ROUTE - 
+// ANCIENNE ROUTE - // Routes des avis
+// ANCIENNE ROUTE - // Route publique pour l'application mobile
+// ANCIENNE ROUTE - app.get('/api/reviews', async (req, res) => {
+// ANCIENNE ROUTE -   try {
+// ANCIENNE ROUTE -     const rows = await db.all(`
+// ANCIENNE ROUTE -       SELECT 
+// ANCIENNE ROUTE -         r.id,
+// ANCIENNE ROUTE -         r.reservationId,
+// ANCIENNE ROUTE -         r.userId,
+// ANCIENNE ROUTE -         r.professionalId,
+// ANCIENNE ROUTE -         r.rating,
+// ANCIENNE ROUTE -         r.comment,
+// ANCIENNE ROUTE -         r.createdAt,
+// ANCIENNE ROUTE -         COALESCE(r.userName, u.name) as userName,
+// ANCIENNE ROUTE -         p.name as professionalName
+// ANCIENNE ROUTE -       FROM reviews r
+// ANCIENNE ROUTE -       LEFT JOIN users u ON r.userId = u.id
+// ANCIENNE ROUTE -       LEFT JOIN users p ON r.professionalId = p.id
+// ANCIENNE ROUTE -       ORDER BY r.createdAt DESC
+// ANCIENNE ROUTE -     `);
+// ANCIENNE ROUTE -     res.json(rows);
+// ANCIENNE ROUTE -   } catch (error) {
+// ANCIENNE ROUTE -     console.error('Erreur récupération reviews:', error);
+// ANCIENNE ROUTE -     // Si la table n'existe pas, retourner un tableau vide
+// ANCIENNE ROUTE -     return res.json([]);
+// ANCIENNE ROUTE -   }
+// ANCIENNE ROUTE - });
+// ANCIENNE ROUTE - 
+// ANCIENNE ROUTE - app.post('/api/reviews', authenticateToken, async (req, res) => {
+// ANCIENNE ROUTE -   try {
+// ANCIENNE ROUTE -     const { professionalId, userId, rating, comment, userName, reservationId } = req.body;
+// ANCIENNE ROUTE - 
+// ANCIENNE ROUTE -     if (!professionalId || !rating) {
+// ANCIENNE ROUTE -       return res.status(400).json({ message: 'professionalId et rating sont requis' });
+// ANCIENNE ROUTE -     }
+// ANCIENNE ROUTE - 
+// ANCIENNE ROUTE -     if (rating < 1 || rating > 5) {
+// ANCIENNE ROUTE -       return res.status(400).json({ message: 'La note doit être entre 1 et 5' });
+// ANCIENNE ROUTE -     }
+// ANCIENNE ROUTE - 
+// ANCIENNE ROUTE -     // Si userName est fourni, on l'utilise, sinon on cherche le nom de l'utilisateur
+// ANCIENNE ROUTE -     let finalUserName = userName;
+// ANCIENNE ROUTE -     if (!finalUserName && userId && userId !== 0) {
+// ANCIENNE ROUTE -       try {
+// ANCIENNE ROUTE -         const user = await db.get('SELECT name FROM users WHERE id = ?', [userId]);
+// ANCIENNE ROUTE -         if (user) {
+// ANCIENNE ROUTE -           finalUserName = user.name;
+// ANCIENNE ROUTE -         }
+// ANCIENNE ROUTE -       } catch (err) {
+// ANCIENNE ROUTE -         // Ignorer l'erreur
+// ANCIENNE ROUTE -       }
+// ANCIENNE ROUTE -     }
+// ANCIENNE ROUTE - 
+// ANCIENNE ROUTE -     // reservationId est NOT NULL, donc on utilise 0 si non fourni (avis système/admin)
+// ANCIENNE ROUTE -     const finalReservationId = reservationId || 0;
+// ANCIENNE ROUTE -     
+// ANCIENNE ROUTE -     const result = await db.run(
+// ANCIENNE ROUTE -       `INSERT INTO reviews (professionalId, userId, rating, comment, reservationId, createdAt) 
+// ANCIENNE ROUTE -        VALUES (?, ?, ?, ?, ?, NOW())`,
+// ANCIENNE ROUTE -       [professionalId, userId || 0, rating, comment || null, finalReservationId]
+// ANCIENNE ROUTE -     );
+// ANCIENNE ROUTE -     
+// ANCIENNE ROUTE -     // Si userName est fourni et que la colonne existe, mettre à jour
+// ANCIENNE ROUTE -     if (finalUserName) {
+// ANCIENNE ROUTE -       try {
+// ANCIENNE ROUTE -         await db.run('UPDATE reviews SET userName = ? WHERE id = ?', [finalUserName, result.lastID]);
+// ANCIENNE ROUTE -       } catch (updateErr) {
+// ANCIENNE ROUTE -         // Ignorer les erreurs si la colonne n'existe pas
+// ANCIENNE ROUTE -         if (!updateErr.message.includes('Unknown column')) {
+// ANCIENNE ROUTE -           console.error('Erreur mise à jour userName:', updateErr);
+// ANCIENNE ROUTE -         }
+// ANCIENNE ROUTE -       }
+// ANCIENNE ROUTE -     }
+// ANCIENNE ROUTE -     
+// ANCIENNE ROUTE -     res.json({ id: result.lastID, message: 'Avis créé avec succès' });
+// ANCIENNE ROUTE -   } catch (error) {
+// ANCIENNE ROUTE -     console.error('Erreur création avis:', error);
+// ANCIENNE ROUTE -     return res.status(500).json({ 
+// ANCIENNE ROUTE -       message: 'Erreur serveur lors de la création de l\'avis',
+// ANCIENNE ROUTE -       error: error.message 
+// ANCIENNE ROUTE -     });
+// ANCIENNE ROUTE -   }
+// ANCIENNE ROUTE - });
+// ANCIENNE ROUTE - 
+// ANCIENNE ROUTE - app.delete('/api/reviews/:id', authenticateToken, async (req, res) => {
+// ANCIENNE ROUTE -   try {
+// ANCIENNE ROUTE -     const { id } = req.params;
+// ANCIENNE ROUTE -     await db.run('DELETE FROM reviews WHERE id = ?', [id]);
+// ANCIENNE ROUTE -     res.json({ message: 'Avis supprimé' });
+// ANCIENNE ROUTE -   } catch (error) {
+// ANCIENNE ROUTE -     return res.status(500).json({ message: 'Erreur serveur' });
+// ANCIENNE ROUTE -   }
+// ANCIENNE ROUTE - });
+// ANCIENNE ROUTE - 
 // Routes des réservations
 // Route publique pour l'app mobile
 app.get('/api/reservations', async (req, res) => {
@@ -1077,9 +1173,12 @@ app.get('/api/messages/partners', async (req, res) => {
 app.get('/api/messages/admin', authenticateToken, async (req, res) => {
   try {
     const { userId } = req.query;
+    const adminId = req.user.userId; // ID de l'admin connecté
 
     if (userId) {
-      // Récupérer les messages avec un utilisateur spécifique (admin = senderId 0 ou receiverId 0)
+      // Récupérer les messages avec un utilisateur spécifique
+      // L'admin peut être le sender OU le receiver
+      // On inclut aussi les anciens messages avec senderId = 0 pour compatibilité
       const rows = await db.all(
         `SELECT m.*, 
           u1.name as senderName, u1.userType as senderType,
@@ -1087,13 +1186,32 @@ app.get('/api/messages/admin', authenticateToken, async (req, res) => {
         FROM messages m
         LEFT JOIN users u1 ON m.senderId = u1.id
         LEFT JOIN users u2 ON m.receiverId = u2.id
-        WHERE (m.senderId = 0 AND m.receiverId = ?) OR (m.senderId = ? AND m.receiverId = 0)
+        WHERE (
+          (m.senderId = ? AND m.receiverId = ?) OR 
+          (m.senderId = ? AND m.receiverId = ?) OR
+          (m.senderId = 0 AND m.receiverId = ?) OR 
+          (m.senderId = ? AND m.receiverId = 0)
+        )
         ORDER BY m.timestamp ASC`,
-        [userId, userId]
+        [adminId, userId, userId, adminId, userId, userId]
       );
+      // Marquer les messages comme lus quand l'admin ouvre la conversation
+      // Marquer uniquement les messages où l'admin est le receiver et l'utilisateur est le sender
+      await db.run(
+        `UPDATE messages 
+         SET isRead = 1 
+         WHERE (
+           (receiverId = ? OR receiverId = 0) 
+           AND (senderId = ?)
+           AND isRead = 0
+         )`,
+        [adminId, userId]
+      );
+      
       res.json(rows);
     } else {
       // Récupérer tous les messages où l'admin est impliqué
+      // On inclut aussi les anciens messages avec senderId = 0 ou receiverId = 0 pour compatibilité
       const rows = await db.all(
         `SELECT m.*, 
           u1.name as senderName, u1.userType as senderType,
@@ -1101,17 +1219,22 @@ app.get('/api/messages/admin', authenticateToken, async (req, res) => {
         FROM messages m
         LEFT JOIN users u1 ON m.senderId = u1.id
         LEFT JOIN users u2 ON m.receiverId = u2.id
-        WHERE m.senderId = 0 OR m.receiverId = 0
-        ORDER BY m.timestamp DESC`
+        WHERE m.senderId = ? OR m.receiverId = ? OR m.senderId = 0 OR m.receiverId = 0
+        ORDER BY m.timestamp DESC`,
+        [adminId, adminId]
       );
       res.json(rows);
     }
   } catch (error) {
+    console.error('Erreur récupération messages admin:', error);
     return res.status(500).json({ message: 'Erreur serveur' });
   }
 });
 
 app.post('/api/messages/admin', authenticateToken, async (req, res) => {
+  console.log('POST /api/messages/admin called');
+  console.log('Body:', req.body);
+  console.log('User:', req.user);
   try {
     const { senderId, receiverId, content } = req.body;
 
@@ -1324,6 +1447,156 @@ app.delete('/api/availabilities/:id', authenticateToken, async (req, res) => {
 });
 
 // Démarrer le serveur
+
+// ==================== ROUTES POUR SIGNALEMENTS (REPORTS) ====================
+
+// Récupérer tous les signalements (admin)
+app.get('/api/reports', authenticateToken, async (req, res) => {
+  try {
+    const reports = await db.all(`
+      SELECT r.*, 
+             u.nom as userNom, 
+             u.prenom as userPrenom,
+             u.email as userEmail
+      FROM reports r
+      LEFT JOIN users u ON r.userId = u.id
+      ORDER BY r.createdAt DESC
+    `);
+    res.json(reports);
+  } catch (error) {
+    console.error('Erreur récupération signalements:', error);
+    res.status(500).json({ message: 'Erreur serveur' });
+  }
+});
+
+// Récupérer un signalement par ID
+app.get('/api/reports/:id', authenticateToken, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const report = await db.get(`
+      SELECT r.*, 
+             u.nom as userNom, 
+             u.prenom as userPrenom,
+             u.email as userEmail,
+             u.telephone as userTelephone
+      FROM reports r
+      LEFT JOIN users u ON r.userId = u.id
+      WHERE r.id = ?
+    `, [id]);
+    
+    if (!report) {
+      return res.status(404).json({ message: 'Signalement non trouvé' });
+    }
+    
+    res.json(report);
+  } catch (error) {
+    console.error('Erreur récupération signalement:', error);
+    res.status(500).json({ message: 'Erreur serveur' });
+  }
+});
+
+// Mettre à jour le statut d'un signalement
+app.put('/api/reports/:id', authenticateToken, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { status } = req.body;
+    
+    const updateFields = ['status = ?'];
+    const values = [status];
+    
+    if (status === 'resolved') {
+      updateFields.push('resolvedAt = NOW()');
+    } else if (status === 'open') {
+      updateFields.push('resolvedAt = NULL');
+    }
+    
+    values.push(id);
+    
+    await db.run(
+      `UPDATE reports SET ${updateFields.join(', ')} WHERE id = ?`,
+      values
+    );
+    
+    res.json({ message: 'Signalement mis à jour' });
+  } catch (error) {
+    console.error('Erreur mise à jour signalement:', error);
+    res.status(500).json({ message: 'Erreur serveur' });
+  }
+});
+
+// Supprimer un signalement
+app.delete('/api/reports/:id', authenticateToken, async (req, res) => {
+  try {
+    const { id } = req.params;
+    await db.run('DELETE FROM reports WHERE id = ?', [id]);
+    res.json({ message: 'Signalement supprimé' });
+  } catch (error) {
+    console.error('Erreur suppression signalement:', error);
+    res.status(500).json({ message: 'Erreur serveur' });
+  }
+});
+
+// ==================== ROUTES POUR JOURS DE RÉSERVATION ====================
+
+// Récupérer les jours d'une réservation
+app.get('/api/reservations/:id/days', authenticateToken, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const days = await db.all(`
+      SELECT * FROM reservation_days 
+      WHERE reservationId = ?
+      ORDER BY date ASC
+    `, [id]);
+    
+    res.json(days);
+  } catch (error) {
+    console.error('Erreur récupération jours réservation:', error);
+    res.status(500).json({ message: 'Erreur serveur' });
+  }
+});
+
+// Mettre à jour les actions d'une réservation
+app.put('/api/reservations/:id/actions', authenticateToken, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { actionType, value } = req.body;
+    
+    let updateQuery = '';
+    const now = new Date().toISOString().slice(0, 19).replace('T', ' ');
+    
+    switch(actionType) {
+      case 'pro_arrive':
+        updateQuery = value 
+          ? 'UPDATE reservations SET pro_arrive = TRUE, pro_arrive_at = ? WHERE id = ?'
+          : 'UPDATE reservations SET pro_arrive = FALSE, pro_arrive_at = NULL WHERE id = ?';
+        await db.run(updateQuery, value ? [now, id] : [id]);
+        break;
+        
+      case 'famille_confirme_arrivee':
+        updateQuery = value 
+          ? 'UPDATE reservations SET famille_confirme_arrivee = TRUE, famille_confirme_at = ? WHERE id = ?'
+          : 'UPDATE reservations SET famille_confirme_arrivee = FALSE, famille_confirme_at = NULL WHERE id = ?';
+        await db.run(updateQuery, value ? [now, id] : [id]);
+        break;
+        
+      case 'pro_a_termine':
+        updateQuery = value 
+          ? 'UPDATE reservations SET pro_a_termine = TRUE, pro_termine_at = ? WHERE id = ?'
+          : 'UPDATE reservations SET pro_a_termine = FALSE, pro_termine_at = NULL WHERE id = ?';
+        await db.run(updateQuery, value ? [now, id] : [id]);
+        break;
+        
+      default:
+        return res.status(400).json({ message: 'Type d\'action invalide' });
+    }
+    
+    res.json({ message: 'Action mise à jour' });
+  } catch (error) {
+    console.error('Erreur mise à jour action:', error);
+    res.status(500).json({ message: 'Erreur serveur' });
+  }
+});
+
 (async () => {
   // Tester la connexion MySQL avant de démarrer
   const connected = await db.testConnection();
@@ -1338,3 +1611,36 @@ app.delete('/api/availabilities/:id', authenticateToken, async (req, res) => {
   });
 })();
 
+
+// Débloquer manuellement les informations (admin uniquement)
+app.put('/api/reservations/:id/unlock-info', authenticateToken, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { type } = req.body; // 'pro' ou 'famille'
+    
+    const now = new Date().toISOString().slice(0, 19).replace('T', ' ');
+    
+    let updateQuery = '';
+    if (type === 'pro') {
+      updateQuery = 'UPDATE reservations SET info_pro_debloquee_at = ? WHERE id = ?';
+    } else if (type === 'famille') {
+      updateQuery = 'UPDATE reservations SET info_famille_debloquee_at = ? WHERE id = ?';
+    } else {
+      return res.status(400).json({ message: 'Type invalide' });
+    }
+    
+    await db.run(updateQuery, [now, id]);
+    
+    res.json({ 
+      message: `Informations ${type === 'pro' ? 'du professionnel' : 'de la famille'} débloquées`,
+      timestamp: now
+    });
+  } catch (error) {
+    console.error('Erreur déblocage info:', error);
+    res.status(500).json({ message: 'Erreur serveur' });
+  }
+});
+
+
+// ============================================
+// ============================================
