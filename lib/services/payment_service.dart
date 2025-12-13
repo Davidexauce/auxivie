@@ -1,24 +1,22 @@
 import 'package:flutter_stripe/flutter_stripe.dart';
 import '../config/app_config.dart';
 import '../services/backend_api_service.dart';
+import '../constants/payment_constants.dart';
 
 /// Service pour gérer les paiements Stripe
 class PaymentService {
-  // Clé publique Stripe (test)
-  static const String publishableKey = 'pk_test_51SaaqvQ3cUJNrEfLZtpivSTkZnjwbb2ixlmLarRiw6JM82KVNNtOpy72kWmpPwM3ggt1sy558W1zCYRPy3PUs5qE00eZooXneP';
-  
   static bool _initialized = false;
 
-  /// Initialise Stripe avec la clé publique
+  /// Initialise Stripe avec la clé publique (depuis PaymentConstants)
   static Future<void> init() async {
     if (_initialized) return;
     
     try {
-      Stripe.publishableKey = publishableKey;
+      Stripe.publishableKey = PaymentConstants.stripePublishableKey;
       await Stripe.instance.applySettings();
       _initialized = true;
       if (AppConfig.enableLogging) {
-        print('✅ Stripe initialisé avec succès');
+        print('✅ Stripe initialisé avec succès (mode PRODUCTION)');
       }
     } catch (e) {
       if (AppConfig.enableLogging) {

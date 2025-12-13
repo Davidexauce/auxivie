@@ -6,6 +6,9 @@ class AppConfig {
   // Changez en Environment.production pour utiliser l'API en production
   static const Environment _currentEnvironment = Environment.staging;
   
+  // Exposer pour les diagnostics
+  static String get currentEnvironment => _currentEnvironment.toString();
+  
   // URLs de l'API selon l'environnement
   static String get apiBaseUrl {
     switch (_currentEnvironment) {

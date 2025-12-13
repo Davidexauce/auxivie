@@ -86,7 +86,7 @@ class _ReservationsScreenState extends State<ReservationsScreen> {
     // Le bouton retour système ne devrait rien faire ici
     return PopScope(
       canPop: false,
-      onPopInvoked: (didPop) {
+      onPopInvokedWithResult: (didPop, result) {
         // Ne rien faire - on est dans un IndexedStack, le retour est géré par le HomeScreen
       },
       child: Scaffold(
@@ -156,7 +156,7 @@ class _ReservationsScreenState extends State<ReservationsScreen> {
                   startingDayOfWeek: StartingDayOfWeek.monday,
                   calendarStyle: CalendarStyle(
                     todayDecoration: BoxDecoration(
-                      color: Theme.of(context).primaryColor.withOpacity(0.5),
+                      color: Theme.of(context).primaryColor.withValues(alpha: 0.5),
                       shape: BoxShape.circle,
                     ),
                     selectedDecoration: BoxDecoration(
@@ -281,7 +281,7 @@ class _ReservationCard extends StatelessWidget {
       child: ListTile(
         contentPadding: const EdgeInsets.all(16),
         leading: CircleAvatar(
-          backgroundColor: color.withOpacity(0.2),
+          backgroundColor: color.withValues(alpha: 0.2),
           child: Icon(
             Icons.calendar_today,
             color: color,
@@ -304,7 +304,7 @@ class _ReservationCard extends StatelessWidget {
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                   decoration: BoxDecoration(
-                    color: color.withOpacity(0.2),
+                    color: color.withValues(alpha: 0.2),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Text(

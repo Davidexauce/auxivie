@@ -111,6 +111,20 @@ class AuthViewModel extends ChangeNotifier {
         return false;
       }
 
+      // Si un token n'a pas été retourné par syncUser, se connecter automatiquement
+      final token = await BackendApiService.getToken();
+      if (token == null || token.isEmpty) {
+        // Se connecter automatiquement après l'inscription pour obtenir un token
+        final loginResult = await BackendApiService.login(email, password);
+        if (loginResult == null || loginResult['token'] == null) {
+          _errorMessage = 'Compte créé mais impossible de se connecter automatiquement. Veuillez vous connecter manuellement.';
+          _isLoading = false;
+          notifyListeners();
+          return false;
+        }
+        // Le token est déjà sauvegardé par login()
+      }
+
       // Récupérer l'utilisateur créé depuis le backend avec l'ID (route publique)
       final createdUser = await BackendApiService.getUserById(userId);
       if (createdUser == null) {

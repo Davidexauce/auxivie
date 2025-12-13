@@ -22,12 +22,13 @@ dependencies:
   shared_preferences: ^2.2.2
   
   # Paiements
-  flutter_stripe: ^9.0.0
+  flutter_stripe: ^11.1.0
   
   # UI & Utilitaires
   intl: ^0.18.1
   table_calendar: ^3.0.9
   image_picker: ^1.0.4
+  url_launcher: ^6.3.0
   
   cupertino_icons: ^1.0.6
 

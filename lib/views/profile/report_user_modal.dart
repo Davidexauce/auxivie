@@ -204,7 +204,7 @@ class _ReportUserModalState extends State<ReportUserModal> {
                   setState(() => _selectedReason = value);
                 },
               );
-            }).toList(),
+            }),
 
             const SizedBox(height: 24),
 

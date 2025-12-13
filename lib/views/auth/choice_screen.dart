@@ -292,10 +292,10 @@ class _AuthSection extends StatelessWidget {
     
     return Container(
       decoration: BoxDecoration(
-        color: theme.primaryColor.withOpacity(0.08),
+        color: theme.primaryColor.withValues(alpha: 0.08),
         borderRadius: BorderRadius.circular(20),
         border: Border.all(
-          color: theme.primaryColor.withOpacity(0.15),
+          color: theme.primaryColor.withValues(alpha: 0.15),
           width: 1,
         ),
       ),
@@ -310,7 +310,7 @@ class _AuthSection extends StatelessWidget {
                 width: 40,
                 height: 40,
                 decoration: BoxDecoration(
-                  color: theme.primaryColor.withOpacity(0.15),
+                  color: theme.primaryColor.withValues(alpha: 0.15),
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: Icon(

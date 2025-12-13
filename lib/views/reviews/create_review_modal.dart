@@ -156,9 +156,9 @@ class _CreateReviewModalState extends State<CreateReviewModal> {
                             widget.reviewedUser.name,
                             style: const TextStyle(fontWeight: FontWeight.w600),
                           ),
-                          if (widget.reviewedUser.userType == 'professionnel' && widget.reviewedUser.categorie != null)
+                          if (widget.reviewedUser.userType == 'professionnel')
                             Text(
-                              widget.reviewedUser.categorie!,
+                              widget.reviewedUser.categorie,
                               style: const TextStyle(
                                 fontSize: 12,
                                 color: AppTheme.textTertiary,

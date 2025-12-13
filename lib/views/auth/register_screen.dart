@@ -196,7 +196,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 // Catégorie (uniquement pour professionnels)
                 if (_selectedUserType == 'professionnel') ...[
                   DropdownButtonFormField<String>(
-                    value: _selectedCategorie,
+                    initialValue: _selectedCategorie,
                     decoration: const InputDecoration(
                       labelText: 'Catégorie',
                       prefixIcon: const Icon(Icons.work_outline, color: AppTheme.textTertiary),
@@ -481,7 +481,7 @@ class _UserTypeSelector extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
         decoration: BoxDecoration(
           color: isSelected
-              ? theme.primaryColor.withOpacity(0.1)
+              ? theme.primaryColor.withValues(alpha: 0.1)
               : AppTheme.green50,
           borderRadius: BorderRadius.circular(14),
           border: Border.all(

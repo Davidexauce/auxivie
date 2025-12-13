@@ -38,6 +38,8 @@ class _ChatScreenState extends State<ChatScreen> {
 
   @override
   void dispose() {
+    // Ne pas recharger ici car dispose est appelé trop tôt
+    // Le rechargement sera fait dans home_screen.dart quand on revient sur l'écran d'accueil
     _messageController.dispose();
     _scrollController.dispose();
     super.dispose();
@@ -217,17 +219,18 @@ class _ChatScreenState extends State<ChatScreen> {
               if (partner == null) {
                 // Charger le partenaire depuis le backend
                 final loadedPartner = await BackendApiService.getUserById(widget.otherUserId);
-                if (loadedPartner != null) {
+                if (loadedPartner != null && mounted) {
+                  final navigator = Navigator.of(context);
                   if (loadedPartner.userType == 'professionnel') {
-                    Navigator.of(context).push(
+                    navigator.push(
                       MaterialPageRoute(
                         builder: (_) => ProfessionalDetailScreen(
                           professional: loadedPartner,
                         ),
                       ),
                     );
-                  } else {
-                    Navigator.of(context).push(
+                  } else if (mounted) {
+                    navigator.push(
                       MaterialPageRoute(
                         builder: (_) => FamilyDetailScreen(
                           family: loadedPartner,

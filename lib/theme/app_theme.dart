@@ -53,7 +53,7 @@ class AppTheme {
       primary: primary,
       secondary: emerald,
       surface: cardBackground,
-      background: background,
+      // background deprecated - utiliser surface à la place
       error: error,
     ),
     
@@ -286,7 +286,7 @@ class AppTheme {
     // Chip Theme
     chipTheme: ChipThemeData(
       backgroundColor: green50,
-      selectedColor: primary.withOpacity(0.1),
+      selectedColor: primary.withValues(alpha: 0.1),
       labelStyle: const TextStyle(
         fontFamily: 'Poppins',
         fontSize: 14,
@@ -322,7 +322,7 @@ class AppTheme {
       primary: primary,
       secondary: emerald,
       surface: const Color(0xFF1e293b),
-      background: const Color(0xFF0b1220),
+      // background deprecated - utiliser surface à la place
       error: error,
     ),
 
@@ -524,7 +524,7 @@ class AppTheme {
     // Card Theme
     cardTheme: CardThemeData(
       elevation: 0,
-      shadowColor: Colors.black.withOpacity(0.3),
+      shadowColor: Colors.black.withValues(alpha: 0.3),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(20),
         side: const BorderSide(color: Color(0xFF334155), width: 1),
@@ -554,7 +554,7 @@ class AppTheme {
     // Chip Theme
     chipTheme: ChipThemeData(
       backgroundColor: const Color(0xFF1e293b),
-      selectedColor: primary.withOpacity(0.2),
+      selectedColor: primary.withValues(alpha: 0.2),
       labelStyle: const TextStyle(
         fontFamily: 'Poppins',
         fontSize: 14,

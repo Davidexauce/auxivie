@@ -6,8 +6,8 @@ import '../services/backend_api_service.dart';
 /// ViewModel pour la gestion des messages
 class MessageViewModel extends ChangeNotifier {
   
-  Map<int, List<MessageModel>> _conversations = {}; // Map<partnerId, messages>
-  Map<int, UserModel> _partners = {}; // Map<partnerId, user>
+  final Map<int, List<MessageModel>> _conversations = {}; // Map<partnerId, messages>
+  final Map<int, UserModel> _partners = {}; // Map<partnerId, user>
   bool _isLoading = false;
   String? _errorMessage;
 

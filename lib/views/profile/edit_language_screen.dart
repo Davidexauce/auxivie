@@ -28,7 +28,7 @@ class _EditLanguageScreenState extends State<EditLanguageScreen> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             DropdownButtonFormField<String>(
-              value: _selectedLanguage,
+              initialValue: _selectedLanguage,
               decoration: const InputDecoration(
                 labelText: 'Langue',
                 prefixIcon: Icon(Icons.language),

@@ -8,6 +8,10 @@ import '../../models/user_model.dart';
 import '../../theme/app_theme.dart';
 import '../reports/create_report_from_reservation_screen.dart';
 import '../reviews/create_review_modal.dart';
+import '../payments/payment_screen.dart';
+import '../../utils/payment_helper.dart';
+import '../../widgets/protected_contact_info.dart';
+import '../../widgets/cancellation_policy_widget.dart';
 
 /// Écran de détails d'une réservation
 class ReservationDetailScreen extends StatefulWidget {
@@ -408,7 +412,7 @@ class _ReservationDetailScreenState extends State<ReservationDetailScreen> {
                   const SizedBox(height: 24),
 
                   // Informations du professionnel
-                  if (_professional != null)
+                  if (_professional != null) ...[
                     Card(
                       child: Padding(
                         padding: const EdgeInsets.all(16.0),
@@ -460,9 +464,29 @@ class _ReservationDetailScreenState extends State<ReservationDetailScreen> {
                         ),
                       ),
                     ),
+                    const SizedBox(height: 12),
+                    // Informations de contact protégées du professionnel
+                    FutureBuilder<UserModel?>(
+                      future: BackendApiService.getProtectedUser(_professional!.id!),
+                      builder: (context, snapshot) {
+                        if (snapshot.connectionState == ConnectionState.waiting) {
+                          return const Card(
+                            child: Padding(
+                              padding: EdgeInsets.all(16.0),
+                              child: Center(child: CircularProgressIndicator()),
+                            ),
+                          );
+                        }
+                        if (snapshot.hasData && snapshot.data != null) {
+                          return ProtectedContactInfo(user: snapshot.data!);
+                        }
+                        return ProtectedContactInfo(user: _professional!);
+                      },
+                    ),
+                  ],
 
                   // Informations de la famille
-                  if (_user != null && _user!.userType == 'famille')
+                  if (_user != null && _user!.userType == 'famille') ...[
                     Card(
                       child: Padding(
                         padding: const EdgeInsets.all(16.0),
@@ -503,8 +527,36 @@ class _ReservationDetailScreenState extends State<ReservationDetailScreen> {
                         ),
                       ),
                     ),
+                    const SizedBox(height: 12),
+                    // Informations de contact protégées de la famille
+                    FutureBuilder<UserModel?>(
+                      future: BackendApiService.getProtectedUser(_user!.id!),
+                      builder: (context, snapshot) {
+                        if (snapshot.connectionState == ConnectionState.waiting) {
+                          return const Card(
+                            child: Padding(
+                              padding: EdgeInsets.all(16.0),
+                              child: Center(child: CircularProgressIndicator()),
+                            ),
+                          );
+                        }
+                        if (snapshot.hasData && snapshot.data != null) {
+                          return ProtectedContactInfo(user: snapshot.data!);
+                        }
+                        return ProtectedContactInfo(user: _user!);
+                      },
+                    ),
+                  ],
 
                   const SizedBox(height: 32),
+
+                  // Politique d'annulation (si réservation en attente ou confirmée)
+                  if (widget.reservation.status == 'pending' || widget.reservation.status == 'confirmed') ...[
+                    CancellationPolicyWidget(
+                      reservationStart: widget.reservation.date,
+                    ),
+                    const SizedBox(height: 24),
+                  ],
 
                   // Bouton pour créer un avis (si réservation terminée ou confirmée)
                   if ((widget.reservation.status == 'completed' || widget.reservation.status == 'confirmed') && currentUser != null) ...[
@@ -564,6 +616,88 @@ class _ReservationDetailScreenState extends State<ReservationDetailScreen> {
 
                   // Actions
                   if (widget.reservation.status == 'pending') ...[
+                    // Bouton Payer (si professionnel a un tarif)
+                    if (_professional != null && _professional!.tarif != null && _professional!.tarif! > 0) ...[
+                      SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton.icon(
+                          onPressed: () async {
+                            // Calculer le montant
+                            final tarifHoraire = _professional!.tarif!;
+                            double montant;
+                            
+                            if (widget.reservation.heureFin != null && widget.reservation.heureFin!.isNotEmpty) {
+                              // Utiliser les heures réelles de la réservation
+                              final heures = widget.reservation.heures;
+                              montant = heures * tarifHoraire;
+                            } else {
+                              // Utiliser le calcul par défaut (8 heures)
+                              montant = PaymentHelper.calculateReservationAmount(
+                                dateDebut: widget.reservation.date,
+                                dateFin: widget.reservation.dateFin,
+                                tarifHoraire: tarifHoraire,
+                              );
+                            }
+                            
+                            final authViewModel = Provider.of<AuthViewModel>(context, listen: false);
+                            final currentUser = authViewModel.currentUser;
+                            
+                            if (currentUser == null) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text('Utilisateur non connecté'),
+                                  backgroundColor: Colors.red,
+                                ),
+                              );
+                              return;
+                            }
+                            
+                            final success = await Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => PaymentScreen(
+                                  reservationId: widget.reservation.id!,
+                                  userId: currentUser.id!,
+                                  amount: montant,
+                                  professionalName: _professional!.name,
+                                ),
+                              ),
+                            );
+                            
+                            if (success == true && mounted) {
+                              // Recharger la réservation pour mettre à jour le statut
+                              _loadUsers();
+                              if (mounted) {
+                                final messenger = ScaffoldMessenger.of(context);
+                                messenger.showSnackBar(
+                                  const SnackBar(
+                                    content: Text('Paiement effectué avec succès'),
+                                    backgroundColor: Colors.green,
+                                  ),
+                                );
+                              }
+                            }
+                          },
+                          icon: const Icon(Icons.payment),
+                          label: Text(
+                            'Payer ${PaymentHelper.formatAmount(
+                              _professional!.tarif! * (widget.reservation.heures > 0 
+                                  ? widget.reservation.heures 
+                                  : 8.0)
+                            )}',
+                          ),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppTheme.primary,
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(vertical: 16),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                    ],
                     SizedBox(
                       width: double.infinity,
                       child: ElevatedButton(

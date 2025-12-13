@@ -61,7 +61,7 @@ class _ProfessionalsListScreenState extends State<ProfessionalsListScreen> {
               children: [
                 // Filtre par ville
                 DropdownButtonFormField<String>(
-                  value: tempCity,
+                  initialValue: tempCity,
                   decoration: const InputDecoration(
                     labelText: 'Ville',
                     prefixIcon: Icon(Icons.location_city),
@@ -86,7 +86,7 @@ class _ProfessionalsListScreenState extends State<ProfessionalsListScreen> {
 
                 // Filtre par catégorie
                 DropdownButtonFormField<String>(
-                  value: tempCategory,
+                  initialValue: tempCategory,
                   decoration: const InputDecoration(
                     labelText: 'Catégorie',
                     prefixIcon: Icon(Icons.work),
@@ -152,7 +152,7 @@ class _ProfessionalsListScreenState extends State<ProfessionalsListScreen> {
     // Le bouton retour système ne devrait rien faire ici
     return PopScope(
       canPop: false,
-      onPopInvoked: (didPop) {
+      onPopInvokedWithResult: (didPop, result) {
         // Ne rien faire - on est dans un IndexedStack, le retour est géré par le HomeScreen
       },
       child: Scaffold(
@@ -177,7 +177,7 @@ class _ProfessionalsListScreenState extends State<ProfessionalsListScreen> {
                 borderRadius: BorderRadius.circular(16),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.05),
+                    color: Colors.black.withValues(alpha: 0.05),
                     blurRadius: 10,
                     offset: const Offset(0, 2),
                   ),

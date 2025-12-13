@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:intl/intl.dart';
 import '../../viewmodels/auth_viewmodel.dart';
 import '../../services/backend_api_service.dart';
 import '../../config/app_config.dart';
@@ -19,6 +20,8 @@ import 'legal_info_screen.dart';
 import 'edit_personal_info_screen.dart';
 import 'family_members_screen.dart';
 import 'my_reports_screen.dart';
+import '../support/support_screen.dart';
+import '../../utils/backend_diagnostics.dart';
 
 /// Page Profile modernisée, intégrée à BackendApiService + Provider
 /// - Thème dégradé vert
@@ -306,7 +309,7 @@ class _ProfileScreenState extends State<ProfileScreen>
         width: 42,
         height: 42,
         decoration: BoxDecoration(
-          color: (leadingColor ?? AppTheme.primary).withOpacity(0.12),
+          color: (leadingColor ?? AppTheme.primary).withValues(alpha: 0.12),
           borderRadius: BorderRadius.circular(10),
         ),
         child: Icon(icon, color: leadingColor ?? AppTheme.primary),
@@ -334,6 +337,64 @@ class _ProfileScreenState extends State<ProfileScreen>
       return parts.sublist(0, parts.length - 1).join(' ');
     }
     return '';
+  }
+  
+  /// Formate dateOfBirth (string) ou dateNaissance (DateTime) pour l'affichage
+  String _formatDateOfBirth() {
+    String? dateStr;
+    
+    // Priorité à dateOfBirth (string format YYYY-MM-DD)
+    if (_user!.dateOfBirth != null && _user!.dateOfBirth!.isNotEmpty) {
+      try {
+        final dateTime = DateTime.tryParse(_user!.dateOfBirth!);
+        if (dateTime != null) {
+          dateStr = _formatDateSafe(dateTime);
+        }
+      } catch (e) {
+        // Si le parsing échoue, essayer comme string direct
+        dateStr = _user!.dateOfBirth;
+      }
+    }
+    
+    // Fallback sur dateNaissance (DateTime)
+    if (dateStr == null && _user!.dateNaissance != null) {
+      dateStr = _formatDateSafe(_user!.dateNaissance!);
+    }
+    
+    return dateStr ?? 'Non renseignée';
+  }
+
+  String _formatDate(DateTime date) {
+    try {
+      // Vérifier que la date est valide
+      if (date.year < 1900 || date.year > 2100) {
+        return '${date.day}/${date.month}/${date.year}';
+      }
+      // Essayer avec la locale française
+      try {
+        return DateFormat('dd/MM/yyyy', 'fr_FR').format(date);
+      } catch (e) {
+        // Si la locale n'est pas disponible, utiliser le formatage simple
+        return '${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}/${date.year}';
+      }
+    } catch (e) {
+      // Fallback ultime si le formatage échoue complètement
+      try {
+        return '${date.day}/${date.month}/${date.year}';
+      } catch (_) {
+        return 'Date invalide';
+      }
+    }
+  }
+
+  String _formatDateSafe(DateTime? date) {
+    if (date == null) return 'Non renseignée';
+    try {
+      return _formatDate(date);
+    } catch (e) {
+      print('❌ [PROFILE] Erreur formatage date: $e');
+      return 'Date invalide';
+    }
   }
 
   Widget _buildInfoRow(String label, String value) {
@@ -509,17 +570,19 @@ class _ProfileScreenState extends State<ProfileScreen>
 
   @override
   Widget build(BuildContext context) {
-    if (_isLoading)
+    if (_isLoading) {
       return const Scaffold(body: Center(child: CircularProgressIndicator()));
-    if (_user == null)
+    }
+    if (_user == null) {
       return const Scaffold(
           body: Center(child: Text('Utilisateur introuvable')));
+    }
 
     // ProfileScreen est dans un IndexedStack, donc il n'est pas dans la pile de navigation
     // Le bouton retour système ne devrait rien faire ici
     return PopScope(
       canPop: false,
-      onPopInvoked: (didPop) {
+      onPopInvokedWithResult: (didPop, result) {
         // Ne rien faire - on est dans un IndexedStack, le retour est géré par le HomeScreen
       },
       child: Scaffold(
@@ -553,7 +616,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                                 children: [
                                   CircleAvatar(
                                     radius: 50,
-                                    backgroundColor: AppTheme.primary.withOpacity(0.1),
+                                    backgroundColor: AppTheme.primary.withValues(alpha: 0.1),
                                     backgroundImage: _user!.photo != null && _user!.photo!.isNotEmpty
                                         ? (_user!.photo!.startsWith('http')
                                             ? NetworkImage(_user!.photo!)
@@ -588,15 +651,39 @@ class _ProfileScreenState extends State<ProfileScreen>
                                   child: Column(
                                     crossAxisAlignment: CrossAxisAlignment.start,
                                     children: [
-                                      _buildInfoRow('Nom', _user!.name),
+                                      // ✅ Afficher firstName/lastName si disponibles, sinon extraire du name
+                                      if (_user!.firstName != null && _user!.firstName!.isNotEmpty)
+                                        _buildInfoRow('Prénom', _user!.firstName!),
+                                      if (_user!.firstName != null && _user!.firstName!.isNotEmpty)
+                                        const SizedBox(height: 12),
+                                      if (_user!.lastName != null && _user!.lastName!.isNotEmpty)
+                                        _buildInfoRow('Nom', _user!.lastName!),
+                                      if (_user!.lastName != null && _user!.lastName!.isNotEmpty)
+                                        const SizedBox(height: 12),
+                                      // Si pas de firstName/lastName, utiliser l'ancienne méthode
+                                      if ((_user!.firstName == null || _user!.firstName!.isEmpty) &&
+                                          (_user!.lastName == null || _user!.lastName!.isEmpty)) ...[
+                                        _buildInfoRow('Nom', _user!.name),
+                                        const SizedBox(height: 12),
+                                        _buildInfoRow('Prénom', _extractFirstName(_user!.name)),
+                                        const SizedBox(height: 12),
+                                      ],
+                                      _buildInfoRow(
+                                        'Date de naissance',
+                                        _formatDateOfBirth(),
+                                      ),
                                       const SizedBox(height: 12),
-                                      _buildInfoRow('Prénom', _extractFirstName(_user!.name)),
+                                      _buildInfoRow(
+                                        'Âge',
+                                        _user!.age != null ? '${_user!.age} ans' : 'Non calculé',
+                                      ),
                                       const SizedBox(height: 12),
-                                      _buildInfoRow('Date de naissance', 'Non renseignée'),
-                                      const SizedBox(height: 12),
-                                      _buildInfoRow('Âge', 'Non calculé'),
-                                      const SizedBox(height: 12),
-                                      _buildInfoRow('Adresse', _user!.ville ?? 'Non renseignée'),
+                                      // ✅ Afficher address si disponible
+                                      if (_user!.address != null && _user!.address!.isNotEmpty)
+                                        _buildInfoRow('Adresse', _user!.address!),
+                                      if (_user!.address != null && _user!.address!.isNotEmpty)
+                                        const SizedBox(height: 12),
+                                      _buildInfoRow('Ville', _user!.ville ?? 'Non renseignée'),
                                     ],
                                   ),
                                 ),
@@ -694,6 +781,20 @@ class _ProfileScreenState extends State<ProfileScreen>
                   ]),
                   _sectionTitle('Support'),
                   _card([
+                    _tile('Aide & Support', Icons.support_agent,
+                        leadingColor: AppTheme.primary, onTap: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => const SupportScreen(),
+                        ),
+                      );
+                    }),
+                    const Divider(),
+                    _tile('🔍 Diagnostic Backend', Icons.bug_report,
+                        leadingColor: Colors.blue, onTap: () {
+                      BackendDiagnostics.showDiagnosticsDialog(context);
+                    }),
+                    const Divider(),
                     FutureBuilder<int>(
                       future: _getOpenReportsCount(),
                       builder: (context, snapshot) {
@@ -769,8 +870,11 @@ class _ProfileScreenState extends State<ProfileScreen>
 
                       if (confirm == true) {
                         // TODO: Implémenter la suppression du compte via l'API backend
-                        ScaffoldMessenger.of(context).showSnackBar(
+                        if (mounted) {
+                          final messenger = ScaffoldMessenger.of(context);
+                          messenger.showSnackBar(
                             const SnackBar(content: Text('Compte supprimé')));
+                        }
                       }
                     }),
                   ]),
@@ -781,7 +885,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                         width: 42,
                         height: 42,
                         decoration: BoxDecoration(
-                            color: const Color(0xFFA8E063).withOpacity(0.12),
+                            color: const Color(0xFFA8E063).withValues(alpha: 0.12),
                             borderRadius: BorderRadius.circular(10)),
                         child: const Icon(Icons.upload_file,
                             color: AppTheme.accent),

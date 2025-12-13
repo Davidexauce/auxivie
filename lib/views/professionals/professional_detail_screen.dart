@@ -7,6 +7,8 @@ import '../../theme/app_theme.dart';
 import '../messages/chat_screen.dart';
 import '../reservations/create_reservation_screen.dart';
 import '../profile/report_user_modal.dart';
+import '../../widgets/protected_contact_info.dart';
+import '../../config/app_config.dart';
 
 /// Écran de détails d'un professionnel
 class ProfessionalDetailScreen extends StatefulWidget {
@@ -26,11 +28,30 @@ class _ProfessionalDetailScreenState extends State<ProfessionalDetailScreen> {
   Map<String, dynamic>? _rating;
   List<Map<String, dynamic>> _reviews = [];
   bool _isLoading = true;
+  UserModel? _protectedProfessional;
 
   @override
   void initState() {
     super.initState();
+    _loadProtectedProfessional();
     _loadBadgesRatingAndReviews();
+  }
+
+  Future<void> _loadProtectedProfessional() async {
+    if (widget.professional.id == null) return;
+
+    try {
+      final protected = await BackendApiService.getProtectedUser(widget.professional.id!);
+      if (mounted) {
+        setState(() {
+          _protectedProfessional = protected;
+        });
+      }
+    } catch (e) {
+      if (AppConfig.enableLogging) {
+        print('⚠️ Erreur chargement professionnel protégé: $e');
+      }
+    }
   }
 
   Future<void> _loadBadgesRatingAndReviews() async {
@@ -98,7 +119,7 @@ class _ProfessionalDetailScreenState extends State<ProfessionalDetailScreen> {
               icon: const Icon(Icons.flag_outlined),
               tooltip: 'Signaler',
               onPressed: () async {
-                final result = await showDialog<bool>(
+                await showDialog<bool>(
                   context: context,
                   builder: (context) => ReportUserModal(
                     reportedUser: widget.professional,
@@ -122,8 +143,8 @@ class _ProfessionalDetailScreenState extends State<ProfessionalDetailScreen> {
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                   colors: [
-                    Theme.of(context).primaryColor.withOpacity(0.1),
-                    Theme.of(context).primaryColor.withOpacity(0.05),
+                    Theme.of(context).primaryColor.withValues(alpha: 0.1),
+                    Theme.of(context).primaryColor.withValues(alpha: 0.05),
                   ],
                 ),
               ),
@@ -137,7 +158,7 @@ class _ProfessionalDetailScreenState extends State<ProfessionalDetailScreen> {
                       borderRadius: BorderRadius.circular(24),
                       boxShadow: [
                         BoxShadow(
-                          color: Theme.of(context).primaryColor.withOpacity(0.3),
+                          color: Theme.of(context).primaryColor.withValues(alpha: 0.3),
                           blurRadius: 12,
                           offset: const Offset(0, 4),
                         ),
@@ -166,7 +187,7 @@ class _ProfessionalDetailScreenState extends State<ProfessionalDetailScreen> {
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                     decoration: BoxDecoration(
-                      color: Theme.of(context).primaryColor.withOpacity(0.15),
+                      color: Theme.of(context).primaryColor.withValues(alpha: 0.15),
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Text(
@@ -194,26 +215,15 @@ class _ProfessionalDetailScreenState extends State<ProfessionalDetailScreen> {
                       label: 'Ville',
                       value: widget.professional.ville!,
                     ),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 24),
                   ],
 
-                  // Téléphone
-                  if (widget.professional.phone != null) ...[
-                    _InfoRow(
-                      icon: Icons.phone,
-                      label: 'Téléphone',
-                      value: widget.professional.phone!,
-                    ),
-                    const SizedBox(height: 16),
-                  ],
-
-                  // Email
-                  _InfoRow(
-                    icon: Icons.email,
-                    label: 'Email',
-                    value: widget.professional.email,
-                  ),
-                  const SizedBox(height: 16),
+                  // Informations de contact protégées
+                  if (_protectedProfessional != null)
+                    ProtectedContactInfo(user: _protectedProfessional!)
+                  else
+                    ProtectedContactInfo(user: widget.professional),
+                  const SizedBox(height: 24),
 
                   // Tarif horaire
                   if (widget.professional.tarif != null) ...[
@@ -285,7 +295,7 @@ class _ProfessionalDetailScreenState extends State<ProfessionalDetailScreen> {
                         const Icon(Icons.star, color: Colors.amber, size: 28),
                         const SizedBox(width: 8),
                         Text(
-                          '${(_rating!['averageRating'] as num?)?.toStringAsFixed(1) ?? '0.0'}',
+                          (_rating!['averageRating'] as num?)?.toStringAsFixed(1) ?? '0.0',
                           style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                             fontWeight: FontWeight.bold,
                             color: AppTheme.textPrimary,
@@ -442,7 +452,7 @@ class _ProfessionalDetailScreenState extends State<ProfessionalDetailScreen> {
                             ],
                           ),
                         );
-                      }).toList(),
+                      }),
                       if (_reviews.length > 10)
                         Padding(
                           padding: const EdgeInsets.only(top: 8),

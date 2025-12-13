@@ -22,17 +22,41 @@ class ProfessionalDashboardScreen extends StatefulWidget {
   State<ProfessionalDashboardScreen> createState() => _ProfessionalDashboardScreenState();
 }
 
-class _ProfessionalDashboardScreenState extends State<ProfessionalDashboardScreen> {
+class _ProfessionalDashboardScreenState extends State<ProfessionalDashboardScreen> with WidgetsBindingObserver {
   List<Map<String, dynamic>> _badges = [];
   bool _badgesLoaded = false;
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _loadData();
       _loadBadges();
     });
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    super.didChangeAppLifecycleState(state);
+    // Recharger les données quand l'app revient au premier plan
+    if (state == AppLifecycleState.resumed && mounted) {
+      _loadData();
+      _loadBadges();
+    }
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Ne pas recharger ici car didChangeDependencies peut être appelé plusieurs fois
+    // Le rechargement se fait via didChangeAppLifecycleState et initState
   }
 
   void _loadData() {
@@ -70,7 +94,7 @@ class _ProfessionalDashboardScreenState extends State<ProfessionalDashboardScree
     // Le bouton retour système ne devrait rien faire ici
     return PopScope(
       canPop: false,
-      onPopInvoked: (didPop) {
+      onPopInvokedWithResult: (didPop, result) {
         // Ne rien faire - on est dans un IndexedStack, le retour est géré par le HomeScreen
       },
       child: SafeArea(
@@ -207,7 +231,7 @@ class _ProfessionalHeader extends StatelessWidget {
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: AppTheme.primary.withOpacity(0.3),
+            color: AppTheme.primary.withValues(alpha: 0.3),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -221,7 +245,7 @@ class _ProfessionalHeader extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.2),
+                  color: Colors.white.withValues(alpha: 0.2),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: const Icon(Icons.work_rounded, color: Colors.white, size: 24),
@@ -234,7 +258,7 @@ class _ProfessionalHeader extends StatelessWidget {
                     Text(
                       'Tableau de bord',
                       style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        color: Colors.white.withOpacity(0.9),
+                        color: Colors.white.withValues(alpha: 0.9),
                         fontSize: 14,
                       ),
                     ),
@@ -252,47 +276,49 @@ class _ProfessionalHeader extends StatelessWidget {
               ),
             ],
           ),
-          const SizedBox(height: 12),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-            decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.2),
-              borderRadius: BorderRadius.circular(20),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(Icons.badge_rounded, color: Colors.white, size: 16),
-                const SizedBox(width: 6),
-                Text(
-                  category,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 12,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-                if (city != null) ...[
-                  const SizedBox(width: 8),
+          if (category.isNotEmpty && category != 'Famille') ...[
+            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.2),
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.badge_rounded, color: Colors.white, size: 16),
+                  const SizedBox(width: 6),
                   Text(
-                    '•',
-                    style: TextStyle(color: Colors.white.withOpacity(0.7)),
-                  ),
-                  const SizedBox(width: 8),
-                  Icon(Icons.location_on_rounded, color: Colors.white, size: 14),
-                  const SizedBox(width: 4),
-                  Text(
-                    city!,
+                    category,
                     style: const TextStyle(
                       color: Colors.white,
                       fontSize: 12,
                       fontWeight: FontWeight.w500,
                     ),
                   ),
+                  if (city != null && city!.isNotEmpty) ...[
+                    const SizedBox(width: 8),
+                    Text(
+                      '•',
+                      style: TextStyle(color: Colors.white.withValues(alpha: 0.7)),
+                    ),
+                    const SizedBox(width: 8),
+                    Icon(Icons.location_on_rounded, color: Colors.white, size: 14),
+                    const SizedBox(width: 4),
+                    Text(
+                      city!,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
                 ],
-              ],
+              ),
             ),
-          ),
+          ],
         ],
       ),
     );
@@ -423,7 +449,7 @@ class _ProfessionalStatCard extends StatelessWidget {
         border: Border.all(color: AppTheme.borderLight),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.03),
+            color: Colors.black.withValues(alpha: 0.03),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
@@ -438,7 +464,7 @@ class _ProfessionalStatCard extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: color.withOpacity(0.1),
+                  color: color.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: Icon(icon, color: color, size: 20),
@@ -569,7 +595,7 @@ class _ProfessionalReservationCard extends StatelessWidget {
             width: 56,
             height: 56,
             decoration: BoxDecoration(
-              color: color.withOpacity(0.1),
+              color: color.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(12),
             ),
             child: Column(
@@ -618,7 +644,7 @@ class _ProfessionalReservationCard extends StatelessWidget {
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                   decoration: BoxDecoration(
-                    color: color.withOpacity(0.1),
+                    color: color.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Text(
@@ -815,11 +841,13 @@ class _ProfessionalTipsSection extends StatelessWidget {
               size: 24,
             ),
             const SizedBox(width: 8),
-            Text(
-              'Conseils pour optimiser votre activité',
-              style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                fontWeight: FontWeight.bold,
-                color: AppTheme.textPrimary,
+            Expanded(
+              child: Text(
+                'Conseils pour optimiser votre activité',
+                style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: AppTheme.textPrimary,
+                ),
               ),
             ),
           ],

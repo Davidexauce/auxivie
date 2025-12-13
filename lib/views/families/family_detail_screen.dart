@@ -3,7 +3,6 @@ import 'package:provider/provider.dart';
 import '../../models/user_model.dart';
 import '../../viewmodels/auth_viewmodel.dart';
 import '../../theme/app_theme.dart';
-import '../../services/backend_api_service.dart';
 import '../messages/chat_screen.dart';
 import '../profile/report_user_modal.dart';
 
@@ -21,43 +20,9 @@ class FamilyDetailScreen extends StatefulWidget {
 }
 
 class _FamilyDetailScreenState extends State<FamilyDetailScreen> {
-  bool _isLoadingReviews = false;
-  Map<String, dynamic>? _rating;
-  List<Map<String, dynamic>> _reviews = [];
-
-  @override
-  void initState() {
-    super.initState();
-    _loadReviews();
-  }
-
-  Future<void> _loadReviews() async {
-    if (widget.family.id == null) return;
-
-    setState(() => _isLoadingReviews = true);
-
-    try {
-      final rating = await BackendApiService.getRating(widget.family.id!);
-      final reviews = await BackendApiService.getReviews(widget.family.id!);
-
-      setState(() {
-        _rating = rating?.toMap();
-        _reviews = reviews.map((r) => r.toMap()).toList();
-        _isLoadingReviews = false;
-      });
-    } catch (e) {
-      setState(() => _isLoadingReviews = false);
-    }
-  }
-
-  String _formatDate(String dateString) {
-    try {
-      final date = DateTime.parse(dateString);
-      return '${date.day}/${date.month}/${date.year}';
-    } catch (e) {
-      return dateString;
-    }
-  }
+  // Note: Les variables _rating, _reviews, _isLoadingReviews et _formatDate
+  // ont été supprimées car elles n'étaient pas utilisées dans le build()
+  // TODO: Implémenter l'affichage des avis si nécessaire à l'avenir
 
   @override
   Widget build(BuildContext context) {

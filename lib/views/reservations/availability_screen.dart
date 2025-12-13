@@ -232,7 +232,7 @@ class _AvailabilityScreenState extends State<AvailabilityScreen> {
                       ),
                       const SizedBox(height: 8),
                       DropdownButtonFormField<String>(
-                        value: heureDebut,
+                        initialValue: heureDebut,
                         decoration: const InputDecoration(
                           border: OutlineInputBorder(),
                           contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
@@ -266,7 +266,7 @@ class _AvailabilityScreenState extends State<AvailabilityScreen> {
                       ),
                       const SizedBox(height: 8),
                       DropdownButtonFormField<String>(
-                        value: heureFin,
+                        initialValue: heureFin,
                         decoration: const InputDecoration(
                           border: OutlineInputBorder(),
                           contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),

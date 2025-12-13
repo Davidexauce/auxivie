@@ -294,11 +294,20 @@ class BackendApiService {
     try {
       final response = await http.get(
         Uri.parse('$baseUrl/users/$id'),
-        headers: _getPublicHeaders(),
+        headers: await _getAuthHeaders(), // Utiliser les headers authentifiés
         ).timeout(AppConfig.apiTimeout);
 
       if (response.statusCode == 200) {
-        return UserModel.fromMap(json.decode(response.body) as Map<String, dynamic>);
+        final data = json.decode(response.body) as Map<String, dynamic>;
+        if (AppConfig.enableLogging) {
+          print('📝 [GET USER BY ID] Données reçues pour user $id:');
+          print('   firstName: ${data['firstName']}');
+          print('   lastName: ${data['lastName']}');
+          print('   name: ${data['name']}');
+          print('   address: ${data['address']}');
+          print('   dateOfBirth: ${data['dateOfBirth']}');
+        }
+        return UserModel.fromMap(data);
       }
       return null;
     } catch (e) {
@@ -397,9 +406,35 @@ class BackendApiService {
   /// Synchronise un utilisateur (création ou mise à jour)
   static Future<Map<String, dynamic>?> syncUser(Map<String, dynamic> userData) async {
     try {
+      // Log des données envoyées pour debug
+      if (AppConfig.enableLogging) {
+        print('📤 [SYNC USER] Envoi des données:');
+        print('   id: ${userData['id']}');
+        print('   name: ${userData['name']}');
+        print('   firstName: ${userData['firstName']}');
+        print('   lastName: ${userData['lastName']}');
+        print('   email: ${userData['email']}');
+        print('   password: ${userData['password'] != null ? "***" : "null (non envoyé)"}');
+        print('   phone: ${userData['phone']}');
+        print('   categorie: ${userData['categorie']}');
+        print('   userType: ${userData['userType']}');
+        print('   dateOfBirth: ${userData['dateOfBirth']}');
+        print('   address: ${userData['address']}');
+        print('   ville: ${userData['ville']}');
+        print('   experience: ${userData['experience']}');
+        print('📤 [SYNC USER] JSON complet: ${jsonEncode(userData)}');
+      }
+      
+      // Pour la création (id null), utiliser les headers publics
+      // Pour la mise à jour (id présent), utiliser les headers authentifiés
+      final isCreation = userData['id'] == null;
+      final headers = isCreation 
+          ? _getPublicHeaders() 
+          : await _getAuthHeaders();
+      
       final response = await http.post(
         Uri.parse('$baseUrl/users/sync'),
-        headers: _getPublicHeaders(),
+        headers: headers,
         body: jsonEncode(userData),
         ).timeout(AppConfig.apiTimeout);
 
@@ -407,7 +442,7 @@ class BackendApiService {
       final contentType = response.headers['content-type'] ?? '';
       if (!contentType.contains('application/json')) {
         if (AppConfig.enableLogging) {
-          print('❌ Erreur syncUser: Le serveur a retourné du ${contentType} au lieu de JSON');
+          print('❌ Erreur syncUser: Le serveur a retourné du $contentType au lieu de JSON');
           print('URL appelée: $baseUrl/users/sync');
           print('Réponse (premiers 200 caractères): ${response.body.substring(0, response.body.length > 200 ? 200 : response.body.length)}');
         }
@@ -428,13 +463,18 @@ class BackendApiService {
         // Essayer de parser l'erreur JSON
         try {
           final error = json.decode(response.body);
+          final errorMessage = error['message'] ?? error['error'] ?? response.body;
           if (AppConfig.enableLogging) {
-            print('❌ Erreur syncUser: ${response.statusCode} - ${error['message'] ?? response.body}');
+            print('❌ Erreur syncUser: ${response.statusCode} - $errorMessage');
+            print('📤 [SYNC USER] Données envoyées (pour debug):');
+            print('   ${jsonEncode(userData)}');
           }
         } catch (_) {
           // Si ce n'est pas du JSON, afficher la réponse brute
           if (AppConfig.enableLogging) {
             print('❌ Erreur syncUser: ${response.statusCode} - ${response.body.substring(0, response.body.length > 200 ? 200 : response.body.length)}');
+            print('📤 [SYNC USER] Données envoyées (pour debug):');
+            print('   ${jsonEncode(userData)}');
           }
         }
         return null;
@@ -456,15 +496,20 @@ class BackendApiService {
   static Future<Map<String, dynamic>?> createUser(UserModel user) async {
     return await syncUser({
       'name': user.name,
+      'firstName': user.firstName,
+      'lastName': user.lastName,
       'email': user.email,
       'password': user.password,
       'phone': user.phone,
+      'dateOfBirth': user.dateOfBirth,
+      'address': user.address,
       'categorie': user.categorie,
       'ville': user.ville,
       'tarif': user.tarif?.toString(),
       'experience': user.experience?.toString(),
       'photo': user.photo,
       'userType': user.userType,
+      'dateNaissance': user.dateNaissance?.toIso8601String(), // Garder pour compatibilité
       'besoin': user.besoin,
       'preference': user.preference,
       'mission': user.mission,
@@ -474,31 +519,105 @@ class BackendApiService {
 
   /// Met à jour un utilisateur
   static Future<bool> updateUser(int userId, Map<String, dynamic> updates) async {
-    // Récupérer l'utilisateur actuel
-    final user = await getUserById(userId);
-    if (user == null) return false;
+    try {
+      // Essayer d'abord d'utiliser PUT /users/:id (route dédiée pour mise à jour)
+      // Si elle n'existe pas, on utilisera syncUser en fallback
+      try {
+        final headers = await _getAuthHeaders();
+        final userData = <String, dynamic>{};
+        
+        // Ne mettre que les champs qui sont dans updates (pas tous les champs)
+        if (updates.containsKey('name')) userData['name'] = updates['name'];
+        if (updates.containsKey('firstName')) userData['firstName'] = updates['firstName'];
+        if (updates.containsKey('lastName')) userData['lastName'] = updates['lastName'];
+        if (updates.containsKey('email')) userData['email'] = updates['email'];
+        if (updates.containsKey('password') && updates['password'] != null && updates['password'].toString().isNotEmpty) {
+          userData['password'] = updates['password'];
+        }
+        if (updates.containsKey('phone')) userData['phone'] = updates['phone'];
+        if (updates.containsKey('dateOfBirth')) userData['dateOfBirth'] = updates['dateOfBirth'];
+        if (updates.containsKey('address')) userData['address'] = updates['address'];
+        if (updates.containsKey('categorie')) userData['categorie'] = updates['categorie'];
+        // Le backend peut utiliser 'city' ou 'ville', essayer les deux
+        if (updates.containsKey('ville')) {
+          userData['ville'] = updates['ville'];
+          userData['city'] = updates['ville']; // Fallback pour compatibilité
+        }
+        if (updates.containsKey('tarif')) userData['tarif'] = updates['tarif']?.toString();
+        if (updates.containsKey('experience')) userData['experience'] = updates['experience']?.toString();
+        if (updates.containsKey('photo')) userData['photo'] = updates['photo'];
+        if (updates.containsKey('dateNaissance')) userData['dateNaissance'] = updates['dateNaissance'];
+        if (updates.containsKey('besoin')) userData['besoin'] = updates['besoin'];
+        if (updates.containsKey('preference')) userData['preference'] = updates['preference'];
+        if (updates.containsKey('mission')) userData['mission'] = updates['mission'];
+        if (updates.containsKey('particularite')) userData['particularite'] = updates['particularite'];
+        
+        if (AppConfig.enableLogging) {
+          print('📤 [UPDATE USER] Tentative PUT /users/$userId');
+          print('📤 [UPDATE USER] Données: ${jsonEncode(userData)}');
+        }
+        
+        final response = await http.put(
+          Uri.parse('$baseUrl/users/$userId'),
+          headers: headers,
+          body: jsonEncode(userData),
+        ).timeout(AppConfig.apiTimeout);
+        
+        if (response.statusCode == 200 || response.statusCode == 201) {
+          if (AppConfig.enableLogging) {
+            print('✅ [UPDATE USER] Mise à jour réussie via PUT /users/$userId');
+          }
+          return true;
+        }
+        
+        // Si PUT n'existe pas ou retourne une erreur, on continue avec syncUser
+        if (AppConfig.enableLogging) {
+          print('⚠️ [UPDATE USER] PUT /users/$userId a échoué (${response.statusCode}), utilisation de syncUser');
+        }
+      } catch (e) {
+        if (AppConfig.enableLogging) {
+          print('⚠️ [UPDATE USER] PUT /users/$userId n\'existe peut-être pas, utilisation de syncUser: $e');
+        }
+      }
+      
+      // Fallback: Utiliser syncUser avec tous les champs (sans password si pas modifié)
+      final user = await getUserById(userId);
+      if (user == null) return false;
 
-    // Fusionner les mises à jour
-    final userData = {
-      'id': userId,
-      'name': updates['name'] ?? user.name,
-      'email': updates['email'] ?? user.email,
-      'password': updates['password'] ?? user.password,
-      'phone': updates['phone'] ?? user.phone,
-      'categorie': updates['categorie'] ?? user.categorie,
-      'ville': updates['ville'] ?? user.ville,
-      'tarif': updates['tarif']?.toString() ?? user.tarif?.toString(),
-      'experience': updates['experience']?.toString() ?? user.experience?.toString(),
-      'photo': updates['photo'] ?? user.photo,
-      'userType': user.userType,
-      'besoin': updates['besoin'] ?? user.besoin,
-      'preference': updates['preference'] ?? user.preference,
-      'mission': updates['mission'] ?? user.mission,
-      'particularite': updates['particularite'] ?? user.particularite,
-    };
+      // Fusionner les mises à jour
+      final userDataSync = <String, dynamic>{
+        'id': userId,
+        'name': updates['name'] ?? user.name,
+        'firstName': updates['firstName'] ?? user.firstName,
+        'lastName': updates['lastName'] ?? user.lastName,
+        'email': updates['email'] ?? user.email,
+        // Ne pas envoyer password si on ne le modifie pas (sécurité)
+        if (updates.containsKey('password') && updates['password'] != null && updates['password'].toString().isNotEmpty)
+          'password': updates['password'],
+        'phone': updates['phone'] ?? user.phone,
+        'dateOfBirth': updates['dateOfBirth'] ?? user.dateOfBirth,
+        'address': updates['address'] ?? user.address,
+        'categorie': updates['categorie'] ?? user.categorie,
+        'ville': updates['ville'] ?? user.ville,
+        'tarif': updates['tarif']?.toString() ?? user.tarif?.toString(),
+        'experience': updates['experience']?.toString() ?? user.experience?.toString(),
+        'photo': updates['photo'] ?? user.photo,
+        'userType': user.userType,
+        'dateNaissance': updates['dateNaissance'] ?? user.dateNaissance?.toIso8601String(),
+        'besoin': updates['besoin'] ?? user.besoin,
+        'preference': updates['preference'] ?? user.preference,
+        'mission': updates['mission'] ?? user.mission,
+        'particularite': updates['particularite'] ?? user.particularite,
+      };
 
-    final result = await syncUser(userData);
-    return result != null;
+      final result = await syncUser(userDataSync);
+      return result != null;
+    } catch (e) {
+      if (AppConfig.enableLogging) {
+        print('❌ Erreur updateUser: $e');
+      }
+      return false;
+    }
   }
 
   // ========== DISPONIBILITÉS ==========
@@ -991,10 +1110,7 @@ class BackendApiService {
       }
       
       // Décoder le token JWT pour diagnostiquer
-      Map<String, dynamic>? jwtPayload;
-      if (token != null) {
-        jwtPayload = _decodeJwtPayload(token);
-      }
+      final jwtPayload = _decodeJwtPayload(token);
       
       if (AppConfig.enableLogging) {
         print('📡 [REVIEW] Création avis (même config que createReport):');
@@ -1004,7 +1120,8 @@ class BackendApiService {
           print('   reservationId: $reservationId');
         }
         if (comment != null && comment.trim().isNotEmpty) {
-          print('   comment: ${comment.trim().length > 50 ? comment.trim().substring(0, 50) + "..." : comment.trim()}');
+          final commentPreview = comment.trim().length > 50 ? '${comment.trim().substring(0, 50)}...' : comment.trim();
+          print('   comment: $commentPreview');
         }
         print('   Le reviewerId (userId qui donne l\'avis) sera extrait du token JWT côté backend');
         print('   Le backend utilise req.user.userId (comme pour createReport)');
@@ -1090,7 +1207,7 @@ class BackendApiService {
               print('❌ [REVIEW] Détails de l\'erreur: $errorDetails');
             }
             print('📡 [REVIEW] Response Body complet:');
-            print('${response.body}');
+            print(response.body);
             
             // Analyser l'erreur de contrainte de clé étrangère (même diagnostic que createReport)
             if (errorDetails != null && errorDetails.contains('foreign key constraint')) {
@@ -1350,7 +1467,8 @@ class BackendApiService {
       print('   type: $reason');
       if (description != null && description.trim().isNotEmpty) {
         final desc = description.trim();
-        print('   message: ${desc.length > 50 ? desc.substring(0, 50) + '...' : desc}');
+        final descPreview = desc.length > 50 ? '${desc.substring(0, 50)}...' : desc;
+        print('   message: $descPreview');
       } else {
         print('   message: (vide - peut causer une erreur)');
       }
@@ -1389,7 +1507,7 @@ class BackendApiService {
       if (response.statusCode == 200 || response.statusCode == 201) {
         print('✅ [REPORT] Signalement créé avec succès - Status: ${response.statusCode}');
         print('📡 [REPORT] Réponse complète du backend:');
-        print('${response.body}');
+        print(response.body);
         
         try {
           final data = json.decode(response.body) as Map<String, dynamic>;
@@ -1481,7 +1599,7 @@ class BackendApiService {
         // Toujours logger les erreurs pour le diagnostic
         print('❌ [REPORT] Erreur createReport: ${response.statusCode}');
         print('📡 [REPORT] Response Body complet:');
-        print('${response.body}');
+        print(response.body);
         print('📡 [REPORT] Response Body length: ${response.body.length}');
         try {
           final error = json.decode(response.body) as Map<String, dynamic>;
@@ -1504,7 +1622,7 @@ class BackendApiService {
           print('❌ [REPORT] Erreur parsing JSON: $parseError');
           print('❌ [REPORT] Réponse brute (500 premiers chars):');
           final bodyPreview = response.body.length > 500 
-              ? response.body.substring(0, 500) + '...'
+              ? '${response.body.substring(0, 500)}...'
               : response.body;
           print(bodyPreview);
         }
@@ -1957,6 +2075,109 @@ class BackendApiService {
     } catch (e) {
       if (AppConfig.enableLogging) {
         print('❌ Erreur remboursement: $e');
+      }
+      return null;
+    }
+  }
+
+  // ========== UTILISATEURS PROTÉGÉS ==========
+
+  /// Récupère la liste des professionnels (infos publiques limitées)
+  static Future<List<UserModel>> getProtectedProfessionals() async {
+    try {
+      final response = await http.get(
+        Uri.parse('$baseUrl/protected-users/professionals'),
+        headers: _getPublicHeaders(),
+      ).timeout(AppConfig.apiTimeout);
+
+      if (response.statusCode == 200) {
+        final List<dynamic> data = json.decode(response.body);
+        return data.map((user) => UserModel.fromMap(user as Map<String, dynamic>)).toList();
+      }
+      if (AppConfig.enableLogging) {
+        print('❌ Erreur getProtectedProfessionals: ${response.statusCode} - ${response.body}');
+      }
+      return [];
+    } catch (e) {
+      if (AppConfig.enableLogging) {
+        print('❌ Erreur getProtectedProfessionals: $e');
+      }
+      return [];
+    }
+  }
+
+  /// Récupère les détails d'un utilisateur avec protection selon réservation
+  static Future<UserModel?> getProtectedUser(int userId) async {
+    try {
+      final headers = await _getAuthHeaders();
+      final response = await http.get(
+        Uri.parse('$baseUrl/protected-users/$userId'),
+        headers: headers,
+      ).timeout(AppConfig.apiTimeout);
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body) as Map<String, dynamic>;
+        return UserModel.fromMap(data);
+      }
+   
+      if (response.statusCode == 404) {
+        if (AppConfig.enableLogging) {
+          print('⚠️ Utilisateur non trouvé: $userId');
+        }
+        return null;
+      }
+
+      if (AppConfig.enableLogging) {
+        print('❌ Erreur getProtectedUser: ${response.statusCode} - ${response.body}');
+      }
+      return null;
+    } catch (e) {
+      if (AppConfig.enableLogging) {
+        print('❌ Erreur getProtectedUser: $e');
+      }
+      return null;
+    }
+  }
+
+  /// Récupère les informations de contact si autorisé
+  static Future<Map<String, dynamic>?> getContactInfo(int userId) async {
+    try {
+      final headers = await _getAuthHeaders();
+      final response = await http.get(
+        Uri.parse('$baseUrl/protected-users/$userId/contact-info'),
+        headers: headers,
+      ).timeout(AppConfig.apiTimeout);
+
+      if (response.statusCode == 200) {
+        return json.decode(response.body) as Map<String, dynamic>;
+      }
+   
+      if (response.statusCode == 403) {
+        try {
+          final data = json.decode(response.body) as Map<String, dynamic>;
+          if (AppConfig.enableLogging) {
+            print('⚠️ Accès refusé: ${data['message']}');
+          }
+          return {
+            'canContact': false,
+            'message': data['message'],
+            'status': data['status'],
+          };
+        } catch (e) {
+          return {
+            'canContact': false,
+            'message': 'Accès refusé',
+          };
+        }
+      }
+
+      if (AppConfig.enableLogging) {
+        print('❌ Erreur getContactInfo: ${response.statusCode} - ${response.body}');
+      }
+      return null;
+    } catch (e) {
+      if (AppConfig.enableLogging) {
+        print('❌ Erreur getContactInfo: $e');
       }
       return null;
     }

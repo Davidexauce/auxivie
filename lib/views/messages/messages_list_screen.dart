@@ -43,7 +43,7 @@ class _MessagesListScreenState extends State<MessagesListScreen> {
     // Le bouton retour système ne devrait rien faire ici
     return PopScope(
       canPop: false,
-      onPopInvoked: (didPop) {
+      onPopInvokedWithResult: (didPop, result) {
         // Ne rien faire - on est dans un IndexedStack, le retour est géré par le HomeScreen
         // Juste empêcher le pop pour éviter toute redirection
       },

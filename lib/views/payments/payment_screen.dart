@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_stripe/flutter_stripe.dart' hide Card;
-import 'package:intl/intl.dart';
-import '../../services/payment_service.dart';
+import '../../services/backend_api_service.dart';
+import '../../constants/payment_constants.dart';
 import '../../theme/app_theme.dart';
+import '../../widgets/price_breakdown_widget.dart';
 
-/// Écran de paiement Stripe
 class PaymentScreen extends StatefulWidget {
   final int reservationId;
   final int userId;
@@ -24,46 +24,112 @@ class PaymentScreen extends StatefulWidget {
 }
 
 class _PaymentScreenState extends State<PaymentScreen> {
-  bool _isProcessing = false;
-  String? _errorMessage;
+  bool _isLoading = false;
+  CardFieldInputDetails? _cardDetails;
 
-  Future<void> _processPayment() async {
-    setState(() {
-      _isProcessing = true;
-      _errorMessage = null;
-    });
+  Future<void> _handlePayment() async {
+    if (_cardDetails == null || !_cardDetails!.complete) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Veuillez remplir toutes les informations de la carte'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    setState(() => _isLoading = true);
 
     try {
-      // Utiliser le PaymentSheet pour une meilleure UX
-      final success = await PaymentService.processPaymentWithSheet(
+      // 1. Créer le PaymentIntent côté backend
+      print('💳 [PAYMENT] Création PaymentIntent...');
+      final paymentIntentData = await BackendApiService.createPaymentIntent(
+        reservationId: widget.reservationId,
+        userId: widget.userId,
+        amount: widget.amount,
+        currency: PaymentConstants.defaultCurrency,
+      );
+
+      if (paymentIntentData == null) {
+        throw Exception(PaymentConstants.errorCreateIntent);
+      }
+
+      final clientSecret = paymentIntentData['clientSecret'] as String;
+      final paymentIntentId = paymentIntentData['paymentIntentId'] as String;
+
+      print('✅ [PAYMENT] PaymentIntent créé: $paymentIntentId');
+      print('💳 [PAYMENT] Client Secret: ${clientSecret.substring(0, 20)}...');
+
+      // 2. Confirmer le paiement avec Stripe
+      print('💳 [PAYMENT] Confirmation du paiement avec Stripe...');
+      await Stripe.instance.confirmPayment(
+        paymentIntentClientSecret: clientSecret,
+        data: const PaymentMethodParams.card(
+          paymentMethodData: PaymentMethodData(),
+        ),
+      );
+
+      print('✅ [PAYMENT] Paiement confirmé par Stripe');
+
+      // 3. Confirmer côté backend
+      print('💳 [PAYMENT] Confirmation côté backend...');
+      final confirmed = await BackendApiService.confirmPayment(
+        paymentIntentId: paymentIntentId,
         reservationId: widget.reservationId,
         userId: widget.userId,
         amount: widget.amount,
       );
 
-      if (mounted) {
-        if (success) {
-          Navigator.of(context).pop(true); // Retourner true = paiement réussi
-        } else {
-          setState(() {
-            _errorMessage = 'Le paiement a échoué. Veuillez réessayer.';
-            _isProcessing = false;
-          });
-        }
+      if (confirmed == null) {
+        throw Exception('Erreur lors de la confirmation backend');
       }
+
+      print('✅ [PAYMENT] Paiement confirmé côté backend');
+
+      // 4. Succès !
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(PaymentConstants.successPaymentCompleted),
+          backgroundColor: Colors.green,
+        ),
+      );
+
+      // Retourner true pour indiquer le succès
+      Navigator.of(context).pop(true);
+
     } on StripeException catch (e) {
-      if (mounted) {
-        setState(() {
-          _errorMessage = e.error.message ?? 'Erreur lors du paiement';
-          _isProcessing = false;
-        });
+      print('❌ [PAYMENT] Erreur Stripe: ${e.error.message}');
+      if (!mounted) return;
+
+      String errorMessage = PaymentConstants.errorPaymentFailed;
+     
+      if (e.error.code == FailureCode.Canceled) {
+        errorMessage = PaymentConstants.errorPaymentCanceled;
+      } else if (e.error.message != null) {
+        errorMessage = e.error.message!;
       }
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(errorMessage),
+          backgroundColor: Colors.red,
+        ),
+      );
     } catch (e) {
+      print('❌ [PAYMENT] Erreur générale: $e');
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Erreur: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    } finally {
       if (mounted) {
-        setState(() {
-          _errorMessage = 'Une erreur est survenue. Veuillez réessayer.';
-          _isProcessing = false;
-        });
+        setState(() => _isLoading = false);
       }
     }
   }
@@ -73,171 +139,192 @@ class _PaymentScreenState extends State<PaymentScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Paiement'),
+        backgroundColor: AppTheme.primary,
+        foregroundColor: Colors.white,
       ),
-      body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(24.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              // Informations de la réservation
-              Card(
-                child: Padding(
-                  padding: const EdgeInsets.all(20.0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Réservation',
-                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                              fontWeight: FontWeight.bold,
-                            ),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        'Professionnel: ${widget.professionalName}',
-                        style: Theme.of(context).textTheme.bodyLarge,
-                      ),
-                      const SizedBox(height: 16),
-                      const Divider(),
-                      const SizedBox(height: 16),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Expanded(
-                            child: Text(
-                              'Montant total',
-                              style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                            ),
-                          ),
-                          Flexible(
-                            child: Text(
-                              NumberFormat.currency(locale: 'fr_FR', symbol: '€').format(widget.amount),
-                              style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                                    fontWeight: FontWeight.bold,
-                                    color: AppTheme.primary,
-                                  ),
-                              textAlign: TextAlign.end,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              const SizedBox(height: 32),
-
-              // Message d'information
-              Container(
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            // Récapitulatif
+            Card(
+              child: Padding(
                 padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: AppTheme.primary.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(
-                    color: AppTheme.primary.withValues(alpha: 0.3),
-                  ),
-                ),
-                child: Row(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Icon(
-                      Icons.info_outline,
-                      color: AppTheme.primary,
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Text(
-                        'Vous allez être redirigé vers le paiement sécurisé Stripe pour finaliser votre réservation.',
-                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                              color: AppTheme.textSecondary,
-                            ),
+                    const Text(
+                      'Récapitulatif',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
                       ),
+                    ),
+                    const SizedBox(height: 16),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text('Professionnel:'),
+                        Text(
+                          widget.professionalName,
+                          style: const TextStyle(fontWeight: FontWeight.bold),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text('Réservation:'),
+                        Text(
+                          '#${widget.reservationId}',
+                          style: const TextStyle(fontWeight: FontWeight.bold),
+                        ),
+                      ],
                     ),
                   ],
                 ),
               ),
-              const SizedBox(height: 32),
+            ),
+            
+            const SizedBox(height: 16),
+            
+            // Répartition des prix avec frais de plateforme
+            PriceBreakdownWidget(
+              basePrice: widget.amount,
+              label: 'Détail du montant',
+            ),
 
-              // Message d'erreur
-              if (_errorMessage != null)
-                Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: AppTheme.errorBackground,
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: AppTheme.error),
-                  ),
-                  child: Row(
-                    children: [
-                      const Icon(
-                        Icons.error_outline,
-                        color: AppTheme.error,
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Text(
-                          _errorMessage!,
-                          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                color: AppTheme.error,
-                              ),
-                        ),
-                      ),
-                    ],
+            const SizedBox(height: 24),
+
+            // Note: Le montant affiché dans PriceBreakdownWidget inclut déjà les frais
+            // Le bouton de paiement utilise widget.amount qui doit être le montant total avec frais
+            // Si vous passez le montant de base, utilisez PriceBreakdownWidget pour calculer le total
+
+            // Formulaire de carte
+            const Text(
+              'Informations de paiement',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 16),
+
+            CardField(
+              onCardChanged: (card) {
+                setState(() {
+                  _cardDetails = card;
+                });
+              },
+              style: const TextStyle(
+                color: Colors.black,
+                fontSize: 16,
+              ),
+              decoration: InputDecoration(
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: const BorderSide(color: Colors.grey),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(
+                    color: AppTheme.primary,
+                    width: 2,
                   ),
                 ),
+              ),
+            ),
 
-              if (_errorMessage != null) const SizedBox(height: 24),
+            const SizedBox(height: 24),
 
-              // Bouton de paiement
-              SizedBox(
-                height: 56,
-                child: ElevatedButton(
-                  onPressed: _isProcessing ? null : _processPayment,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppTheme.primary,
-                    foregroundColor: Colors.white,
+            // Info sécurité
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.blue.shade50,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Row(
+                children: [
+                  Icon(Icons.lock, color: Colors.blue.shade700),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      'Paiement sécurisé par Stripe',
+                      style: TextStyle(
+                        color: Colors.blue.shade700,
+                        fontSize: 14,
+                      ),
+                    ),
                   ),
-                  child: _isProcessing
-                      ? const SizedBox(
-                          height: 24,
-                          width: 24,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                          ),
-                        )
-                      : const Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(Icons.payment, size: 24),
-                            SizedBox(width: 8),
-                            Text(
-                              'Payer maintenant',
-                              style: TextStyle(
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ],
-                        ),
+                ],
+              ),
+            ),
+
+            const SizedBox(height: 24),
+
+            // Bouton de paiement
+            ElevatedButton(
+              onPressed: _isLoading ? null : _handlePayment,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppTheme.primary,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
                 ),
               ),
-              const SizedBox(height: 16),
+              child: _isLoading
+                  ? const SizedBox(
+                      height: 20,
+                      width: 20,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                      ),
+                    )
+                  : Text(
+                      'Payer ${widget.amount.toStringAsFixed(2)} ${PaymentConstants.currencySymbol}',
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+            ),
 
-              // Bouton annuler
-              TextButton(
-                onPressed: _isProcessing
-                    ? null
-                    : () => Navigator.of(context).pop(false),
-                child: const Text('Annuler'),
+            const SizedBox(height: 16),
+
+            // Note mode LIVE
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.orange.shade50,
+                borderRadius: BorderRadius.circular(8),
               ),
-            ],
-          ),
+              child: Row(
+                children: [
+                  Icon(Icons.warning_amber, color: Colors.orange.shade700),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      '⚠️ Mode PRODUCTION : Les paiements sont réels',
+                      style: TextStyle(
+                        color: Colors.orange.shade700,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
         ),
       ),
     );
   }
 }
-

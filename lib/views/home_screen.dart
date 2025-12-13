@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../viewmodels/auth_viewmodel.dart';
+import '../viewmodels/message_viewmodel.dart';
 import '../theme/app_theme.dart';
 import 'professionals/professionals_list_screen.dart';
 import 'messages/messages_list_screen.dart';
@@ -25,6 +26,20 @@ class _HomeScreenState extends State<HomeScreen> {
     setState(() {
       _currentIndex = index;
     });
+    
+    // Recharger les conversations quand on revient sur l'écran d'accueil
+    // pour mettre à jour le compteur de messages non lus
+    if (index == 0) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          final authViewModel = Provider.of<AuthViewModel>(context, listen: false);
+          final messageViewModel = Provider.of<MessageViewModel>(context, listen: false);
+          if (authViewModel.currentUser != null) {
+            messageViewModel.loadConversations(authViewModel.currentUser!.id!);
+          }
+        }
+      });
+    }
   }
 
   @override
@@ -56,7 +71,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
     // Définir les écrans disponibles selon le type d'utilisateur
     // Index 0: Accueil, 1: Recherche/Tableau, 2: Messages, 3: Planning, 4: Profil
-    final List<Widget> _screens = [
+    final screens = [
       // Accueil avec statistiques et informations
       HomeDashboardScreen(
         currentUser: currentUser,
@@ -76,7 +91,7 @@ class _HomeScreenState extends State<HomeScreen> {
     ];
 
     // Définir les items de navigation selon le type d'utilisateur
-    final List<BottomNavigationBarItem> _navItems = [
+    final navItems = [
       const BottomNavigationBarItem(
         icon: Icon(Icons.home_rounded),
         label: 'Accueil',
@@ -110,7 +125,7 @@ class _HomeScreenState extends State<HomeScreen> {
         appBar: AppBar(
         backgroundColor: AppTheme.cardBackground,
         elevation: 2,
-        shadowColor: Colors.black.withOpacity(0.1),
+        shadowColor: Colors.black.withValues(alpha: 0.1),
         automaticallyImplyLeading: false,
         title: ShaderMask(
           shaderCallback: (bounds) => AppTheme.textGradient.createShader(bounds),
@@ -138,14 +153,14 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
       body: IndexedStack(
         index: _currentIndex,
-        children: _screens,
+        children: screens,
       ),
       bottomNavigationBar: Container(
         decoration: BoxDecoration(
           color: AppTheme.cardBackground,
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.05),
+              color: Colors.black.withValues(alpha: 0.05),
               blurRadius: 10,
               offset: const Offset(0, -2),
             ),
@@ -176,7 +191,7 @@ class _HomeScreenState extends State<HomeScreen> {
             size: 24,
           ),
           elevation: 8,
-          items: _navItems,
+          items: navItems,
         ),
       ),
     );

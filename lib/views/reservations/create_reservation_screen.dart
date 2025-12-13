@@ -41,7 +41,7 @@ class _CreateReservationScreenState extends State<CreateReservationScreen> {
   final _formKey = GlobalKey<FormState>();
   DateTime _focusedDay = DateTime.now();
   DateTime _selectedDay = DateTime.now();
-  Set<DateTime> _selectedDays = {};
+  final Set<DateTime> _selectedDays = {};
   List<_ReservationDay> _reservationDays = [];
   String _defaultHeureDebut = '09:00';
   String _defaultHeureFin = '17:00';

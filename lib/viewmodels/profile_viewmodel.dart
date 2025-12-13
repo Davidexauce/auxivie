@@ -33,8 +33,8 @@ class ProfileViewModel extends ChangeNotifier {
     notifyListeners();
 
     try {
-      // Charger depuis le backend (base de données unique)
-      _professionals = await BackendApiService.getProfessionals();
+      // Charger depuis le backend avec protection des informations
+      _professionals = await BackendApiService.getProtectedProfessionals();
       
       if (_professionals.isEmpty) {
         _errorMessage = 'Aucun professionnel trouvé';
@@ -62,8 +62,8 @@ class ProfileViewModel extends ChangeNotifier {
     notifyListeners();
 
     try {
-      // Charger tous les professionnels depuis le backend
-      final allProfessionals = await BackendApiService.getProfessionals();
+      // Charger tous les professionnels depuis le backend avec protection
+      final allProfessionals = await BackendApiService.getProtectedProfessionals();
       
       // Appliquer les filtres localement
       _professionals = allProfessionals.where((p) {
@@ -81,10 +81,10 @@ class ProfileViewModel extends ChangeNotifier {
     }
   }
 
-  /// Récupère un professionnel par son ID depuis l'API backend
+  /// Récupère un professionnel par son ID depuis l'API backend (avec protection)
   Future<UserModel?> getProfessionalById(int id) async {
     try {
-      return await BackendApiService.getUserById(id);
+      return await BackendApiService.getProtectedUser(id);
     } catch (e) {
       _errorMessage = 'Erreur lors du chargement du professionnel';
       notifyListeners();
@@ -102,13 +102,18 @@ class ProfileViewModel extends ChangeNotifier {
       // Préparer les mises à jour
       final updates = <String, dynamic>{
         'name': user.name,
+        'firstName': user.firstName,
+        'lastName': user.lastName,
         'email': user.email,
         if (user.phone != null) 'phone': user.phone,
+        'dateOfBirth': user.dateOfBirth,
+        'address': user.address,
         'categorie': user.categorie,
         if (user.ville != null) 'ville': user.ville,
         if (user.tarif != null) 'tarif': user.tarif,
         if (user.experience != null) 'experience': user.experience,
         if (user.photo != null) 'photo': user.photo,
+        if (user.dateNaissance != null) 'dateNaissance': user.dateNaissance!.toIso8601String(), // Garder pour compatibilité
       };
 
       final success = await BackendApiService.updateUser(user.id!, updates);
@@ -133,8 +138,8 @@ class ProfileViewModel extends ChangeNotifier {
   /// Récupère la liste des villes disponibles
   Future<List<String>> getAvailableCities() async {
     try {
-      // Charger depuis le backend
-      final professionals = await BackendApiService.getProfessionals();
+      // Charger depuis le backend avec protection
+      final professionals = await BackendApiService.getProtectedProfessionals();
       final cities = professionals
           .where((p) => p.ville != null && p.ville!.isNotEmpty)
           .map((p) => p.ville!)
@@ -150,8 +155,8 @@ class ProfileViewModel extends ChangeNotifier {
   /// Récupère la liste des catégories disponibles
   Future<List<String>> getAvailableCategories() async {
     try {
-      // Charger depuis le backend
-      final professionals = await BackendApiService.getProfessionals();
+      // Charger depuis le backend avec protection
+      final professionals = await BackendApiService.getProtectedProfessionals();
       final categories = professionals
           .map((p) => p.categorie)
           .toSet()

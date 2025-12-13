@@ -40,7 +40,7 @@ class _EditCountryScreenState extends State<EditCountryScreen> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             DropdownButtonFormField<String>(
-              value: _selectedCountry,
+              initialValue: _selectedCountry,
               decoration: const InputDecoration(
                 labelText: 'Pays',
                 prefixIcon: Icon(Icons.flag),
