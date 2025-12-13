@@ -16,6 +16,8 @@ export default function Messages() {
   const [filter, setFilter] = useState('all'); // all, professionnel, famille
 
   useEffect(() => {
+    if (typeof window === 'undefined') return;
+    
     const token = localStorage.getItem('token');
     if (!token) {
       router.push('/login');
@@ -23,6 +25,11 @@ export default function Messages() {
     }
 
     loadData();
+    
+    // Déclencher le rechargement des notifications quand on arrive sur la page messages
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new Event('refreshNotifications'));
+    }
   }, [router]);
 
   // Détecter le paramètre userId dans l'URL et charger la conversation
@@ -43,6 +50,12 @@ export default function Messages() {
   const loadData = async () => {
     try {
       setLoading(true);
+      
+      // Récupérer l'ID de l'admin connecté
+      const userJson = localStorage.getItem('user');
+      const currentUser = userJson ? JSON.parse(userJson) : null;
+      const adminId = currentUser?.id;
+      
       const [conversationsData, usersData] = await Promise.all([
         messagesAPI.getAll(),
         usersAPI.getAll(),
@@ -52,7 +65,21 @@ export default function Messages() {
       const conversationsMap = new Map();
       
       conversationsData.forEach((msg) => {
-        const partnerId = msg.senderId !== 0 ? msg.senderId : msg.receiverId;
+        // Identifier le partnerId : c'est celui qui n'est pas l'admin
+        // On gère aussi les anciens messages avec senderId = 0
+        let partnerId;
+        if (msg.senderId === 0 || msg.senderId === adminId) {
+          partnerId = msg.receiverId;
+        } else if (msg.receiverId === 0 || msg.receiverId === adminId) {
+          partnerId = msg.senderId;
+        } else {
+          // Si aucun n'est l'admin, prendre le receiverId par défaut
+          partnerId = msg.receiverId;
+        }
+        
+        // Ignorer si partnerId est 0 ou null ou égal à adminId
+        if (!partnerId || partnerId === 0 || partnerId === adminId) return;
+        
         if (!conversationsMap.has(partnerId)) {
           const partner = usersData.find(u => u.id === partnerId);
           conversationsMap.set(partnerId, {
@@ -100,13 +127,20 @@ export default function Messages() {
       setMessages(conversationData || []);
       setSelectedConversation(userId);
       
+      // Déclencher le rechargement des notifications après avoir chargé la conversation
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new Event('refreshNotifications'));
+      }
+      
       // Scroll vers le bas après chargement
-      setTimeout(() => {
-        const messagesList = document.querySelector(`.${styles.messagesList}`);
-        if (messagesList) {
-          messagesList.scrollTop = messagesList.scrollHeight;
-        }
-      }, 100);
+      if (typeof window !== 'undefined') {
+        setTimeout(() => {
+          const messagesList = document.querySelector(`.${styles.messagesList}`);
+          if (messagesList) {
+            messagesList.scrollTop = messagesList.scrollHeight;
+          }
+        }, 100);
+      }
     } catch (error) {
       console.error('Erreur lors du chargement de la conversation:', error);
       // Même en cas d'erreur, sélectionner la conversation pour permettre d'envoyer un message
@@ -130,10 +164,19 @@ export default function Messages() {
       await loadConversation(selectedConversation);
       await loadData(); // Recharger la liste des conversations
       
+      // Déclencher le rechargement des notifications après l'envoi
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new Event('refreshNotifications'));
+      }
+      
       // Scroll vers le bas
-      const messagesList = document.querySelector(`.${styles.messagesList}`);
-      if (messagesList) {
-        messagesList.scrollTop = messagesList.scrollHeight;
+      if (typeof window !== 'undefined') {
+        setTimeout(() => {
+          const messagesList = document.querySelector(`.${styles.messagesList}`);
+          if (messagesList) {
+            messagesList.scrollTop = messagesList.scrollHeight;
+          }
+        }, 100);
       }
     } catch (error) {
       console.error('Erreur lors de l\'envoi:', error);
@@ -261,7 +304,12 @@ export default function Messages() {
                     </div>
                   ) : (
                     messages.map((msg) => {
-                      const isFromAdmin = msg.senderId === 0;
+                      // Récupérer l'ID de l'admin connecté pour déterminer si le message vient de l'admin
+                      const userJson = localStorage.getItem('user');
+                      const currentUser = userJson ? JSON.parse(userJson) : null;
+                      const adminId = currentUser?.id;
+                      // Un message vient de l'admin si senderId = 0 (ancien système) ou senderId = adminId (nouveau système)
+                      const isFromAdmin = msg.senderId === 0 || msg.senderId === adminId;
                       return (
                         <div
                           key={msg.id}

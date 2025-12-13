@@ -1,0 +1,184 @@
+.container {
+  padding: 20px;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.header {
+  margin-bottom: 30px;
+}
+
+.backLink {
+  display: inline-block;
+  color: #475569;
+  text-decoration: none;
+  margin-bottom: 16px;
+  font-size: 14px;
+}
+
+.backLink:hover {
+  color: #1DBF73;
+}
+
+.title {
+  font-size: 28px;
+  font-weight: 700;
+  color: #0b1220;
+}
+
+.content {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.card {
+  background: white;
+  border-radius: 12px;
+  padding: 24px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+.cardTitle {
+  font-size: 18px;
+  font-weight: 600;
+  color: #0b1220;
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 2px solid #e2e8f0;
+}
+
+.infoGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
+}
+
+.infoItem {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.infoItem label {
+  font-size: 12px;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  font-weight: 600;
+}
+
+.infoItem span {
+  font-size: 14px;
+  color: #0b1220;
+}
+
+.userInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.userInfo p {
+  margin: 0;
+  font-size: 14px;
+  color: #475569;
+}
+
+.message {
+  background: #f8fafc;
+  padding: 16px;
+  border-radius: 8px;
+  border-left: 4px solid #fbbf24;
+  white-space: pre-wrap;
+  color: #0b1220;
+  line-height: 1.6;
+}
+
+.link {
+  color: #1DBF73;
+  text-decoration: none;
+  font-weight: 500;
+  font-size: 14px;
+}
+
+.link:hover {
+  text-decoration: underline;
+}
+
+.badge {
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.open {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.resolved {
+  background: #d1fae5;
+  color: #166534;
+}
+
+.actions {
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+  margin-top: 20px;
+}
+
+.resolveButton,
+.reopenButton {
+  padding: 12px 24px;
+  border-radius: 8px;
+  border: none;
+  font-weight: 600;
+  cursor: pointer;
+  font-size: 14px;
+  transition: all 0.2s;
+}
+
+.resolveButton {
+  background: #10b981;
+  color: white;
+}
+
+.resolveButton:hover {
+  background: #059669;
+}
+
+.reopenButton {
+  background: #fbbf24;
+  color: #78350f;
+}
+
+.reopenButton:hover {
+  background: #f59e0b;
+}
+
+.loading,
+.notFound {
+  text-align: center;
+  padding: 60px 40px;
+  color: #475569;
+}
+
+.backButton {
+  display: inline-block;
+  margin-top: 20px;
+  padding: 10px 20px;
+  background: #1DBF73;
+  color: white;
+  text-decoration: none;
+  border-radius: 8px;
+  font-weight: 600;
+}
+
+.backButton:hover {
+  background: #17a661;
+}

@@ -13,7 +13,7 @@ const nextConfig = {
   poweredByHeader: false,
   
   // Configuration pour Hostinger
-  output: 'standalone', // Pour un déploiement optimisé
+  // output: 'standalone', // Désactivé temporairement
   
   // Headers de sécurité
   async headers() {

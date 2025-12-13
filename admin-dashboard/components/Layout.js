@@ -16,8 +16,10 @@ export default function Layout({ children }) {
   }, []);
 
   const handleLogout = () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+    }
     router.push('/login');
   };
 
@@ -66,9 +68,15 @@ export default function Layout({ children }) {
           </Link>
           <Link 
             href="/reservations" 
-            className={router.pathname === '/reservations' ? styles.active : ''}
+            className={router.pathname.startsWith('/reservations') ? styles.active : ''}
           >
             Réservations
+          </Link>
+          <Link 
+            href="/reports" 
+            className={router.pathname.startsWith('/reports') ? styles.active : ''}
+          >
+            Signalements
           </Link>
           <Link 
             href="/messages" 

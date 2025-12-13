@@ -34,6 +34,8 @@ export default function UserDetail() {
   ];
 
   useEffect(() => {
+    if (typeof window === 'undefined') return;
+    
     const token = localStorage.getItem('token');
     if (!token) {
       router.push('/login');
@@ -108,18 +110,21 @@ export default function UserDetail() {
   };
 
   const handleUpdateRating = async () => {
-    if (newRating.averageRating < 0 || newRating.averageRating > 5) {
+    const avgRating = parseFloat(newRating.averageRating) || 0;
+    const totalRatings = parseInt(newRating.totalRatings) || 0;
+    
+    if (isNaN(avgRating) || avgRating < 0 || avgRating > 5) {
       alert('La note moyenne doit être entre 0 et 5');
       return;
     }
-    if (newRating.totalRatings < 0) {
+    if (isNaN(totalRatings) || totalRatings < 0) {
       alert('Le nombre d\'avis doit être positif');
       return;
     }
     try {
       await ratingsAPI.update(id, {
-        averageRating: parseFloat(newRating.averageRating),
-        totalRatings: parseInt(newRating.totalRatings),
+        averageRating: avgRating,
+        totalRatings: totalRatings,
       });
       setShowEditRating(false);
       loadUser();
@@ -215,6 +220,27 @@ export default function UserDetail() {
                 <p>{user.phone || '-'}</p>
               </div>
               <div className={styles.infoItem}>
+                <label>Âge</label>
+                <p>
+                  {user.dateOfBirth ? (
+                    (() => {
+                      const birthDate = new Date(user.dateOfBirth);
+                      const today = new Date();
+                      let age = today.getFullYear() - birthDate.getFullYear();
+                      const monthDiff = today.getMonth() - birthDate.getMonth();
+                      if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+                        age--;
+                      }
+                      return `${age} ans`;
+                    })()
+                  ) : '-'}
+                </p>
+              </div>
+              <div className={styles.infoItem}>
+                <label>Adresse</label>
+                <p>{user.address || '-'}</p>
+              </div>
+              <div className={styles.infoItem}>
                 <label>Type</label>
                 <p>{user.userType}</p>
               </div>
@@ -279,8 +305,8 @@ export default function UserDetail() {
                     className={styles.addButton}
                     onClick={() => {
                       setNewRating(rating ? { 
-                        averageRating: rating.averageRating, 
-                        totalRatings: rating.totalRatings 
+                        averageRating: rating.averageRating != null ? Number(rating.averageRating) : 0, 
+                        totalRatings: rating.totalRatings != null ? Number(rating.totalRatings) : 0 
                       } : { averageRating: 0, totalRatings: 0 });
                       setShowEditRating(true);
                     }}
@@ -290,8 +316,12 @@ export default function UserDetail() {
                 </div>
                 {rating ? (
                   <div className={styles.rating}>
-                    <span className={styles.ratingValue}>{rating.averageRating.toFixed(1)}</span>
-                    <span className={styles.ratingCount}>({rating.totalRatings} avis)</span>
+                    <span className={styles.ratingValue}>
+                      {rating.averageRating != null 
+                        ? Number(rating.averageRating).toFixed(1) 
+                        : '0.0'}
+                    </span>
+                    <span className={styles.ratingCount}>({rating.totalRatings || 0} avis)</span>
                   </div>
                 ) : (
                   <p style={{ color: '#475569' }}>Aucune note</p>

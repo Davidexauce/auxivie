@@ -10,14 +10,39 @@ export default function NotificationCenter() {
   const [isOpen, setIsOpen] = useState(false);
 
   useEffect(() => {
+    if (typeof window === 'undefined') return;
+    
     loadNotifications();
     // Recharger toutes les 30 secondes
     const interval = setInterval(loadNotifications, 30000);
-    return () => clearInterval(interval);
-  }, []);
+    
+    // Écouter les événements de rechargement des notifications
+    const handleRefresh = () => {
+      loadNotifications();
+    };
+    
+    // Écouter les changements de route pour recharger les notifications
+    const handleRouteChange = () => {
+      loadNotifications();
+    };
+    
+    window.addEventListener('refreshNotifications', handleRefresh);
+    router.events?.on('routeChangeComplete', handleRouteChange);
+    
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener('refreshNotifications', handleRefresh);
+      router.events?.off('routeChangeComplete', handleRouteChange);
+    };
+  }, [router]);
 
   const loadNotifications = async () => {
     try {
+      // Récupérer l'ID de l'admin connecté
+      const userJson = typeof window !== 'undefined' ? localStorage.getItem('user') : null;
+      const currentUser = userJson ? JSON.parse(userJson) : null;
+      const adminId = currentUser?.id;
+      
       const [documents, messages] = await Promise.all([
         documentsAPI.getAll().catch(() => []),
         messagesAPI.getAll().catch(() => []),
@@ -40,20 +65,26 @@ export default function NotificationCenter() {
       }
 
       // Nouveaux messages (non lus par l'admin)
-      const recentMessages = messages.filter(m => {
-        const messageDate = new Date(m.timestamp);
-        const dayAgo = new Date();
-        dayAgo.setDate(dayAgo.getDate() - 1);
-        return messageDate > dayAgo && m.senderId !== 0; // Messages des utilisateurs (pas de l'admin)
+      // Un message est non lu si :
+      // 1. L'admin est le receiver (receiverId = adminId ou receiverId = 0 pour compatibilité)
+      // 2. Le message n'a pas été lu (isRead = 0)
+      // 3. Le sender n'est pas l'admin (senderId !== adminId et senderId !== 0)
+      const unreadMessages = messages.filter(m => {
+        const isAdminReceiver = m.receiverId === adminId || m.receiverId === 0;
+        const isAdminSender = m.senderId === adminId || m.senderId === 0;
+        const isUnread = m.isRead === 0 || m.isRead === false;
+        
+        // Message non lu = l'admin est le destinataire ET le message n'a pas été lu ET ce n'est pas l'admin qui l'a envoyé
+        return isAdminReceiver && !isAdminSender && isUnread;
       });
 
-      if (recentMessages.length > 0) {
+      if (unreadMessages.length > 0) {
         newNotifications.push({
           id: 'new-messages',
           type: 'message',
-          title: `${recentMessages.length} nouveau(x) message(s)`,
+          title: `${unreadMessages.length} nouveau(x) message(s)`,
           message: 'Vous avez de nouveaux messages à lire',
-          count: recentMessages.length,
+          count: unreadMessages.length,
           link: '/messages',
           priority: 'medium',
         });

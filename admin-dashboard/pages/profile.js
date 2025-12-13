@@ -18,6 +18,8 @@ export default function Profile() {
   const [success, setSuccess] = useState(false);
 
   useEffect(() => {
+    if (typeof window === 'undefined') return;
+    
     const token = localStorage.getItem('token');
     if (!token) {
       router.push('/login');
@@ -117,6 +119,24 @@ export default function Profile() {
                 Email
               </span>
               <p style={{ fontSize: '16px', fontWeight: '600', margin: '4px 0 0 0' }}>{admin.email}</p>
+            </div>
+            <div>
+              <span style={{ fontSize: '12px', fontWeight: '700', color: '#059669', textTransform: 'uppercase' }}>
+                Âge
+              </span>
+              <p style={{ fontSize: '16px', fontWeight: '600', margin: '4px 0 0 0' }}>{admin.age || 'Non renseigné'} ans</p>
+            </div>
+            <div>
+              <span style={{ fontSize: '12px', fontWeight: '700', color: '#059669', textTransform: 'uppercase' }}>
+                Téléphone
+              </span>
+              <p style={{ fontSize: '16px', fontWeight: '600', margin: '4px 0 0 0' }}>{admin.phone || 'Non renseigné'}</p>
+            </div>
+            <div>
+              <span style={{ fontSize: '12px', fontWeight: '700', color: '#059669', textTransform: 'uppercase' }}>
+                Adresse
+              </span>
+              <p style={{ fontSize: '16px', fontWeight: '600', margin: '4px 0 0 0' }}>{admin.address || 'Non renseignée'}</p>
             </div>
             <div>
               <span style={{ fontSize: '12px', fontWeight: '700', color: '#059669', textTransform: 'uppercase' }}>

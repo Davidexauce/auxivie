@@ -22,6 +22,8 @@ export default function EditUser() {
   const [success, setSuccess] = useState(false);
 
   useEffect(() => {
+    if (typeof window === 'undefined') return;
+    
     const token = localStorage.getItem('token');
     if (!token) {
       router.push('/login');

@@ -1,14 +1,16 @@
-// Récupérer l'URL de l'API depuis les variables d'environnement
-// SOLUTION RADICALE: Utiliser UNIQUEMENT le domaine principal (auxivie.org)
-// Cela élimine complètement les problèmes de blocage de sous-domaines
+// Récupérer l'URL de base de l'API depuis l'environnement, avec des valeurs de secours
 const getApiBaseUrl = () => {
+  // Priorité à la variable publique fournie par Next (configurée dans next.config.js)
+  const envUrl = process.env.NEXT_PUBLIC_API_URL;
+  if (envUrl) return envUrl.replace(/\/$/, '');
+
+  // Fallback client: même origine que l'app (pratique en développement local)
   if (typeof window !== 'undefined') {
-    // Côté client: toujours utiliser le même domaine
-    // Les routes API commencent par /api/ et seront ajoutées après
-    return 'https://auxivie.org';
+    return window.location.origin.replace(/\/$/, '');
   }
-  // Côté serveur: même chose
-  return 'https://auxivie.org';
+
+  // Fallback serveur: localhost pour le dev si rien n'est défini
+  return 'http://localhost:3000';
 };
 
 const API_BASE_URL = getApiBaseUrl();
@@ -43,16 +45,24 @@ async function apiCall(endpoint, options = {}) {
       credentials: 'include',
     };
 
-    // Timeout de 10 secondes
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 10000);
+    // Timeout de 10 secondes (uniquement si AbortController est disponible)
+    let controller = null;
+    let timeoutId = null;
+    
+    if (typeof AbortController !== 'undefined') {
+      controller = new AbortController();
+      timeoutId = setTimeout(() => controller.abort(), 10000);
+    }
 
-    const response = await fetch(fullUrl, {
-      ...fetchOptions,
-      signal: controller.signal,
-    });
+    const fetchOptionsWithSignal = controller 
+      ? { ...fetchOptions, signal: controller.signal }
+      : fetchOptions;
 
-    clearTimeout(timeoutId);
+    const response = await fetch(fullUrl, fetchOptionsWithSignal);
+
+    if (timeoutId) {
+      clearTimeout(timeoutId);
+    }
 
     // Log de la réponse pour débogage
     if (process.env.NODE_ENV !== 'production' && typeof window !== 'undefined') {
@@ -180,10 +190,19 @@ export const reservationsAPI = {
   getById: async (id) => {
     return apiCall(`/api/reservations/${id}`);
   },
+  getDays: async (id) => {
+    return apiCall(`/api/reservations/${id}/days`);
+  },
   updateStatus: async (id, status) => {
     return apiCall(`/api/reservations/${id}`, {
       method: 'PUT',
       body: JSON.stringify({ status }),
+    });
+  },
+  updateActions: async (id, actionType, value) => {
+    return apiCall(`/api/reservations/${id}/actions`, {
+      method: 'PUT',
+      body: JSON.stringify({ actionType, value }),
     });
   },
   delete: async (id) => {
@@ -258,6 +277,27 @@ export const settingsAPI = {
     return apiCall('/api/settings', {
       method: 'PUT',
       body: JSON.stringify(data),
+    });
+  },
+};
+
+// API des signalements/reports
+export const reportsAPI = {
+  getAll: async () => {
+    return apiCall('/api/reports');
+  },
+  getById: async (id) => {
+    return apiCall(`/api/reports/${id}`);
+  },
+  updateStatus: async (id, status) => {
+    return apiCall(`/api/reports/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify({ status }),
+    });
+  },
+  delete: async (id) => {
+    return apiCall(`/api/reports/${id}`, {
+      method: 'DELETE',
     });
   },
 };

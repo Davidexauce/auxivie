@@ -1,0 +1,371 @@
+import { useEffect, useState } from 'react';
+import { useRouter } from 'next/router';
+import Layout from '../components/Layout';
+import { settingsAPI } from '../lib/api';
+import styles from '../styles/Dashboard.module.css';
+
+export default function Settings() {
+  const router = useRouter();
+  const [settings, setSettings] = useState({
+    platformFee: 15,
+    cancellationDelay: 24,
+    contactEmail: 'contact@auxivie.org',
+    supportPhone: '+33 1 23 45 67 89',
+    paymentMethods: ['card', 'stripe'],
+    minReservationHours: 2,
+    maxReservationHours: 24,
+    autoApproveDocuments: false,
+    sendEmailNotifications: true,
+    sendSMSNotifications: false,
+    maintenanceMode: false
+  });
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState('');
+  const [success, setSuccess] = useState(false);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    
+    const token = localStorage.getItem('token');
+    if (!token) {
+      router.push('/login');
+      return;
+    }
+
+    loadSettings();
+  }, [router]);
+
+  const loadSettings = async () => {
+    try {
+      setLoading(true);
+      const data = await settingsAPI.get().catch(() => null);
+      if (data) {
+        setSettings({ ...settings, ...data });
+      }
+    } catch (error) {
+      console.error('Erreur:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleChange = (key, value) => {
+    setSettings({ ...settings, [key]: value });
+  };
+
+  const handleSave = async (e) => {
+    e.preventDefault();
+    setError('');
+    setSuccess(false);
+    setSaving(true);
+
+    try {
+      await settingsAPI.update(settings);
+      setSuccess(true);
+      setTimeout(() => setSuccess(false), 3000);
+    } catch (error) {
+      console.error('Erreur:', error);
+      setError(error.message || 'Erreur lors de la sauvegarde');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <Layout>
+        <div className={styles.loading}>Chargement...</div>
+      </Layout>
+    );
+  }
+
+  return (
+    <Layout>
+      <div className={styles.dashboard}>
+        <h1 className={styles.title}>Paramètres</h1>
+
+        {error && (
+          <div style={{ 
+            marginBottom: '20px', 
+            padding: '12px', 
+            backgroundColor: '#fee', 
+            border: '1px solid #fcc', 
+            borderRadius: '4px',
+            color: '#c33'
+          }}>
+            {error}
+          </div>
+        )}
+
+        {success && (
+          <div style={{ 
+            marginBottom: '20px', 
+            padding: '12px', 
+            backgroundColor: '#efe', 
+            border: '1px solid #cfc', 
+            borderRadius: '4px',
+            color: '#3c3'
+          }}>
+            ✅ Paramètres sauvegardés avec succès !
+          </div>
+        )}
+
+        <form onSubmit={handleSave}>
+          {/* Paramètres financiers */}
+          <div className={styles.adminCard} style={{ marginBottom: '20px' }}>
+            <h2 style={{ marginBottom: '20px', fontSize: '20px', color: '#0b1220' }}>💰 Paramètres financiers</h2>
+            
+            <div style={{ marginBottom: '20px' }}>
+              <label style={{ display: 'block', marginBottom: '8px', fontWeight: '600', color: '#0b1220' }}>
+                Frais de plateforme (%)
+              </label>
+              <input
+                type="number"
+                min="0"
+                max="100"
+                value={settings.platformFee}
+                onChange={(e) => handleChange('platformFee', parseFloat(e.target.value))}
+                style={{
+                  width: '100%',
+                  padding: '10px',
+                  border: '1px solid #e2e8f0',
+                  borderRadius: '8px',
+                  fontSize: '14px'
+                }}
+              />
+              <small style={{ color: '#666' }}>Commission prélevée sur chaque réservation</small>
+            </div>
+
+            <div style={{ marginBottom: '20px' }}>
+              <label style={{ display: 'block', marginBottom: '8px', fontWeight: '600', color: '#0b1220' }}>
+                Méthodes de paiement acceptées
+              </label>
+              <div style={{ display: 'flex', gap: '15px', flexWrap: 'wrap' }}>
+                <label style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <input
+                    type="checkbox"
+                    checked={settings.paymentMethods.includes('card')}
+                    onChange={(e) => {
+                      const methods = e.target.checked 
+                        ? [...settings.paymentMethods, 'card']
+                        : settings.paymentMethods.filter(m => m !== 'card');
+                      handleChange('paymentMethods', methods);
+                    }}
+                  />
+                  Carte bancaire
+                </label>
+                <label style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <input
+                    type="checkbox"
+                    checked={settings.paymentMethods.includes('stripe')}
+                    onChange={(e) => {
+                      const methods = e.target.checked 
+                        ? [...settings.paymentMethods, 'stripe']
+                        : settings.paymentMethods.filter(m => m !== 'stripe');
+                      handleChange('paymentMethods', methods);
+                    }}
+                  />
+                  Stripe
+                </label>
+              </div>
+            </div>
+          </div>
+
+          {/* Paramètres de réservation */}
+          <div className={styles.adminCard} style={{ marginBottom: '20px' }}>
+            <h2 style={{ marginBottom: '20px', fontSize: '20px', color: '#0b1220' }}>📅 Paramètres de réservation</h2>
+            
+            <div style={{ marginBottom: '20px' }}>
+              <label style={{ display: 'block', marginBottom: '8px', fontWeight: '600', color: '#0b1220' }}>
+                Délai d'annulation (heures)
+              </label>
+              <input
+                type="number"
+                min="0"
+                value={settings.cancellationDelay}
+                onChange={(e) => handleChange('cancellationDelay', parseInt(e.target.value))}
+                style={{
+                  width: '100%',
+                  padding: '10px',
+                  border: '1px solid #e2e8f0',
+                  borderRadius: '8px',
+                  fontSize: '14px'
+                }}
+              />
+              <small style={{ color: '#666' }}>Heures avant le début pour annuler sans frais</small>
+            </div>
+
+            <div style={{ marginBottom: '20px' }}>
+              <label style={{ display: 'block', marginBottom: '8px', fontWeight: '600', color: '#0b1220' }}>
+                Durée minimale de réservation (heures)
+              </label>
+              <input
+                type="number"
+                min="1"
+                value={settings.minReservationHours}
+                onChange={(e) => handleChange('minReservationHours', parseInt(e.target.value))}
+                style={{
+                  width: '100%',
+                  padding: '10px',
+                  border: '1px solid #e2e8f0',
+                  borderRadius: '8px',
+                  fontSize: '14px'
+                }}
+              />
+            </div>
+
+            <div style={{ marginBottom: '20px' }}>
+              <label style={{ display: 'block', marginBottom: '8px', fontWeight: '600', color: '#0b1220' }}>
+                Durée maximale de réservation (heures)
+              </label>
+              <input
+                type="number"
+                min="1"
+                value={settings.maxReservationHours}
+                onChange={(e) => handleChange('maxReservationHours', parseInt(e.target.value))}
+                style={{
+                  width: '100%',
+                  padding: '10px',
+                  border: '1px solid #e2e8f0',
+                  borderRadius: '8px',
+                  fontSize: '14px'
+                }}
+              />
+            </div>
+          </div>
+
+          {/* Contact */}
+          <div className={styles.adminCard} style={{ marginBottom: '20px' }}>
+            <h2 style={{ marginBottom: '20px', fontSize: '20px', color: '#0b1220' }}>📞 Informations de contact</h2>
+            
+            <div style={{ marginBottom: '20px' }}>
+              <label style={{ display: 'block', marginBottom: '8px', fontWeight: '600', color: '#0b1220' }}>
+                Email de contact
+              </label>
+              <input
+                type="email"
+                value={settings.contactEmail}
+                onChange={(e) => handleChange('contactEmail', e.target.value)}
+                style={{
+                  width: '100%',
+                  padding: '10px',
+                  border: '1px solid #e2e8f0',
+                  borderRadius: '8px',
+                  fontSize: '14px'
+                }}
+              />
+            </div>
+
+            <div style={{ marginBottom: '20px' }}>
+              <label style={{ display: 'block', marginBottom: '8px', fontWeight: '600', color: '#0b1220' }}>
+                Téléphone support
+              </label>
+              <input
+                type="tel"
+                value={settings.supportPhone}
+                onChange={(e) => handleChange('supportPhone', e.target.value)}
+                style={{
+                  width: '100%',
+                  padding: '10px',
+                  border: '1px solid #e2e8f0',
+                  borderRadius: '8px',
+                  fontSize: '14px'
+                }}
+              />
+            </div>
+          </div>
+
+          {/* Notifications */}
+          <div className={styles.adminCard} style={{ marginBottom: '20px' }}>
+            <h2 style={{ marginBottom: '20px', fontSize: '20px', color: '#0b1220' }}>🔔 Notifications</h2>
+            
+            <div style={{ marginBottom: '15px' }}>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer' }}>
+                <input
+                  type="checkbox"
+                  checked={settings.sendEmailNotifications}
+                  onChange={(e) => handleChange('sendEmailNotifications', e.target.checked)}
+                  style={{ width: '18px', height: '18px' }}
+                />
+                <span style={{ fontWeight: '500' }}>Activer les notifications par email</span>
+              </label>
+            </div>
+
+            <div style={{ marginBottom: '15px' }}>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer' }}>
+                <input
+                  type="checkbox"
+                  checked={settings.sendSMSNotifications}
+                  onChange={(e) => handleChange('sendSMSNotifications', e.target.checked)}
+                  style={{ width: '18px', height: '18px' }}
+                />
+                <span style={{ fontWeight: '500' }}>Activer les notifications par SMS</span>
+              </label>
+            </div>
+          </div>
+
+          {/* Autres paramètres */}
+          <div className={styles.adminCard} style={{ marginBottom: '20px' }}>
+            <h2 style={{ marginBottom: '20px', fontSize: '20px', color: '#0b1220' }}>⚙️ Autres paramètres</h2>
+            
+            <div style={{ marginBottom: '15px' }}>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer' }}>
+                <input
+                  type="checkbox"
+                  checked={settings.autoApproveDocuments}
+                  onChange={(e) => handleChange('autoApproveDocuments', e.target.checked)}
+                  style={{ width: '18px', height: '18px' }}
+                />
+                <span style={{ fontWeight: '500' }}>Approbation automatique des documents</span>
+              </label>
+              <small style={{ display: 'block', marginLeft: '28px', color: '#666' }}>
+                ⚠️ Non recommandé pour la sécurité
+              </small>
+            </div>
+
+            <div style={{ marginBottom: '15px' }}>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer' }}>
+                <input
+                  type="checkbox"
+                  checked={settings.maintenanceMode}
+                  onChange={(e) => handleChange('maintenanceMode', e.target.checked)}
+                  style={{ width: '18px', height: '18px' }}
+                />
+                <span style={{ fontWeight: '500', color: settings.maintenanceMode ? '#dc2626' : 'inherit' }}>
+                  Mode maintenance {settings.maintenanceMode && '🔴'}
+                </span>
+              </label>
+              <small style={{ display: 'block', marginLeft: '28px', color: '#666' }}>
+                Désactive l'accès aux utilisateurs (sauf admins)
+              </small>
+            </div>
+          </div>
+
+          <div style={{ display: 'flex', gap: '12px' }}>
+            <button
+              type="submit"
+              className={styles.actionButton}
+              disabled={saving}
+              style={{ 
+                backgroundColor: saving ? '#999' : 'var(--primary)',
+                cursor: saving ? 'not-allowed' : 'pointer'
+              }}
+            >
+              {saving ? 'Enregistrement...' : 'Enregistrer les paramètres'}
+            </button>
+            <button
+              type="button"
+              className={styles.actionButton}
+              onClick={() => router.push('/dashboard')}
+              style={{ backgroundColor: '#666' }}
+            >
+              Retour au dashboard
+            </button>
+          </div>
+        </form>
+      </div>
+    </Layout>
+  );
+}
+

@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
 import Layout from '../components/Layout';
 import { usersAPI } from '../lib/api';
-import { exportUsersToCSV } from '../lib/export';
+import { exportUsersToCSV, exportUsersToExcel } from '../lib/export';
 import Pagination from '../components/Pagination';
 import styles from '../styles/Users.module.css';
 
@@ -16,6 +16,8 @@ export default function Users() {
   const [itemsPerPage, setItemsPerPage] = useState(25);
 
   useEffect(() => {
+    if (typeof window === 'undefined') return;
+    
     const token = localStorage.getItem('token');
     if (!token) {
       router.push('/login');
@@ -75,67 +77,58 @@ export default function Users() {
     <Layout>
       <div className={styles.container}>
         <div className={styles.header}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-            <h1 className={styles.title}>Gestion des utilisateurs</h1>
+          <h1 className={styles.title}>Gestion des utilisateurs</h1>
+          <div className={styles.exportButtons}>
             <button
               onClick={() => exportUsersToCSV(filteredUsers)}
-              style={{
-                padding: '10px 20px',
-                backgroundColor: '#059669',
-                color: 'white',
-                border: 'none',
-                borderRadius: '8px',
-                cursor: 'pointer',
-                fontSize: '14px',
-                fontWeight: '600',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '8px'
-              }}
+              className={styles.exportButton}
             >
-              📥 Exporter CSV
-            </button>
-          </div>
-          <div style={{ marginBottom: '20px' }}>
-            <input
-              type="text"
-              placeholder="Rechercher par nom, email, catégorie ou ville..."
-              value={searchTerm}
-              onChange={(e) => {
-                setSearchTerm(e.target.value);
-                setCurrentPage(1); // Réinitialiser à la page 1 lors de la recherche
-              }}
-              style={{
-                width: '100%',
-                maxWidth: '500px',
-                padding: '10px 15px',
-                border: '1px solid #ddd',
-                borderRadius: '8px',
-                fontSize: '14px',
-                marginBottom: '15px'
-              }}
-            />
-          </div>
-          <div className={styles.filters}>
-            <button
-              className={filter === 'all' ? styles.activeFilter : styles.filter}
-              onClick={() => setFilter('all')}
-            >
-              Tous ({users.length})
+              📄 CSV
             </button>
             <button
-              className={filter === 'professionnel' ? styles.activeFilter : styles.filter}
-              onClick={() => setFilter('professionnel')}
+              onClick={() => exportUsersToExcel(filteredUsers)}
+              className={styles.exportButton}
+              style={{ backgroundColor: '#059669' }}
             >
-              Professionnels ({users.filter(u => u.userType === 'professionnel').length})
-            </button>
-            <button
-              className={filter === 'famille' ? styles.activeFilter : styles.filter}
-              onClick={() => setFilter('famille')}
-            >
-              Familles ({users.filter(u => u.userType === 'famille').length})
+              📊 Excel
             </button>
           </div>
+        </div>
+
+        {/* Recherche */}
+        <div className={styles.searchContainer}>
+          <input
+            type="text"
+            placeholder="🔍 Rechercher par nom, email, catégorie ou ville..."
+            value={searchTerm}
+            onChange={(e) => {
+              setSearchTerm(e.target.value);
+              setCurrentPage(1);
+            }}
+            className={styles.searchInput}
+          />
+        </div>
+
+        {/* Filtres */}
+        <div className={styles.filters}>
+          <button
+            className={filter === 'all' ? styles.activeFilter : styles.filter}
+            onClick={() => setFilter('all')}
+          >
+            Tous ({users.length})
+          </button>
+          <button
+            className={filter === 'professionnel' ? styles.activeFilter : styles.filter}
+            onClick={() => setFilter('professionnel')}
+          >
+            Professionnels ({users.filter(u => u.userType === 'professionnel').length})
+          </button>
+          <button
+            className={filter === 'famille' ? styles.activeFilter : styles.filter}
+            onClick={() => setFilter('famille')}
+          >
+            Familles ({users.filter(u => u.userType === 'famille').length})
+          </button>
         </div>
 
         <div className={styles.tableContainer}>

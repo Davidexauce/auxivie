@@ -7,10 +7,14 @@ import styles from '../styles/Reviews.module.css';
 export default function Reviews() {
   const router = useRouter();
   const [reviews, setReviews] = useState([]);
+  const [allReviews, setAllReviews] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('all'); // all, positive, negative
+  const [searchTerm, setSearchTerm] = useState('');
 
   useEffect(() => {
+    if (typeof window === 'undefined') return;
+    
     const token = localStorage.getItem('token');
     if (!token) {
       router.push('/login');
@@ -18,11 +22,17 @@ export default function Reviews() {
     }
 
     loadReviews();
-  }, [router, filter]);
+  }, [router]);
+
+  useEffect(() => {
+    loadReviews();
+  }, [filter, searchTerm]);
 
   const loadReviews = async () => {
     try {
       const data = await reviewsAPI.getAll();
+      setAllReviews(data);
+      
       let filtered = data;
       
       if (filter === 'positive') {
@@ -30,12 +40,59 @@ export default function Reviews() {
       } else if (filter === 'negative') {
         filtered = data.filter(r => r.rating <= 2);
       }
+
+      // Recherche
+      if (searchTerm.trim()) {
+        const search = searchTerm.toLowerCase();
+        filtered = filtered.filter(r =>
+          r.userName?.toLowerCase().includes(search) ||
+          r.professionalName?.toLowerCase().includes(search) ||
+          r.comment?.toLowerCase().includes(search)
+        );
+      }
       
       setReviews(filtered);
     } catch (error) {
       console.error('Erreur:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const exportToCSV = () => {
+    const headers = ['ID', 'Client', 'Professionnel', 'Note', 'Commentaire', 'Date'];
+    const rows = reviews.map(r => [
+      r.id,
+      r.userName || `User ${r.userId}`,
+      r.professionalName || `Pro ${r.professionalId}`,
+      r.rating,
+      r.comment || '',
+      new Date(r.createdAt).toLocaleDateString('fr-FR')
+    ]);
+
+    const csv = [headers, ...rows].map(row => row.map(cell => `"${cell}"`).join(',')).join('\n');
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `avis_${new Date().toISOString().split('T')[0]}.csv`;
+    a.click();
+  };
+
+  const stats = {
+    total: allReviews.length,
+    average: allReviews.length > 0 
+      ? (allReviews.reduce((sum, r) => sum + r.rating, 0) / allReviews.length).toFixed(1)
+      : 0,
+    positive: allReviews.filter(r => r.rating >= 4).length,
+    neutral: allReviews.filter(r => r.rating === 3).length,
+    negative: allReviews.filter(r => r.rating <= 2).length,
+    distribution: {
+      5: allReviews.filter(r => r.rating === 5).length,
+      4: allReviews.filter(r => r.rating === 4).length,
+      3: allReviews.filter(r => r.rating === 3).length,
+      2: allReviews.filter(r => r.rating === 2).length,
+      1: allReviews.filter(r => r.rating === 1).length,
     }
   };
 
@@ -76,26 +133,92 @@ export default function Reviews() {
   return (
     <Layout>
       <div className={styles.container}>
-        <h1 className={styles.title}>Gestion des avis</h1>
+        <div className={styles.header}>
+          <h1 className={styles.title}>Gestion des avis</h1>
+          <button onClick={exportToCSV} className={styles.exportButton}>
+            📄 Exporter CSV
+          </button>
+        </div>
 
+        {/* Statistiques */}
+        <div className={styles.statsGrid}>
+          <div className={styles.statCard}>
+            <div className={styles.statValue}>{stats.total}</div>
+            <div className={styles.statLabel}>Total avis</div>
+          </div>
+          <div className={styles.statCard} style={{ borderLeft: '3px solid #f59e0b' }}>
+            <div className={styles.statValue}>
+              <span style={{ fontSize: '32px' }}>{stats.average}</span>
+              <span style={{ fontSize: '20px', color: '#f59e0b' }}> ★</span>
+            </div>
+            <div className={styles.statLabel}>Note moyenne</div>
+          </div>
+          <div className={styles.statCard} style={{ borderLeft: '3px solid #10b981' }}>
+            <div className={styles.statValue}>{stats.positive}</div>
+            <div className={styles.statLabel}>Positifs (4-5★)</div>
+          </div>
+          <div className={styles.statCard} style={{ borderLeft: '3px solid #ef4444' }}>
+            <div className={styles.statValue}>{stats.negative}</div>
+            <div className={styles.statLabel}>Négatifs (1-2★)</div>
+          </div>
+        </div>
+
+        {/* Distribution des notes */}
+        <div className={styles.distributionCard}>
+          <h3 style={{ marginBottom: '16px', fontSize: '18px', color: '#0b1220' }}>Distribution des notes</h3>
+          <div className={styles.distributionBars}>
+            {[5, 4, 3, 2, 1].map(rating => {
+              const count = stats.distribution[rating];
+              const percentage = stats.total > 0 ? (count / stats.total) * 100 : 0;
+              return (
+                <div key={rating} className={styles.distributionRow}>
+                  <span className={styles.ratingLabel}>{rating}★</span>
+                  <div className={styles.barContainer}>
+                    <div 
+                      className={styles.bar} 
+                      style={{ 
+                        width: `${percentage}%`,
+                        backgroundColor: rating >= 4 ? '#10b981' : rating === 3 ? '#f59e0b' : '#ef4444'
+                      }}
+                    ></div>
+                  </div>
+                  <span className={styles.countLabel}>{count}</span>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Recherche */}
+        <div className={styles.searchContainer}>
+          <input
+            type="text"
+            placeholder="🔍 Rechercher par nom, commentaire..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className={styles.searchInput}
+          />
+        </div>
+
+        {/* Filtres */}
         <div className={styles.filters}>
           <button
             className={filter === 'all' ? styles.activeFilter : styles.filter}
             onClick={() => setFilter('all')}
           >
-            Tous
+            Tous ({stats.total})
           </button>
           <button
             className={filter === 'positive' ? styles.activeFilter : styles.filter}
             onClick={() => setFilter('positive')}
           >
-            Positifs (4-5★)
+            Positifs ({stats.positive})
           </button>
           <button
             className={filter === 'negative' ? styles.activeFilter : styles.filter}
             onClick={() => setFilter('negative')}
           >
-            Négatifs (1-2★)
+            Négatifs ({stats.negative})
           </button>
         </div>
 

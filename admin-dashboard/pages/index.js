@@ -1,18 +1,31 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
 
 export default function Home() {
   const router = useRouter();
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    // Vérifier si l'utilisateur est connecté
-    const token = localStorage.getItem('token');
-    if (token) {
-      router.push('/dashboard');
-    } else {
+    // S'assurer que le composant est monté côté client
+    setMounted(true);
+  }, []);
+
+  useEffect(() => {
+    // Vérifier si l'utilisateur est connecté (uniquement côté client et après montage)
+    if (!mounted || typeof window === 'undefined') return;
+    
+    try {
+      const token = localStorage.getItem('token');
+      if (token) {
+        router.push('/dashboard');
+      } else {
+        router.push('/login');
+      }
+    } catch (error) {
+      console.error('Erreur lors de la redirection:', error);
       router.push('/login');
     }
-  }, [router]);
+  }, [mounted, router]);
 
   return (
     <div style={{ 
