@@ -286,90 +286,7 @@ app.post('/api/auth/register-admin', async (req, res) => {
   }
 });
 
-
-
 // Route de santé
-// ========== ENDPOINT D'ENREGISTREMENT ADMIN ==========
-app.post('/api/auth/register-admin', async (req, res) => {
-  try {
-    const { email, password, name, adminKey } = req.body;
-
-    // Validation des champs requis
-    if (!email || !password || !name || !adminKey) {
-      return res.status(400).json({ message: 'Email, mot de passe, nom et clé admin requis' });
-    }
-
-    // Vérification de la clé admin (variable d'environnement)
-    const ADMIN_KEY = process.env.ADMIN_REGISTRATION_KEY || 'auxivie-admin-2025';
-    if (adminKey !== ADMIN_KEY) {
-      return res.status(403).json({ message: 'Clé admin invalide' });
-    }
-
-    // Vérifier si l'email existe déjà dans la table users
-    try {
-      const existingUser = await db.get('SELECT id FROM users WHERE email = ?', [email]);
-      if (existingUser) {
-        return res.status(409).json({ message: 'Cet email est déjà enregistré' });
-      }
-    } catch (err) {
-      console.error('Erreur vérification email:', err);
-      return res.status(500).json({ message: 'Erreur serveur' });
-    }
-
-    // Vérifier la force du mot de passe (min 8 caractères)
-    if (password.length < 8) {
-      return res.status(400).json({ message: 'Le mot de passe doit contenir au moins 8 caractères' });
-    }
-
-    // Hasher le mot de passe
-    let hashedPassword;
-    try {
-      hashedPassword = await bcrypt.hash(password, 10);
-    } catch (err) {
-      console.error('Erreur hashage:', err);
-      return res.status(500).json({ message: 'Erreur serveur' });
-    }
-
-    // Créer l'utilisateur admin dans la table users
-    try {
-      const result = await db.run(
-        'INSERT INTO users (email, password, name, userType, categorie) VALUES (?, ?, ?, ?, ?)',
-        [email, hashedPassword, name, 'admin', 'administrateur']
-      );
-
-      console.log(`✅ Admin créé avec succès: ${email} (ID: ${result.lastID})`);
-
-      // Générer le token JWT
-      const token = jwt.sign(
-        {
-          userId: result.lastID,
-          email: email,
-          userType: 'admin',
-        },
-        process.env.JWT_SECRET || 'your-secret-key',
-        { expiresIn: '7d' }
-      );
-
-      res.status(201).json({
-        message: 'Administrateur créé avec succès',
-        token,
-        user: {
-          id: result.lastID,
-          name: name,
-          email: email,
-          userType: 'admin',
-        },
-      });
-    } catch (err) {
-      console.error('Erreur création admin:', err);
-      return res.status(500).json({ message: 'Erreur serveur' });
-    }
-  } catch (error) {
-    console.error('Erreur register-admin:', error);
-    res.status(500).json({ message: 'Erreur serveur' });
-  }
-});
-
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', message: 'Auxivie API' });
 });
@@ -400,7 +317,9 @@ app.get('/api/users', async (req, res) => {
     
     // Si userType=professionnel, route publique pour l'app mobile
     if (userType === 'professionnel') {
-      const rows = await db.all('SELECT id, name, email, phone, categorie, ville, tarif, experience, photo, userType FROM users WHERE userType = "professionnel"');
+      const rows = await db.all(
+        'SELECT id, name, email, phone, categorie, ville, tarif, experience, photo, userType FROM users WHERE userType = "professionnel" ORDER BY id DESC'
+      );
       return res.json(rows);
     }
     
@@ -418,7 +337,12 @@ app.get('/api/users', async (req, res) => {
       }
       
       try {
-        const rows = await db.all('SELECT id, name, email, phone, categorie, ville, tarif, userType FROM users WHERE userType != "admin"');
+        if (user.userType !== 'admin') {
+          return res.status(403).json({ message: 'Accès réservé aux administrateurs' });
+        }
+        const rows = await db.all(
+          'SELECT id, name, email, phone, categorie, ville, tarif, experience, userType, suspended, createdAt FROM users WHERE userType != "admin" ORDER BY id DESC'
+        );
         res.json(rows);
       } catch (error) {
         return res.status(500).json({ message: 'Erreur serveur' });
@@ -433,10 +357,29 @@ app.get('/api/users', async (req, res) => {
 app.get('/api/users/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    const row = await db.get('SELECT id, name, email, phone, categorie, ville, tarif, experience, photo, userType, besoin, preference, mission, particularite FROM users WHERE id = ?', [id]);
+    const row = await db.get('SELECT id, name, email, phone, categorie, ville, tarif, experience, photo, userType, besoin, preference, mission, particularite, rib FROM users WHERE id = ?', [id]);
     if (!row) {
       return res.status(404).json({ message: 'Utilisateur non trouvé' });
     }
+
+    let canSeeRib = false;
+    const authHeader = req.headers['authorization'];
+    const token = authHeader && authHeader.split(' ')[1];
+    if (token) {
+      try {
+        const decoded = jwt.verify(token, JWT_SECRET);
+        const targetId = parseInt(id, 10);
+        canSeeRib =
+          decoded.userId === targetId ||
+          decoded.userType === 'admin';
+      } catch (_) {
+        /* token invalide : pas de rib */
+      }
+    }
+    if (!canSeeRib) {
+      delete row.rib;
+    }
+
     res.json(row);
   } catch (error) {
     return res.status(500).json({ message: 'Erreur serveur' });
@@ -460,7 +403,16 @@ app.get('/api/users/:id/admin', authenticateToken, async (req, res) => {
 app.put('/api/users/:id', authenticateToken, async (req, res) => {
   try {
     const { id } = req.params;
-    const { name, email, phone, categorie, ville, tarif, password, currentPassword } = req.body;
+    const tokenUserId = req.user.userId;
+    const requestUserId = parseInt(id, 10);
+    if (Number.isNaN(requestUserId)) {
+      return res.status(400).json({ message: 'ID invalide' });
+    }
+    if (req.user.userType !== 'admin' && tokenUserId !== requestUserId) {
+      return res.status(403).json({ message: 'Accès refusé' });
+    }
+
+    const { name, email, phone, categorie, ville, tarif, password, currentPassword, rib } = req.body;
     
     // Si un nouveau mot de passe est fourni, vérifier l'ancien et hasher le nouveau
     if (password) {
@@ -492,6 +444,7 @@ app.put('/api/users/:id', authenticateToken, async (req, res) => {
       if (categorie !== undefined) { fields.push('categorie = ?'); values.push(categorie); }
       if (ville !== undefined) { fields.push('ville = ?'); values.push(ville); }
       if (tarif !== undefined) { fields.push('tarif = ?'); values.push(tarif); }
+      if (rib !== undefined) { fields.push('rib = ?'); values.push(rib); }
       fields.push('password = ?'); values.push(hashedPassword);
       values.push(id);
       
@@ -508,6 +461,7 @@ app.put('/api/users/:id', authenticateToken, async (req, res) => {
       if (categorie !== undefined) { fields.push('categorie = ?'); values.push(categorie); }
       if (ville !== undefined) { fields.push('ville = ?'); values.push(ville); }
       if (tarif !== undefined) { fields.push('tarif = ?'); values.push(tarif); }
+      if (rib !== undefined) { fields.push('rib = ?'); values.push(rib); }
       values.push(id);
       
       if (fields.length === 0) {
@@ -519,6 +473,79 @@ app.put('/api/users/:id', authenticateToken, async (req, res) => {
     }
   } catch (error) {
     console.error('Erreur mise à jour utilisateur:', error);
+    return res.status(500).json({ message: 'Erreur serveur' });
+  }
+});
+
+// Suppression de compte (app mobile — aligné Flutter DELETE /users/:id)
+app.delete('/api/users/:id', authenticateToken, async (req, res) => {
+  try {
+    const id = parseInt(req.params.id, 10);
+    if (Number.isNaN(id)) {
+      return res.status(400).json({ message: 'ID invalide' });
+    }
+    const tokenUserId = req.user.userId;
+    const isAdmin = req.user.userType === 'admin';
+    if (!isAdmin && tokenUserId !== id) {
+      return res.status(403).json({ message: 'Accès refusé' });
+    }
+    const target = await db.get('SELECT id, userType FROM users WHERE id = ?', [id]);
+    if (!target) {
+      return res.status(404).json({ message: 'Utilisateur non trouvé' });
+    }
+    if (target.userType === 'admin' && !isAdmin) {
+      return res.status(403).json({ message: 'Accès refusé' });
+    }
+    await db.run('DELETE FROM users WHERE id = ?', [id]);
+    return res.status(204).send();
+  } catch (error) {
+    console.error('Erreur suppression utilisateur:', error);
+    return res.status(500).json({ message: 'Erreur serveur' });
+  }
+});
+
+// Suspension compte (dashboard admin — aligné sur admin-dashboard/lib/api.js)
+app.post('/api/users/:id/suspend', authenticateToken, async (req, res) => {
+  try {
+    if (req.user.userType !== 'admin') {
+      return res.status(403).json({ message: 'Accès réservé aux administrateurs' });
+    }
+    const id = parseInt(req.params.id, 10);
+    if (Number.isNaN(id)) {
+      return res.status(400).json({ message: 'ID invalide' });
+    }
+    const target = await db.get('SELECT id, userType FROM users WHERE id = ?', [id]);
+    if (!target) {
+      return res.status(404).json({ message: 'Utilisateur non trouvé' });
+    }
+    if (target.userType === 'admin') {
+      return res.status(400).json({ message: 'Impossible de suspendre un administrateur' });
+    }
+    await db.run('UPDATE users SET suspended = 1 WHERE id = ?', [id]);
+    res.json({ message: 'Utilisateur suspendu' });
+  } catch (error) {
+    console.error('Erreur suspension utilisateur:', error);
+    return res.status(500).json({ message: 'Erreur serveur' });
+  }
+});
+
+app.post('/api/users/:id/unsuspend', authenticateToken, async (req, res) => {
+  try {
+    if (req.user.userType !== 'admin') {
+      return res.status(403).json({ message: 'Accès réservé aux administrateurs' });
+    }
+    const id = parseInt(req.params.id, 10);
+    if (Number.isNaN(id)) {
+      return res.status(400).json({ message: 'ID invalide' });
+    }
+    const target = await db.get('SELECT id FROM users WHERE id = ?', [id]);
+    if (!target) {
+      return res.status(404).json({ message: 'Utilisateur non trouvé' });
+    }
+    await db.run('UPDATE users SET suspended = 0 WHERE id = ?', [id]);
+    res.json({ message: 'Utilisateur réactivé' });
+  } catch (error) {
+    console.error('Erreur réactivation utilisateur:', error);
     return res.status(500).json({ message: 'Erreur serveur' });
   }
 });
@@ -998,7 +1025,22 @@ app.put('/api/reservations/:id', authenticateToken, async (req, res) => {
 
 app.delete('/api/reservations/:id', authenticateToken, async (req, res) => {
   try {
-    const { id } = req.params;
+    const id = parseInt(req.params.id, 10);
+    if (Number.isNaN(id)) {
+      return res.status(400).json({ message: 'ID invalide' });
+    }
+    const row = await db.get(
+      'SELECT userId, professionnelId FROM reservations WHERE id = ?',
+      [id],
+    );
+    if (!row) {
+      return res.status(404).json({ message: 'Réservation non trouvée' });
+    }
+    const uid = req.user.userId;
+    const isAdmin = req.user.userType === 'admin';
+    if (!isAdmin && uid !== row.userId && uid !== row.professionnelId) {
+      return res.status(403).json({ message: 'Accès refusé' });
+    }
     const result = await db.run('DELETE FROM reservations WHERE id = ?', [id]);
     if (result.changes === 0) {
       return res.status(404).json({ message: 'Réservation non trouvée' });
@@ -1189,9 +1231,33 @@ app.post('/api/reservations/sync', async (req, res) => {
 // Route de synchronisation d'utilisateur depuis Flutter
 app.post('/api/users/sync', async (req, res) => {
   try {
-    const { name, email, password, phone, categorie, ville, tarif, experience, photo, userType, besoin, preference, mission, particularite } = req.body;
+    const {
+      name,
+      email,
+      password,
+      phone,
+      categorie,
+      ville,
+      tarif,
+      experience,
+      photo,
+      userType,
+      user_type,
+      besoin,
+      preference,
+      mission,
+      particularite,
+      rib,
+    } = req.body;
 
-    if (!name || !email || !password || !categorie || !userType) {
+    const effectiveUserType = (userType || user_type || '').toString().trim();
+    let experienceValue = null;
+    if (experience !== undefined && experience !== null && experience !== '') {
+      const n = parseInt(String(experience), 10);
+      experienceValue = Number.isFinite(n) ? n : null;
+    }
+
+    if (!name || !email || !password || !categorie || !effectiveUserType) {
       return res.status(400).json({ message: 'Champs requis manquants' });
     }
 
@@ -1206,29 +1272,39 @@ app.post('/api/users/sync', async (req, res) => {
       if (password && !password.startsWith('$2b$')) {
         hashedPassword = await bcrypt.hash(password, 10);
       }
+
+      let ribValue = rib;
+      if (rib === undefined) {
+        const row = await db.get('SELECT rib FROM users WHERE email = ?', [email]);
+        ribValue = row ? row.rib : null;
+      }
       
       await db.run(
         `UPDATE users SET 
           name = ?, password = ?, phone = ?, categorie = ?, ville = ?, 
           tarif = ?, experience = ?, photo = ?, userType = ?,
-          besoin = ?, preference = ?, mission = ?, particularite = ?
+          besoin = ?, preference = ?, mission = ?, particularite = ?, rib = ?
          WHERE email = ?`,
-        [name, hashedPassword, phone || null, categorie, ville || null, tarif || null, experience || null, photo || null, userType, besoin || null, preference || null, mission || null, particularite || null, email]
+        [name, hashedPassword, phone || null, categorie, ville || null, tarif || null, experienceValue, photo || null, effectiveUserType, besoin || null, preference || null, mission || null, particularite || null, ribValue, email]
       );
-      res.json({ message: 'Utilisateur mis à jour', id: existingUser.id, user: { id: existingUser.id, name, email, userType, besoin, preference, mission, particularite } });
+      res.json({
+        message: 'Utilisateur mis à jour',
+        id: existingUser.id,
+        user: { id: existingUser.id, name, email, userType: effectiveUserType, besoin, preference, mission, particularite },
+      });
     } else {
       // Créer un nouvel utilisateur (hasher le mot de passe)
       const hashedPassword = await bcrypt.hash(password, 10);
       
       const result = await db.run(
-        `INSERT INTO users (name, email, password, phone, categorie, ville, tarif, experience, photo, userType, besoin, preference, mission, particularite, createdAt)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())`,
-        [name, email, hashedPassword, phone || null, categorie, ville || null, tarif || null, experience || null, photo || null, userType, besoin || null, preference || null, mission || null, particularite || null]
+        `INSERT INTO users (name, email, password, phone, categorie, ville, tarif, experience, photo, userType, besoin, preference, mission, particularite, rib, createdAt)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())`,
+        [name, email, hashedPassword, phone || null, categorie, ville || null, tarif || null, experienceValue, photo || null, effectiveUserType, besoin || null, preference || null, mission || null, particularite || null, rib ?? null]
       );
-      res.json({ 
-        message: 'Utilisateur créé', 
+      res.json({
+        message: 'Utilisateur créé',
         id: result.lastID,
-        user: { id: result.lastID, name, email, userType, besoin, preference, mission, particularite }
+        user: { id: result.lastID, name, email, userType: effectiveUserType, besoin, preference, mission, particularite },
       });
     }
   } catch (error) {

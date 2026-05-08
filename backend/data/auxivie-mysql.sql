@@ -28,6 +28,7 @@ CREATE TABLE `users` (
   `preference` TEXT,
   `mission` TEXT,
   `particularite` TEXT,
+  `rib` VARCHAR(34) DEFAULT NULL COMMENT 'IBAN / RIB pour versements',
   INDEX `idx_email` (`email`),
   INDEX `idx_userType` (`userType`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
