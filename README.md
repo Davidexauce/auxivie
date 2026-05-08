@@ -1,41 +1,33 @@
-# AuxiLink
+# Christelle Projet — Aidalia / Auxivie
 
-Application mobile Flutter de mise en relation entre professionnels de l'aide à domicile et familles.
+Dépôt **serveur + dashboard web** uniquement.  
+L’**application mobile Flutter** (iOS / Android) est dans un projet séparé : **`App flutter Auxivie`** sur cette machine.
 
-## Fonctionnalités
+## Contenu
 
-- ✅ Authentification locale (inscription/connexion)
-- ✅ Gestion de profils professionnels
-- ✅ Messagerie interne
-- ✅ Planning/réservations
-- ✅ Recherche de professionnels avec filtres
-- ✅ Support iOS et Android
-- ✅ Fonctionnement 100% hors-ligne
+| Dossier | Rôle |
+|---------|------|
+| **`backend/`** | API Node.js (Express, MySQL), Stripe, auth JWT — déployée derrière `auxivie.org` / Hostinger. |
+| **`admin-dashboard/`** | Interface Next.js pour l’administration. |
+| **`docs/`** | Notes d’intégration, déploiement et historiques de corrections. |
 
-## Architecture
+## Démarrage rapide
 
-- **MVVM** (Model-View-ViewModel)
-- **Provider** pour la gestion d'état
-- **SQLite** pour le stockage local
-
-## Installation
+**API** (depuis `backend/`) :
 
 ```bash
-flutter pub get
-flutter run
+npm install
+# Configurer .env ou .env.production (voir backend/.env.local.example si présent)
+node server.js
 ```
 
-## Structure du projet
+**Dashboard** (depuis `admin-dashboard/`) :
 
-```
-lib/
-├── main.dart
-├── models/          # Modèles de données
-├── services/        # Services (SQLite, etc.)
-├── viewmodels/     # ViewModels (logique métier)
-├── views/          # Vues/Écrans
-├── widgets/        # Widgets réutilisables
-└── theme/          # Configuration du thème
+```bash
+npm install
+npm run dev
 ```
 
+## Déploiement
 
+Voir **`docs/DEPLOYMENT.md`** et **`docs/PRODUCTION_CHECKLIST.md`**.
