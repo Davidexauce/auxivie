@@ -87,6 +87,7 @@ app.*.map.json
 **/android/**/gradle-wrapper.jar
 **/android/.gradle
 **/android/captures/
+**/android/.kotlin/
 **/android/gradlew
 **/android/gradlew.bat
 **/android/local.properties

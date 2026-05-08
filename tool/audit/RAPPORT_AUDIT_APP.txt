@@ -1,0 +1,102 @@
+================================================================================
+AUDIT TECHNIQUE — Aidalia / Auxivie (Flutter)
+Date indicative : 2026-05-09
+Périmètre : dossier lib/ (~73 fichiers Dart), services, flux principaux
+================================================================================
+
+1. MÉTHODOLOGIE
+---------------
+• Lecture structurée du code (navigation, ViewModels, BackendApiService).
+• Recherche des TODO / FIXME et code mort évident.
+• dart analyze lib/ (statique).
+• flutter test test/widget_test.dart (smoke test chargement app).
+
+Limites : pas d’audit runtime sur API réelle, pas de tests E2E device dans ce rapport.
+
+2. RÉSULTATS OUTILS
+-------------------
+• dart analyze lib/     → Aucun problème signalé.
+• flutter test          → 1 test : « App loads successfully » — OK.
+
+3. ARCHITECTURE GLOBALE
+-----------------------
+• Point d’entrée : main.dart → AuxivieApp → SettingsViewModel.initialize (fast startup).
+• Si maintenanceMode (API settings) → MaintenanceScreen.
+• Sinon : MaterialApp → ConsentGate → SplashScreen → ChoiceScreen ou HomeScreen.
+• State : Provider (Auth, Profile, Message, Reservation, Settings).
+• Données métier : BackendApiService → https://auxivie.org/api (staging/prod selon AppConfig).
+
+4. PARCOURS UTILISATEUR (SYNTHÈSE)
+----------------------------------
+
+A) Premier lancement / retour
+   ConsentGate → si pas de consentement stocké → ConsentScreen → puis enfant (Splash).
+   Splash → AuthViewModel.init() (≤2s) → Home si token+user persistés, sinon Choice.
+
+B) Famille (client)
+   Choice → Connexion Famille ou Inscrivez-vous → profil Famille.
+   Home : onglets Accueil | Recherche | Messages | Planning | Profil.
+   • Recherche : liste pros → fiche ProfessionalDetail → réservation / message / Signaler.
+   • Messages : liste conversations → ChatScreen (messages via API, MessageValidator anti-coordonnées).
+   • Planning : réservations → détail → paiement Stripe si proposé → signalement problème.
+   • Profil : infos perso, documents (caméra/galerie/fichiers), légal, consentements, suppression compte.
+
+C) Professionnel
+   Choice → Connexion Professionnel ou inscription pro.
+   Home : Accueil | Tableau | Messages | Planning | Profil.
+   • Tableau : stats / réservations / badges (API).
+   • Planning / Messages / Profil : logique équivalente côté métier pro.
+
+5. ÉTAT PAR FONCTIONNALITÉ
+--------------------------
+
+| Domaine          | Intégration      | Commentaire |
+|------------------|------------------|-------------|
+| Auth login/register | API | Token + user JSON prefs ; erreurs remontées au UI. |
+| Suppression compte | API DELETE /users/:id | Dépend du backend ; sinon erreur UI. |
+| Réservations CRUD | API principalement | Voir risque « deleteReservation » ci-dessous. |
+| Paiement Stripe | API create-intent + PaymentSheet | Dépend backend / clés ; double init possible main vs PaymentService (voir note). |
+| Messagerie | API + validation locale | Bloque partage tel/email/etc. (MessageValidator). |
+| Signalements | API (modal / écran / réservation) | Parcours multiples cohérents. |
+| Consentements | ConsentService local | Ré-affichage via Profil → Gérer mes consentements. |
+| Maintenance | Settings API | Peut verrouiller toute l’app si activé. |
+| RIB (Profil) | NON persisté | Écran simule succès — voir dette §6. |
+| SQLite DatabaseService | NON utilisé | Code mort côté app actuelle (aucune import lib/). |
+
+6. DETTE TECHNIQUE & RISQUES
+----------------------------
+• lib/views/profile/edit_rib_screen.dart : TODO — sauvegarde RIB non implémentée ; SnackBar « enregistré » trompeur.
+• lib/viewmodels/reservation_viewmodel.dart deleteReservation : suppression uniquement en liste locale ; pas d’appel API DELETE — risque d’incohérence si l’UI expose cette action.
+• lib/views/families/family_detail_screen.dart : TODO avis — fonctionnalité future.
+• lib/services/database_service.dart : présent mais non référencé par le reste de lib/ → confusion / taille projet ; sqflite sous-utilisé au profit du backend.
+• Paiement : main.dart initialise Stripe en async avec clé settings ou fallback PaymentConstants ; PaymentService.init existe aussi — à harmoniser pour éviter comportements divergents si appelé ailleurs.
+• Dépendance totale au réseau : sans API, settings par défaut mais données métier absentes.
+
+7. RECOMMANDATIONS PRIORITAIRES
+-------------------------------
+P1 — Implémenter persistance RIB (API + validation) ou masquer l’écran jusqu’à API prête.
+P2 — Brancher deleteReservation sur endpoint backend ou retirer l’action utilisateur.
+P3 — Tests manuels E2E sur device : inscription → réservation → paiement test → message → signalement → suppression compte démo.
+P4 — Documenter ou supprimer DatabaseService si la stratégie est 100 % backend.
+P5 — Suite de tests widget/integration sur flux critiques (auth mock, payment mock).
+
+8. RÉFÉRENCE RAPIDE DES ÉCRANS (lib/views)
+------------------------------------------
+auth/          choice, login, register
+consent/       consent_screen
+home/          home_dashboard, professional_dashboard
+professionals/ list + detail
+families/      family_detail
+messages/      list, chat, select_professional
+reservations/  list, create, detail, availability
+payments/      payment_screen
+profile/       profil, éditions, légal, signalements, support
+reports/       create_from_reservation, report_detail
+reviews/       list, create modal/screen
+support/       support_screen
+maintenance/   maintenance_screen
+splash_screen, home_screen
+
+================================================================================
+Fin du rapport — à compléter après tests manuels sur backend réel et TestFlight.
+================================================================================

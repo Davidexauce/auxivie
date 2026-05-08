@@ -4,6 +4,8 @@ import '../../config/app_config.dart';
 import '../../models/user_model.dart';
 import '../../theme/app_theme.dart';
 
+// ignore_for_file: deprecated_member_use
+
 /// Modal pour signaler un utilisateur
 class ReportUserModal extends StatefulWidget {
   final UserModel reportedUser;

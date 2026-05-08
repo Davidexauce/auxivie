@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 import 'package:http/http.dart' as http;
+import 'package:http_parser/http_parser.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/user_model.dart';
 import '../models/reservation_model.dart';
@@ -288,6 +289,39 @@ class BackendApiService {
     await clearToken();
   }
 
+  /// Supprime le compte utilisateur authentifié (DELETE /users/:id).
+  /// En cas de succès (2xx), le token local est effacé.
+  static Future<bool> deleteUserAccount(int userId) async {
+    try {
+      final headers = await _getAuthHeaders();
+      final response = await http
+          .delete(
+            Uri.parse('$baseUrl/users/$userId'),
+            headers: headers,
+          )
+          .timeout(AppConfig.apiTimeout);
+
+      if (response.statusCode == 200 ||
+          response.statusCode == 204 ||
+          response.statusCode == 202) {
+        await clearToken();
+        return true;
+      }
+
+      await _handleAuthError(response.statusCode, response.body);
+      if (AppConfig.enableLogging) {
+        print(
+            '❌ deleteUserAccount: ${response.statusCode} - ${response.body}');
+      }
+      return false;
+    } catch (e) {
+      if (AppConfig.enableLogging) {
+        print('❌ Erreur deleteUserAccount: $e');
+      }
+      return false;
+    }
+  }
+
   // ========== UTILISATEURS ==========
 
   static Future<UserModel?> getUserById(int id) async {
@@ -422,7 +456,11 @@ class BackendApiService {
         print('   address: ${userData['address']}');
         print('   ville: ${userData['ville']}');
         print('   experience: ${userData['experience']}');
-        print('📤 [SYNC USER] JSON complet: ${jsonEncode(userData)}');
+        final sanitizedUserData = Map<String, dynamic>.from(userData);
+        if (sanitizedUserData.containsKey('password')) {
+          sanitizedUserData['password'] = '***';
+        }
+        print('📤 [SYNC USER] JSON complet (sanitisé): ${jsonEncode(sanitizedUserData)}');
       }
       
       // Pour la création (id null), utiliser les headers publics
@@ -466,15 +504,23 @@ class BackendApiService {
           final errorMessage = error['message'] ?? error['error'] ?? response.body;
           if (AppConfig.enableLogging) {
             print('❌ Erreur syncUser: ${response.statusCode} - $errorMessage');
-            print('📤 [SYNC USER] Données envoyées (pour debug):');
-            print('   ${jsonEncode(userData)}');
+            final sanitizedUserData = Map<String, dynamic>.from(userData);
+            if (sanitizedUserData.containsKey('password')) {
+              sanitizedUserData['password'] = '***';
+            }
+            print('📤 [SYNC USER] Données envoyées (pour debug, sanitisées):');
+            print('   ${jsonEncode(sanitizedUserData)}');
           }
         } catch (_) {
           // Si ce n'est pas du JSON, afficher la réponse brute
           if (AppConfig.enableLogging) {
             print('❌ Erreur syncUser: ${response.statusCode} - ${response.body.substring(0, response.body.length > 200 ? 200 : response.body.length)}');
-            print('📤 [SYNC USER] Données envoyées (pour debug):');
-            print('   ${jsonEncode(userData)}');
+            final sanitizedUserData = Map<String, dynamic>.from(userData);
+            if (sanitizedUserData.containsKey('password')) {
+              sanitizedUserData['password'] = '***';
+            }
+            print('📤 [SYNC USER] Données envoyées (pour debug, sanitisées):');
+            print('   ${jsonEncode(sanitizedUserData)}');
           }
         }
         return null;
@@ -509,6 +555,8 @@ class BackendApiService {
       'experience': user.experience?.toString(),
       'photo': user.photo,
       'userType': user.userType,
+      // Alias snake_case : certains backends / dashboards ne mappent que cette clé.
+      'user_type': user.userType,
       'dateNaissance': user.dateNaissance?.toIso8601String(), // Garder pour compatibilité
       'besoin': user.besoin,
       'preference': user.preference,
@@ -551,6 +599,7 @@ class BackendApiService {
         if (updates.containsKey('preference')) userData['preference'] = updates['preference'];
         if (updates.containsKey('mission')) userData['mission'] = updates['mission'];
         if (updates.containsKey('particularite')) userData['particularite'] = updates['particularite'];
+        if (updates.containsKey('rib')) userData['rib'] = updates['rib'];
         
         if (AppConfig.enableLogging) {
           print('📤 [UPDATE USER] Tentative PUT /users/$userId');
@@ -603,11 +652,13 @@ class BackendApiService {
         'experience': updates['experience']?.toString() ?? user.experience?.toString(),
         'photo': updates['photo'] ?? user.photo,
         'userType': user.userType,
+        'user_type': user.userType,
         'dateNaissance': updates['dateNaissance'] ?? user.dateNaissance?.toIso8601String(),
         'besoin': updates['besoin'] ?? user.besoin,
         'preference': updates['preference'] ?? user.preference,
         'mission': updates['mission'] ?? user.mission,
         'particularite': updates['particularite'] ?? user.particularite,
+        'rib': updates.containsKey('rib') ? updates['rib'] : user.rib,
       };
 
       final result = await syncUser(userDataSync);
@@ -841,6 +892,36 @@ class BackendApiService {
           'status': reservation.status,
     });
     return result != null;
+  }
+
+  /// Supprime une réservation (DELETE authentifié).
+  static Future<bool> deleteReservationById(int reservationId) async {
+    try {
+      final headers = await _getAuthHeaders();
+      final response = await http
+          .delete(
+            Uri.parse('$baseUrl/reservations/$reservationId'),
+            headers: headers,
+          )
+          .timeout(AppConfig.apiTimeout);
+
+      if (response.statusCode == 200 ||
+          response.statusCode == 204 ||
+          response.statusCode == 202) {
+        return true;
+      }
+      await _handleAuthError(response.statusCode, response.body);
+      if (AppConfig.enableLogging) {
+        print(
+            '❌ deleteReservationById: ${response.statusCode} - ${response.body}');
+      }
+      return false;
+    } catch (e) {
+      if (AppConfig.enableLogging) {
+        print('❌ Erreur deleteReservationById: $e');
+      }
+      return false;
+    }
   }
 
   // ========== MESSAGES ==========
@@ -1293,38 +1374,184 @@ class BackendApiService {
     required File file,
   }) async {
     try {
+      // Vérifier que le fichier existe et est accessible
+      if (!await file.exists()) {
+        if (AppConfig.enableLogging) {
+          print('❌ [UPLOAD DOCUMENT] Le fichier n\'existe pas: ${file.path}');
+        }
+        return null;
+      }
+      
+      // Lire les bytes du fichier en mémoire pour éviter les problèmes de security-scoped URLs sur iOS
+      List<int> fileBytes;
+      try {
+        fileBytes = await file.readAsBytes();
+      } catch (e) {
+        if (AppConfig.enableLogging) {
+          print('❌ [UPLOAD DOCUMENT] Impossible de lire le fichier: $e');
+          print('   Path: ${file.path}');
+        }
+        return null;
+      }
+      
+      if (fileBytes.isEmpty) {
+        if (AppConfig.enableLogging) {
+          print('❌ [UPLOAD DOCUMENT] Le fichier est vide');
+        }
+        return null;
+      }
+
+      // Validation locale: alignée sur les formats autorisés côté backend.
+      final allowedExtensions = <String>{'pdf', 'jpg', 'jpeg', 'png'};
+      final filename = file.path.split('/').last;
+      final dotIndex = filename.lastIndexOf('.');
+      final extension = dotIndex == -1 ? '' : filename.substring(dotIndex + 1).toLowerCase();
+      if (!allowedExtensions.contains(extension)) {
+        if (AppConfig.enableLogging) {
+          print('❌ [UPLOAD DOCUMENT] Extension non supportée: .$extension');
+          print('   Extensions autorisées: ${allowedExtensions.join(', ')}');
+        }
+        return null;
+      }
+      
+      // Récupérer les headers d'authentification
+      final authHeaders = await _getAuthHeaders();
+      
       final uri = Uri.parse('$baseUrl/documents/upload');
       final request = http.MultipartRequest('POST', uri);
       
-      request.fields['userId'] = userId.toString();
-      request.fields['documentType'] = type;
-      request.headers['x-request-type'] = 'mobile';
+      // Ajouter tous les headers d'authentification (y compris Authorization)
+      request.headers.addAll(authHeaders);
+      // Note: Content-Type sera automatiquement défini par MultipartRequest
+      // On doit le retirer des headers car il sera défini automatiquement avec la boundary
+      request.headers.remove('Content-Type');
       
-      final fileStream = file.openRead();
-      final fileLength = await file.length();
-      final multipartFile = http.MultipartFile(
+      request.fields['userId'] = userId.toString();
+      // Compatibilité backend: certains environnements lisent "type", d'autres "documentType".
+      request.fields['type'] = type;
+      request.fields['documentType'] = type;
+
+      MediaType contentType;
+      switch (extension) {
+        case 'pdf':
+          contentType = MediaType('application', 'pdf');
+          break;
+        case 'png':
+          contentType = MediaType('image', 'png');
+          break;
+        case 'jpg':
+        case 'jpeg':
+          contentType = MediaType('image', 'jpeg');
+          break;
+        default:
+          contentType = MediaType('application', 'octet-stream');
+      }
+      
+      // Utiliser les bytes directement au lieu d'un stream pour éviter les problèmes de sécurité iOS
+      final multipartFile = http.MultipartFile.fromBytes(
         'file',
-        fileStream,
-        fileLength,
-        filename: file.path.split('/').last,
+        fileBytes,
+        filename: filename,
+        contentType: contentType,
       );
       request.files.add(multipartFile);
+
+      // Pas de limite de taille de fichier
+
+      if (AppConfig.enableLogging) {
+        print('📡 [UPLOAD DOCUMENT] Envoi du document:');
+        print('   URL: $uri');
+        print('   Type: $type');
+        print('   Filename: ${file.path.split('/').last}');
+        print('   Size: ${(fileBytes.length / 1024 / 1024).toStringAsFixed(2)} MB (${fileBytes.length} bytes)');
+        print('   File path: ${file.path}');
+        print('   File exists: ${await file.exists()}');
+        print('   Token présent: ${authHeaders.containsKey('Authorization')}');
+        if (authHeaders.containsKey('Authorization')) {
+          final authHeader = authHeaders['Authorization']!;
+          print('   Authorization: ${authHeader.substring(0, authHeader.length > 30 ? 30 : authHeader.length)}...');
+        }
+      }
 
       final streamedResponse = await request.send().timeout(AppConfig.apiTimeout);
       final response = await http.Response.fromStream(streamedResponse);
 
-      if (response.statusCode == 200) {
-        return json.decode(response.body) as Map<String, dynamic>;
+      if (AppConfig.enableLogging) {
+        print('📡 [UPLOAD DOCUMENT] Réponse reçue:');
+        print('   Status Code: ${response.statusCode}');
+        print('   Content-Type: ${response.headers['content-type'] ?? 'non spécifié'}');
+        print('   Body length: ${response.body.length} bytes');
+      }
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        try {
+          final result = json.decode(response.body) as Map<String, dynamic>;
+          if (AppConfig.enableLogging) {
+            print('✅ [UPLOAD DOCUMENT] Document uploadé avec succès');
+          }
+          return result;
+        } catch (e) {
+          if (AppConfig.enableLogging) {
+            print('❌ [UPLOAD DOCUMENT] Erreur parsing réponse: $e');
+            print('   Réponse body (premiers 500 chars): ${response.body.length > 500 ? response.body.substring(0, 500) : response.body}');
+          }
+          return null;
+        }
       } else {
-        final error = json.decode(response.body);
+        // Gérer les erreurs qui retournent du HTML au lieu de JSON
+        String errorMessage = 'Erreur ${response.statusCode}';
+        String serverError = '';
+        
+        try {
+          final error = json.decode(response.body);
+          errorMessage = error['message'] ?? error['error'] ?? error.toString();
+          serverError = error.toString();
+        } catch (e) {
+          // Si ce n'est pas du JSON, c'est probablement du HTML (page d'erreur)
+          if (response.body.contains('<!DOCTYPE') || response.body.contains('<html')) {
+            // Essayer d'extraire un message d'erreur du HTML
+            final titleMatch = RegExp(r'<title>(.*?)</title>', caseSensitive: false).firstMatch(response.body);
+            final h1Match = RegExp(r'<h1[^>]*>(.*?)</h1>', caseSensitive: false).firstMatch(response.body);
+            
+            if (titleMatch != null) {
+              errorMessage = 'Erreur serveur: ${titleMatch.group(1)}';
+            } else if (h1Match != null) {
+              errorMessage = 'Erreur serveur: ${h1Match.group(1)}';
+            } else {
+              if (response.statusCode == 500) {
+                errorMessage = 'Erreur serveur (500). Veuillez réessayer ou contacter le support si le problème persiste.';
+              } else {
+                errorMessage = 'Le serveur a retourné une erreur ${response.statusCode}. Vérifiez les logs serveur pour plus de détails.';
+              }
+            }
+            serverError = 'Page HTML d\'erreur (${response.body.length} bytes)';
+          } else {
+            errorMessage = response.body.length > 200 
+                ? response.body.substring(0, 200) 
+                : response.body;
+            serverError = response.body;
+          }
+        }
+        
         if (AppConfig.enableLogging) {
-          print('❌ Erreur upload document: ${response.statusCode} - ${error['message'] ?? response.body}');
+          print('❌ [UPLOAD DOCUMENT] Erreur ${response.statusCode}:');
+          print('   Message: $errorMessage');
+          if (serverError.isNotEmpty) {
+            if (serverError.length < 500) {
+              print('   Détails serveur: $serverError');
+            } else {
+              print('   Détails serveur: ${serverError.substring(0, 500)}...');
+            }
+          }
+          print('   Headers réponse: ${response.headers}');
         }
         return null;
       }
-    } catch (e) {
+    } catch (e, stackTrace) {
       if (AppConfig.enableLogging) {
-      print('❌ Erreur upload document: $e');
+        print('❌ [UPLOAD DOCUMENT] Erreur exception: $e');
+        print('   Stack trace: $stackTrace');
+        print('   Type d\'erreur: ${e.runtimeType}');
       }
       return null;
     }

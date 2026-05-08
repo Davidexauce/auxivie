@@ -8,6 +8,7 @@ import '../../models/user_model.dart';
 import '../../models/document_model.dart';
 import '../../theme/app_theme.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:file_picker/file_picker.dart';
 import 'dart:io';
 import 'edit_phone_screen.dart';
 import 'edit_email_screen.dart';
@@ -21,7 +22,9 @@ import 'edit_personal_info_screen.dart';
 import 'family_members_screen.dart';
 import 'my_reports_screen.dart';
 import '../support/support_screen.dart';
-import '../../utils/backend_diagnostics.dart';
+import '../../services/consent_service.dart';
+import '../consent/consent_screen.dart';
+import '../auth/choice_screen.dart';
 
 /// Page Profile modernisée, intégrée à BackendApiService + Provider
 /// - Thème dégradé vert
@@ -48,6 +51,9 @@ class _ProfileScreenState extends State<ProfileScreen>
 
   UserModel? _user;
   bool _isLoading = true;
+
+  /// Une seule requête réseau tant qu’on ne force pas un rafraîchissement (évite N appels à /reports/my à chaque rebuild).
+  Future<int>? _openReportsCountFuture;
 
   final ImagePicker _picker = ImagePicker();
   List<DocumentModel> _docsIdentite = [];
@@ -97,6 +103,9 @@ class _ProfileScreenState extends State<ProfileScreen>
           _villeController.text = u.ville ?? '';
           _tarifController.text = u.tarif?.toStringAsFixed(2) ?? '';
           _experienceController.text = u.experience?.toString() ?? '';
+          _openReportsCountFuture = _getOpenReportsCount();
+        } else {
+          _openReportsCountFuture = null;
         }
         _isLoading = false;
       });
@@ -175,7 +184,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                   onTap: () async {
                     Navigator.of(context).pop(true);
                     final picked = await _picker.pickImage(
-                        source: ImageSource.camera, imageQuality: 90);
+                        source: ImageSource.camera, imageQuality: 70);
                     if (picked == null) return;
                     
                     // Afficher un indicateur de chargement
@@ -186,8 +195,21 @@ class _ProfileScreenState extends State<ProfileScreen>
                       builder: (_) => const Center(child: CircularProgressIndicator()),
                     );
                     
-                    // Uploader vers le backend
+                    // Vérifier que le fichier existe avant l'upload
                     final file = File(picked.path);
+                    if (!await file.exists()) {
+                      if (!mounted) return;
+                      Navigator.of(context).pop(); // Fermer le dialog de chargement
+                      ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Le fichier sélectionné n\'est plus accessible. Veuillez réessayer.'),
+                            duration: Duration(seconds: 5),
+                            backgroundColor: Colors.red,
+                          ));
+                      return;
+                    }
+                    
+                    // Uploader vers le backend
                     final result = await BackendApiService.uploadDocument(
                       userId: widget.userId,
                       type: type,
@@ -206,7 +228,11 @@ class _ProfileScreenState extends State<ProfileScreen>
                     } else {
                       if (!mounted) return;
                       ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Erreur lors de l\'upload du document')));
+                          const SnackBar(
+                            content: Text('Erreur lors de l\'upload du document. Veuillez réessayer.'),
+                            duration: Duration(seconds: 5),
+                            backgroundColor: Colors.red,
+                          ));
                     }
                   },
                 ),
@@ -217,7 +243,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                   onTap: () async {
                     Navigator.of(context).pop(true);
                     final picked = await _picker.pickImage(
-                        source: ImageSource.gallery, imageQuality: 90);
+                        source: ImageSource.gallery, imageQuality: 70);
                     if (picked == null) return;
                     
                     // Afficher un indicateur de chargement
@@ -228,8 +254,21 @@ class _ProfileScreenState extends State<ProfileScreen>
                       builder: (_) => const Center(child: CircularProgressIndicator()),
                     );
                     
-                    // Uploader vers le backend
+                    // Vérifier que le fichier existe avant l'upload
                     final file = File(picked.path);
+                    if (!await file.exists()) {
+                      if (!mounted) return;
+                      Navigator.of(context).pop(); // Fermer le dialog de chargement
+                      ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Le fichier sélectionné n\'est plus accessible. Veuillez réessayer.'),
+                            duration: Duration(seconds: 5),
+                            backgroundColor: Colors.red,
+                          ));
+                      return;
+                    }
+                    
+                    // Uploader vers le backend
                     final result = await BackendApiService.uploadDocument(
                       userId: widget.userId,
                       type: type,
@@ -248,7 +287,11 @@ class _ProfileScreenState extends State<ProfileScreen>
                     } else {
                       if (!mounted) return;
                       ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Erreur lors de l\'upload du document')));
+                          const SnackBar(
+                            content: Text('Erreur lors de l\'upload du document. Veuillez réessayer.'),
+                            duration: Duration(seconds: 5),
+                            backgroundColor: Colors.red,
+                          ));
                     }
                   },
                 ),
@@ -256,11 +299,168 @@ class _ProfileScreenState extends State<ProfileScreen>
                   leading: const Icon(Icons.picture_as_pdf_rounded,
                       color: Color.fromARGB(255, 43, 54, 29)),
                   title: const Text('Importer un fichier (PDF, images)'),
+                  subtitle: const Text('Sélectionnez un PDF ou une image', style: TextStyle(fontSize: 12)),
                   onTap: () async {
-                    Navigator.of(context).pop();
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Fonctionnalité à venir')),
-                    );
+                    Navigator.of(context).pop(true);
+                    
+                    try {
+                      // Utiliser file_picker pour sélectionner PDF ou images
+                      // Essayer d'abord avec FileType.any pour une meilleure compatibilité
+                      FilePickerResult? result;
+                      
+                      const allowedExtensions = <String>{'pdf', 'jpg', 'jpeg', 'png'};
+                      try {
+                        // Essayer avec FileType.any (plus compatible)
+                        result = await FilePicker.pickFiles(
+                          type: FileType.any,
+                          allowMultiple: false,
+                        );
+                      } catch (e) {
+                        // Si FileType.any ne fonctionne pas, essayer FileType.custom
+                        if (AppConfig.enableLogging) {
+                          print('⚠️ [FILE PICKER] FileType.any a échoué, essai avec FileType.custom: $e');
+                        }
+                        result = await FilePicker.pickFiles(
+                          type: FileType.custom,
+                          allowedExtensions: allowedExtensions.toList(),
+                          allowMultiple: false,
+                        );
+                      }
+                      
+                      if (result == null || result.files.single.path == null) return;
+                      
+                      final filePath = result.files.single.path!;
+                      final file = File(filePath);
+                      final filename = result.files.single.name;
+                      final dotIndex = filename.lastIndexOf('.');
+                      final extension = dotIndex == -1
+                          ? ''
+                          : filename.substring(dotIndex + 1).toLowerCase();
+
+                      if (!allowedExtensions.contains(extension)) {
+                        if (!mounted) return;
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text(
+                              'Format non supporté. Utilisez un PDF, JPG, JPEG ou PNG.',
+                            ),
+                            duration: Duration(seconds: 5),
+                            backgroundColor: Colors.red,
+                          ),
+                        );
+                        return;
+                      }
+                      
+                      // Vérifier que le fichier existe et est accessible
+                      if (!await file.exists()) {
+                        if (!mounted) return;
+                        ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('Le fichier sélectionné n\'est plus accessible. Veuillez réessayer.'),
+                              duration: Duration(seconds: 5),
+                              backgroundColor: Colors.red,
+                            ));
+                        return;
+                      }
+                      
+                      // Vérifier que le fichier peut être lu
+                      try {
+                        final testBytes = await file.readAsBytes();
+                        if (testBytes.isEmpty) {
+                          if (!mounted) return;
+                          ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('Le fichier sélectionné est vide. Veuillez choisir un autre fichier.'),
+                                duration: Duration(seconds: 5),
+                                backgroundColor: Colors.red,
+                              ));
+                          return;
+                        }
+                      } catch (e) {
+                        if (!mounted) return;
+                        ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text('Impossible d\'accéder au fichier. Erreur: ${e.toString()}'),
+                              duration: const Duration(seconds: 5),
+                              backgroundColor: Colors.red,
+                            ));
+                        return;
+                      }
+                      
+                      // Afficher un indicateur de chargement
+                      if (!mounted) return;
+                      showDialog(
+                        context: context,
+                        barrierDismissible: false,
+                        builder: (_) => const Center(child: CircularProgressIndicator()),
+                      );
+                      
+                      // Uploader vers le backend
+                      final uploadResult = await BackendApiService.uploadDocument(
+                        userId: widget.userId,
+                        type: type,
+                        file: file,
+                      );
+                      
+                      if (!mounted) return;
+                      Navigator.of(context).pop(); // Fermer le dialog de chargement
+                      
+                      if (uploadResult != null) {
+                        // Le document est déjà enregistré sur le backend
+                        await _loadDocuments();
+                        if (!mounted) return;
+                        ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('Document uploadé avec succès')));
+                      } else {
+                        if (!mounted) return;
+                        ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('Erreur lors de l\'upload du document. Veuillez réessayer.'),
+                              duration: Duration(seconds: 5),
+                              backgroundColor: Colors.red,
+                            ));
+                      }
+                    } catch (e) {
+                      // Fermer le dialog de chargement si ouvert
+                      if (mounted) {
+                        try {
+                          Navigator.of(context).pop();
+                        } catch (_) {
+                          // Dialog peut ne pas être ouvert
+                        }
+                      }
+                      
+                      // Gérer l'erreur MissingPluginException
+                      if (e.toString().contains('MissingPluginException') || 
+                          e.toString().contains('filepicker') ||
+                          e.toString().contains('Method not found')) {
+                        if (!mounted) return;
+                        ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('Le sélecteur de fichiers nécessite un redémarrage complet de l\'application. Arrêtez l\'app et relancez-la.'),
+                              duration: Duration(seconds: 7),
+                              backgroundColor: Colors.orange,
+                            ));
+                        if (AppConfig.enableLogging) {
+                          print('❌ [FILE PICKER] Erreur plugin: $e');
+                          print('   Solution: Arrêter complètement l\'app et la relancer (pas juste hot reload)');
+                          print('   Alternative: Utiliser "Depuis la galerie" pour les images');
+                        }
+                      } else {
+                        if (!mounted) return;
+                        final err = e.toString();
+                        final preview = err.length > 100 ? '${err.substring(0, 100)}...' : err;
+                        ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text('Erreur lors de la sélection du fichier: $preview'),
+                              duration: const Duration(seconds: 5),
+                              backgroundColor: Colors.red,
+                            ));
+                        if (AppConfig.enableLogging) {
+                          print('❌ [FILE PICKER] Erreur: $e');
+                        }
+                      }
+                    }
                   },
                 ),
               ],
@@ -329,6 +529,13 @@ class _ProfileScreenState extends State<ProfileScreen>
     } catch (e) {
       return 0;
     }
+  }
+
+  void _refreshOpenReportsBadge() {
+    if (!mounted) return;
+    setState(() {
+      _openReportsCountFuture = _getOpenReportsCount();
+    });
   }
 
   String _extractFirstName(String fullName) {
@@ -491,7 +698,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                   onTap: () async {
                     Navigator.of(context).pop(true);
                     final picked = await _picker.pickImage(
-                        source: ImageSource.camera, imageQuality: 90);
+                        source: ImageSource.camera, imageQuality: 70);
                     if (picked == null) return;
                     
                     if (!mounted) return;
@@ -529,7 +736,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                   onTap: () async {
                     Navigator.of(context).pop(true);
                     final picked = await _picker.pickImage(
-                        source: ImageSource.gallery, imageQuality: 90);
+                        source: ImageSource.gallery, imageQuality: 70);
                     if (picked == null) return;
                     
                     if (!mounted) return;
@@ -742,22 +949,33 @@ class _ProfileScreenState extends State<ProfileScreen>
                   ]),
                   _sectionTitle('Paiement & Facturation'),
                   _card([
-                    _tile('Tarif horaire', Icons.euro, onTap: () {
-                      Navigator.of(context).push(
+                    // Afficher le tarif horaire uniquement pour les professionnels
+                    if (_user!.userType == 'professionnel')
+                      _tile('Tarif horaire', Icons.euro, onTap: () {
+                        Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (_) => EditTarifScreen(
+                              currentTarif: _user?.tarif,
+                              userId: widget.userId,
+                            ),
+                          ),
+                        ).then((_) => _loadUser());
+                      }),
+                    if (_user!.userType == 'professionnel')
+                      const Divider(),
+                    _tile('RIB', Icons.account_balance, onTap: () {
+                      Navigator.of(context)
+                          .push(
                         MaterialPageRoute(
-                          builder: (_) => EditTarifScreen(
-                            currentTarif: _user?.tarif,
+                          builder: (_) => EditRibScreen(
                             userId: widget.userId,
+                            initialRib: _user?.rib,
                           ),
                         ),
-                      ).then((_) => _loadUser());
-                    }),
-                    _tile('RIB', Icons.account_balance, onTap: () {
-                      Navigator.of(context).push(
-                        MaterialPageRoute(
-                          builder: (_) => const EditRibScreen(),
-                        ),
-                      );
+                      )
+                          .then((saved) {
+                        if (saved == true) _loadUser();
+                      });
                     }),
                   ]),
                   _sectionTitle('Paramètres'),
@@ -790,49 +1008,42 @@ class _ProfileScreenState extends State<ProfileScreen>
                       );
                     }),
                     const Divider(),
-                    _tile('🔍 Diagnostic Backend', Icons.bug_report,
-                        leadingColor: Colors.blue, onTap: () {
-                      BackendDiagnostics.showDiagnosticsDialog(context);
-                    }),
-                    const Divider(),
                     FutureBuilder<int>(
-                      future: _getOpenReportsCount(),
+                      future: _openReportsCountFuture,
                       builder: (context, snapshot) {
                         final count = snapshot.data ?? 0;
-                        return _tile('Mes signalements', Icons.report_problem,
-                            leadingColor: Colors.orange, onTap: () {
-                          Navigator.of(context).push(
-                            MaterialPageRoute(
-                          builder: (_) => const MyReportsScreen(),
-                        ),
-                      );
-                      
-                      // Recharger le badge après retour de MyReportsScreen
-                      // (au cas où un signalement aurait été créé depuis un autre écran)
-                      if (mounted) {
-                        setState(() {
-                          // Le badge se rechargera automatiquement via _getOpenReportsCount()
-                        });
-                      }
-                        },
-                        trailing: count > 0
-                            ? Container(
-                                padding: const EdgeInsets.symmetric(
-                                    horizontal: 8, vertical: 4),
-                                decoration: BoxDecoration(
-                                  color: Colors.orange,
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                                child: Text(
-                                  count.toString(),
-                                  style: const TextStyle(
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 12,
+                        return _tile(
+                          'Mes signalements',
+                          Icons.report_problem,
+                          leadingColor: Colors.orange,
+                          onTap: () {
+                            Navigator.of(context)
+                                .push(
+                              MaterialPageRoute(
+                                builder: (_) => const MyReportsScreen(),
+                              ),
+                            )
+                                .then((_) => _refreshOpenReportsBadge());
+                          },
+                          trailing: count > 0
+                              ? Container(
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 8, vertical: 4),
+                                  decoration: BoxDecoration(
+                                    color: Colors.orange,
+                                    borderRadius: BorderRadius.circular(12),
                                   ),
-                                ),
-                              )
-                            : null);
+                                  child: Text(
+                                    count.toString(),
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 12,
+                                    ),
+                                  ),
+                                )
+                              : null,
+                        );
                       },
                     ),
                   ]),
@@ -843,6 +1054,22 @@ class _ProfileScreenState extends State<ProfileScreen>
                       Navigator.of(context).push(
                         MaterialPageRoute(
                           builder: (_) => const LegalInfoScreen(),
+                        ),
+                      );
+                    }),
+                    const Divider(),
+                    _tile('Gérer mes consentements', Icons.tune_rounded, onTap: () async {
+                      await ConsentService.clearConsent();
+                      if (!context.mounted) return;
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => ConsentScreen(
+                            onDecided: () {
+                              if (Navigator.of(context).canPop()) {
+                                Navigator.of(context).pop();
+                              }
+                            },
+                          ),
                         ),
                       );
                     }),
@@ -868,12 +1095,37 @@ class _ProfileScreenState extends State<ProfileScreen>
                         ),
                       );
 
-                      if (confirm == true) {
-                        // TODO: Implémenter la suppression du compte via l'API backend
-                        if (mounted) {
-                          final messenger = ScaffoldMessenger.of(context);
-                          messenger.showSnackBar(
-                            const SnackBar(content: Text('Compte supprimé')));
+                      if (confirm == true && mounted) {
+                        showDialog<void>(
+                          context: context,
+                          barrierDismissible: false,
+                          builder: (_) =>
+                              const Center(child: CircularProgressIndicator()),
+                        );
+                        final ok = await BackendApiService.deleteUserAccount(
+                            widget.userId);
+                        if (!mounted) return;
+                        Navigator.of(context).pop();
+
+                        if (ok) {
+                          await ConsentService.clearConsent();
+                          if (!mounted) return;
+                          await Provider.of<AuthViewModel>(context,
+                                  listen: false)
+                              .logout();
+                          if (!mounted) return;
+                          Navigator.of(context).pushAndRemoveUntil(
+                            MaterialPageRoute(
+                                builder: (_) => const ChoiceScreen()),
+                            (route) => false,
+                          );
+                        } else {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text(
+                                  'Impossible de supprimer le compte. Réessayez ou contactez le support.'),
+                            ),
+                          );
                         }
                       }
                     }),

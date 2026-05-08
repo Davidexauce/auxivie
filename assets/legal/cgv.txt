@@ -1,0 +1,98 @@
+CONDITIONS GÉNÉRALES DE VENTE (CGV) – AIDALIA
+Dernière mise à jour : 08/05/2026
+
+1. Objet – Champ d’application
+Les présentes Conditions Générales de Vente (« CGV ») régissent les conditions financières applicables à l’utilisation des fonctionnalités payantes de l’application mobile Aidalia (ci‑après la « Plateforme ») et, en particulier, la perception par Aidalia d’une commission au titre de son service d’intermédiation.
+Les CGV s’appliquent à tout Utilisateur ayant la qualité de Particulier/Famille (ci‑après le « Client ») procédant à une réservation payante sur la Plateforme.
+En cas de contradiction entre les CGU et les présentes CGV sur les aspects financiers, les CGV prévalent.
+2. Identité du vendeur / de l’opérateur
+Aidalia est éditée et exploitée par :
+Aidalia — micro-entreprise (entrepreneur individuel) — capital social : non applicable.
+Siège : 12 rue Basfroi, 75011 Paris, France — SIREN : 104 621 669 — SIRET : 104 621 669 00019 — TVA : non applicable (franchise en base, art. 293 B du CGI).
+Support : christ.emmanuel12@outlook.fr / rubrique support dans l’application.
+3. Description du service payant
+Aidalia fournit un service d’intermédiation permettant au Client de réserver une prestation auprès d’un Professionnel référencé sur la Plateforme.
+Aidalia n’est pas le prestataire de la prestation d’aide à domicile : la prestation est réalisée par le Professionnel, sous sa responsabilité, conformément aux CGU.
+4. Prix – Commission
+4.1 Prix affichés
+Les prix sont affichés en euros (€), toutes taxes comprises (TTC) sauf mention contraire.
+Le montant payé par le Client à la réservation inclut :
+le prix de la prestation fixé par le Professionnel auquel s’ajoute,
+la commission due à Aidalia au titre du service d’intermédiation.
+4.2 Taux / modalités de calcul
+Le taux de commission applicable est indiqué au Client avant validation du paiement et peut être exprimé en pourcentage et/ou en frais fixes si prévu.
+Aidalia peut faire évoluer le taux de commission pour l’avenir ; toute modification s’applique uniquement aux nouvelles réservations.
+5. Réservation – Formation du contrat
+Le Client sélectionne une prestation, un créneau et/ou des paramètres de réservation proposés sur la Plateforme, puis procède au paiement.
+La réservation est considérée comme ferme lorsque :
+le paiement est validé, et
+la Plateforme confirme la réservation dans l’app (notification / écran de confirmation).
+Aidalia se réserve le droit de refuser ou d’annuler une réservation en cas de suspicion de fraude, d’incident de paiement, ou de violation des CGU/CGV.
+6. Paiement – Stripe
+6.1 Moyen de paiement
+Le paiement s’effectue exclusivement sur une Plateforme (carte bancaire et autres moyens proposés), de manière sécurisée.
+6.2 Encaissement – Reversement au Professionnel
+Le Client autorise Aidalia à encaisser le montant total de la réservation.
+Aidalia prélève automatiquement sa commission puis reverse au Professionnel le montant correspondant au prix de la prestation, sous réserve des conditions ci‑dessous.
+Sauf incident (litige, suspicion de fraude, chargeback, vérification obligatoire), le reversement intervient après la réalisation de la prestation, selon le calendrier de traitement technique et les contrôles de sécurité.
+6.3 Incidents de paiement – Impayés
+En cas de refus de paiement, d’impayé, d’annulation de paiement, ou de rétrofacturation (chargeback), la réservation peut être annulée et/ou suspendue. Les conséquences financières sont détaillées à l’article 10.
+7. Exécution de la prestation – Confirmation de réalisation
+La prestation est réputée réalisée à la date/heure prévue sauf :
+annulation conforme aux présentes CGV,
+signalement de non‑présentation (« no‑show »),
+litige déclaré dans les délais prévus à l’article 10.
+Aidalia peut mettre à disposition des outils de confirmation (ex. bouton « prestation réalisée »). À défaut, Aidalia peut se fonder sur des indices raisonnables (messages, absence de contestation, etc.).
+8. Annulation – Remboursements (Client)
+8.1 Annulation par le Client (famille)
+Plus de 24h avant l’heure prévue : remboursement intégral.
+Moins de 24h avant l’heure prévue : remboursement de 50% du montant payé (sauf conditions particulières affichées lors de la réservation).
+Le remboursement est réalisé via le même moyen de paiement, dans un délai dépendant des délais bancaires. Il peut également être réalisé au moyen d’un avoir à durée limitée, ne pouvant excéder un an. 
+8.2 Annulation par le Professionnel
+Le Professionnel doit informer le Client dès que possible.
+Le Client n’est pas tenu d’accepter un remplaçant proposé par le Professionnel.
+En cas d’annulation par le Professionnel : remboursement intégral au Client, sauf accord exprès du Client pour un report.
+8.3 Cas de force majeure
+En cas de force majeure au sens du droit français, les parties peuvent convenir d’un report ; à défaut, la réservation peut être annulée et remboursée selon une solution équitable au cas par cas.
+9. Non‑présentation
+9.1 Non-présentation du Professionnel
+Si le Professionnel ne se présente pas à l’heure convenue : remboursement intégral au Client, sauf preuve contraire ou accord de report.
+9.2 Non-présentation du Client
+Si le Client ne se présente pas / n’est pas joignable / empêche l’exécution de la prestation :
+le Professionnel est payé du prix de la prestation ;
+la commission reste acquise à Aidalia.
+10. Litiges – Contestations –
+10.1 Déclaration d’un litige
+Le Client peut signaler un problème lié à une réservation (non-présentation, exécution impossible, contestation) via le support Aidalia dans un délai de [48h] après l’heure de fin prévue, sauf circonstances particulières.
+Aidalia n’est pas juge de la qualité de la prestation, mais peut :
+collecter des éléments (messages, confirmations, justificatifs),
+appliquer les règles de remboursement prévues aux CGV,
+suspendre temporairement un reversement en cas de litige sérieux.
+10.2 Suspension / retenue en cas de contestation ou fraude
+En cas de contestation, suspicion de fraude, ou demande de sécurisation (KYC/contrôle), Aidalia peut suspendre le reversement au Professionnel le temps nécessaire au traitement.
+10.3 Rétrofacturation 
+En cas de rétrofacturation initiée par la banque du Client, Aidalia peut exiger des informations.
+Si la rétrofacturation aboutit, les sommes correspondantes peuvent être débitée(s) du compte de la Plateforme et/ou impacter le reversement prévu. Aidalia pourra, le cas échéant, demander au Professionnel la restitution des sommes déjà reversées si le paiement initial est annulé, dans la mesure permise par la loi et par les mécanismes Stripe.
+11. Pénalités liées aux annulations/non-présentation du Professionnel (règles plateforme)
+Afin de garantir la fiabilité de la Plateforme, Aidalia peut appliquer des mesures et pénalités aux Professionnels en cas d’annulations tardives ou de non-présentations, notamment :
+après 3 annulations/non-présentations enregistrées : pénalité sur la prochaine prestation (frais supplémentaires en plus de la commission) ;
+possibilité de pénalité dès le 2ᵉ incident en cas d’impact important ;
+et/ou mesures de limitation/suspension prévues par les CGU.
+Les modalités exactes (montant/assiette de la pénalité) seront précisées dans l’app.
+12. Droit de rétractation (Client consommateur)
+12.1 Principe
+Lorsque le Client a la qualité de consommateur, il dispose en principe d’un délai de 14 jours pour exercer son droit de rétractation dans les conditions du Code de la consommation.
+12.2 Exception / exécution immédiate du service d’intermédiation
+Le service d’intermédiation d’Aidalia (mise à disposition de la Plateforme, traitement de la réservation, sécurisation/organisation du paiement) est fourni immédiatement après paiement.
+Conformément au Code de la consommation, le Client peut être amené à demander l’exécution immédiate du service et à reconnaître la perte de son droit de rétractation lorsque le service est pleinement exécuté.
+Implémentation in‑app à prévoir : une case à cocher au moment du paiement du type : « Je demande l’exécution immédiate du service et reconnais perdre mon droit de rétractation une fois le service pleinement exécuté. »
+13. Médiation de la consommation – Règlement amiable
+En cas de litige, le Client est invité à contacter d’abord le support Aidalia afin de rechercher une solution amiable.
+Conformément au Code de la consommation, le Client peut recourir gratuitement à un médiateur de la consommation, après démarche préalable écrite auprès du support. Référence utile pour les litiges liés aux services en ligne : Médiateur du e-commerce (FEVAD), 60 rue La Boétie, 75008 Paris — https://www.mediateurfevad.fr. Liste générale des médiateurs : https://www.economie.gouv.fr/mediation-conso
+14. Données – Preuve – Archivage
+Les enregistrements (logs), confirmations in‑app, échanges via messagerie, et éléments de paiement constituent des éléments de preuve recevables, sauf erreur manifeste.
+15. Modification des CGV
+Aidalia peut modifier les CGV. Les nouvelles CGV s’appliquent aux réservations réalisées après leur entrée en vigueur. Le Client en est informé via l’app.
+16. Droit applicable – Tribunaux compétents
+Les CGV sont soumises au droit français.
+À défaut d’accord amiable ou de médiation, le litige relève des juridictions compétentes selon les règles applicables (notamment en matière de consommation).

@@ -106,7 +106,7 @@ class PaymentService {
       await Stripe.instance.initPaymentSheet(
         paymentSheetParameters: SetupPaymentSheetParameters(
           paymentIntentClientSecret: clientSecret,
-          merchantDisplayName: 'Auxivie',
+          merchantDisplayName: 'Aidalia',
         ),
       );
 

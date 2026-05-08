@@ -1,5 +1,5 @@
 # Uncomment this line to define a global platform for your project
-platform :ios, '13.0'
+platform :ios, '14.0'
 
 # CocoaPods analytics sends network stats synchronously affecting flutter build latency.
 ENV['COCOAPODS_DISABLE_STATS'] = 'true'
@@ -29,8 +29,11 @@ flutter_ios_podfile_setup
 
 target 'Runner' do
   use_frameworks!
+  inhibit_all_warnings!
 
   flutter_install_all_ios_pods File.dirname(File.realpath(__FILE__))
+  # Requis par StripePaymentSheet (CardScanningView) sur certaines versions
+  pod 'StripeCardScan'
   target 'RunnerTests' do
     inherit! :search_paths
   end
@@ -39,5 +42,62 @@ end
 post_install do |installer|
   installer.pods_project.targets.each do |target|
     flutter_additional_ios_build_settings(target)
+    target.build_configurations.each do |config|
+      # Forcer le deployment target minimum à 14.0 pour tous les pods
+      if config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'].to_f < 14.0
+        config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '14.0'
+      end
+      
+      # Optimisations pour compilation plus rapide en mode Debug
+      if config.name == 'Debug'
+        config.build_settings['ONLY_ACTIVE_ARCH'] = 'YES'
+        config.build_settings['SWIFT_OPTIMIZATION_LEVEL'] = '-Onone'
+        config.build_settings['GCC_OPTIMIZATION_LEVEL'] = '0'
+        config.build_settings['SWIFT_COMPILATION_MODE'] = 'singlefile'
+        config.build_settings['COMPILER_INDEX_STORE_ENABLE'] = 'YES'
+        # Réduire le bruit Xcode provenant des pods externes
+        config.build_settings['GCC_WARN_INHIBIT_ALL_WARNINGS'] = 'YES'
+      end
+
+      # Réduire les alertes issues des dépendances tierces (Pods)
+      config.build_settings['SWIFT_SUPPRESS_WARNINGS'] = 'YES'
+      config.build_settings['GCC_WARN_INHIBIT_ALL_WARNINGS'] = 'YES'
+      config.build_settings['RUN_CLANG_STATIC_ANALYZER'] = 'NO'
+    end
+  end
+
+  # Patch StripePaymentSheet: désactive le "scan de carte" (STPCardScanner)
+  # car certaines versions Stripe/Xcode ne l'exposent plus, ce qui empêche le build Release/Archive.
+  begin
+    pod_root = File.dirname(__FILE__)
+
+    card_section_path = File.join(pod_root, 'Pods', 'StripePaymentSheet', 'StripePaymentSheet', 'StripePaymentSheet', 'Source', 'PaymentSheet', 'Elements', 'CardSection', 'CardSectionElement.swift')
+    if File.exist?(card_section_path)
+      content = File.read(card_section_path)
+      if content.include?('STPCardScanner') || content.include?('CardSectionWithScannerView')
+        content = content.gsub(/lazy var view: UIView = \\{[\\s\\S]*?\\}\\(\\)/m, "lazy var view: UIView = {\n        return cardSection.view\n    }()")
+        content = content.gsub(
+          "#if !canImport(CompositorServices)\n// MARK: - CardSectionWithScannerViewDelegate",
+          "#if !canImport(CompositorServices) && canImport(StripeCardScan)\n// MARK: - CardSectionWithScannerViewDelegate"
+        )
+        File.write(card_section_path, content)
+      end
+    end
+
+    card_scanning_view_path = File.join(pod_root, 'Pods', 'StripePaymentSheet', 'StripePaymentSheet', 'StripePaymentSheet', 'Source', 'PaymentSheet', 'Views', 'CardScanningView.swift')
+    if File.exist?(card_scanning_view_path)
+      content = File.read(card_scanning_view_path)
+      content = content.sub(/\A#if[^\n]*\n/, "#if false\n")
+      File.write(card_scanning_view_path, content)
+    end
+
+    card_section_with_scanner_path = File.join(pod_root, 'Pods', 'StripePaymentSheet', 'StripePaymentSheet', 'StripePaymentSheet', 'Source', 'PaymentSheet', 'Elements', 'CardSection', 'CardSectionWithScannerView.swift')
+    if File.exist?(card_section_with_scanner_path)
+      content = File.read(card_section_with_scanner_path)
+      content = content.sub(/\A#if[^\n]*\n/, "#if false\n")
+      File.write(card_section_with_scanner_path, content)
+    end
+  rescue => e
+    puts "⚠️ post_install Stripe patch skipped: #{e}"
   end
 end

@@ -5,6 +5,8 @@ import '../../services/backend_api_service.dart';
 import '../../theme/app_theme.dart';
 import 'package:intl/intl.dart';
 
+// ignore_for_file: deprecated_member_use
+
 /// Écran pour créer un signalement depuis une réservation
 class CreateReportFromReservationScreen extends StatefulWidget {
   final int currentUserId;

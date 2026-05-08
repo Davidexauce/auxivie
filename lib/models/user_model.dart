@@ -26,6 +26,8 @@ class UserModel {
   final bool? isPhoneVisible;
   final bool? isEmailVisible;
   final String? infoMessage;
+  /// IBAN / RIB stocké côté backend (paiements sortants).
+  final String? rib;
 
   UserModel({
     this.id,
@@ -51,6 +53,7 @@ class UserModel {
     this.isPhoneVisible,
     this.isEmailVisible,
     this.infoMessage,
+    this.rib,
   });
 
   /// Convertit le modèle en Map pour SQLite
@@ -76,6 +79,7 @@ class UserModel {
       'preference': preference,
       'mission': mission,
       'particularite': particularite,
+      'rib': rib,
     };
   }
 
@@ -149,7 +153,9 @@ class UserModel {
       tarif: _parseDouble(map['tarif']),
       experience: _parseInt(map['experience']),
       photo: map['photo']?.toString(),
-      userType: map['userType']?.toString() ?? 'famille',
+      userType: map['userType']?.toString() ??
+          map['user_type']?.toString() ??
+          'famille',
       dateNaissance: parsedDate, // Garder pour compatibilité interne
       besoin: map['besoin']?.toString(),
       preference: map['preference']?.toString(),
@@ -158,10 +164,11 @@ class UserModel {
       isPhoneVisible: phone != null && phone != '***' && phone.isNotEmpty,
       isEmailVisible: email.isNotEmpty && !email.contains('***'),
       infoMessage: map['infoMessage']?.toString(),
+      rib: map['rib']?.toString() ?? map['iban']?.toString(),
     );
   }
 
-  get photoPath => null;
+  String? get photoPath => null;
 
   /// Vérifie si le téléphone est masqué
   bool get isPhoneMasked {
@@ -249,6 +256,7 @@ class UserModel {
     bool? isPhoneVisible,
     bool? isEmailVisible,
     String? infoMessage,
+    String? rib,
   }) {
     return UserModel(
       id: id ?? this.id,
@@ -274,6 +282,7 @@ class UserModel {
       isPhoneVisible: isPhoneVisible ?? this.isPhoneVisible,
       isEmailVisible: isEmailVisible ?? this.isEmailVisible,
       infoMessage: infoMessage ?? this.infoMessage,
+      rib: rib ?? this.rib,
     );
   }
 }

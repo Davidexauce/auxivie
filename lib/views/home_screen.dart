@@ -13,14 +13,34 @@ import 'home/professional_dashboard_screen.dart';
 
 /// Écran d'accueil principal avec navigation
 class HomeScreen extends StatefulWidget {
-  const HomeScreen({super.key});
+  /// Onglet initial (ex. captures App Store). Doit rester dans la plage des onglets affichés.
+  final int? initialTabIndex;
+
+  const HomeScreen({super.key, this.initialTabIndex});
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  int _currentIndex = 0;
+  late int _currentIndex;
+  DateTime? _lastHomeRefreshAt;
+  static const Duration _homeRefreshDebounce = Duration(seconds: 15);
+
+  @override
+  void initState() {
+    super.initState();
+    _currentIndex = widget.initialTabIndex ?? 0;
+  }
+
+  @override
+  void didUpdateWidget(HomeScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.initialTabIndex != oldWidget.initialTabIndex &&
+        widget.initialTabIndex != null) {
+      _currentIndex = widget.initialTabIndex!;
+    }
+  }
 
   void _onItemTapped(int index) {
     setState(() {
@@ -30,12 +50,22 @@ class _HomeScreenState extends State<HomeScreen> {
     // Recharger les conversations quand on revient sur l'écran d'accueil
     // pour mettre à jour le compteur de messages non lus
     if (index == 0) {
+      final now = DateTime.now();
+      if (_lastHomeRefreshAt != null &&
+          now.difference(_lastHomeRefreshAt!) < _homeRefreshDebounce) {
+        return;
+      }
+      _lastHomeRefreshAt = now;
+
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) {
           final authViewModel = Provider.of<AuthViewModel>(context, listen: false);
           final messageViewModel = Provider.of<MessageViewModel>(context, listen: false);
           if (authViewModel.currentUser != null) {
-            messageViewModel.loadConversations(authViewModel.currentUser!.id!);
+            messageViewModel.loadConversations(
+              authViewModel.currentUser!.id!,
+              forceRefresh: true,
+            );
           }
         }
       });
@@ -130,7 +160,7 @@ class _HomeScreenState extends State<HomeScreen> {
         title: ShaderMask(
           shaderCallback: (bounds) => AppTheme.textGradient.createShader(bounds),
           child: const Text(
-            'Auxivie',
+            'Aidalia',
             style: TextStyle(
               color: Colors.white,
               fontWeight: FontWeight.bold,

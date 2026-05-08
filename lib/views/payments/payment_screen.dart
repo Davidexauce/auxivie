@@ -296,32 +296,6 @@ class _PaymentScreenState extends State<PaymentScreen> {
                       ),
                     ),
             ),
-
-            const SizedBox(height: 16),
-
-            // Note mode LIVE
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: Colors.orange.shade50,
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Row(
-                children: [
-                  Icon(Icons.warning_amber, color: Colors.orange.shade700),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Text(
-                      '⚠️ Mode PRODUCTION : Les paiements sont réels',
-                      style: TextStyle(
-                        color: Colors.orange.shade700,
-                        fontSize: 12,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
           ],
         ),
       ),

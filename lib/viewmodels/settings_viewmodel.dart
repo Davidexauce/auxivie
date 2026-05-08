@@ -42,8 +42,20 @@ class SettingsViewModel extends ChangeNotifier {
   }
 
   /// Initialise les paramètres et démarre le rafraîchissement automatique
-  Future<void> initialize() async {
-    await loadSettings();
+  Future<void> initialize({bool fastStartup = false}) async {
+    if (fastStartup) {
+      // Démarrage ultra-rapide: valeurs par défaut immédiates, puis synchro réseau en arrière-plan.
+      if (_settings == null) {
+        _settings = SettingsModel.defaults();
+        _isLoading = false;
+        _errorMessage = null;
+        notifyListeners();
+      }
+      unawaited(loadSettings(forceRefresh: true));
+    } else {
+      await loadSettings();
+    }
+
     _startAutoRefresh();
   }
 

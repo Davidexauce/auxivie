@@ -8,6 +8,11 @@ class ReservationViewModel extends ChangeNotifier {
   List<ReservationModel> _reservations = [];
   bool _isLoading = false;
   String? _errorMessage;
+  int? _lastUserIdLoaded;
+  int? _lastProfessionalIdLoaded;
+  DateTime? _lastLoadedAt;
+
+  static const Duration _cacheTtl = Duration(seconds: 30);
 
   /// Liste des réservations
   List<ReservationModel> get reservations => _reservations;
@@ -19,7 +24,17 @@ class ReservationViewModel extends ChangeNotifier {
   String? get errorMessage => _errorMessage;
 
   /// Charge toutes les réservations d'un utilisateur
-  Future<void> loadUserReservations(int userId) async {
+  Future<void> loadUserReservations(int userId, {bool forceRefresh = false}) async {
+    final now = DateTime.now();
+    final cacheIsFresh =
+        _lastLoadedAt != null && now.difference(_lastLoadedAt!) < _cacheTtl;
+    if (!forceRefresh &&
+        _lastUserIdLoaded == userId &&
+        _reservations.isNotEmpty &&
+        cacheIsFresh) {
+      return;
+    }
+
     _isLoading = true;
     _errorMessage = null;
     notifyListeners();
@@ -27,6 +42,9 @@ class ReservationViewModel extends ChangeNotifier {
     try {
       // Charger depuis le backend (base de données unique)
       _reservations = await BackendApiService.getUserReservations(userId);
+      _lastUserIdLoaded = userId;
+      _lastProfessionalIdLoaded = null;
+      _lastLoadedAt = DateTime.now();
       _isLoading = false;
       notifyListeners();
     } catch (e) {
@@ -37,7 +55,17 @@ class ReservationViewModel extends ChangeNotifier {
   }
 
   /// Charge les réservations d'un professionnel
-  Future<void> loadProfessionalReservations(int professionnelId) async {
+  Future<void> loadProfessionalReservations(int professionnelId, {bool forceRefresh = false}) async {
+    final now = DateTime.now();
+    final cacheIsFresh =
+        _lastLoadedAt != null && now.difference(_lastLoadedAt!) < _cacheTtl;
+    if (!forceRefresh &&
+        _lastProfessionalIdLoaded == professionnelId &&
+        _reservations.isNotEmpty &&
+        cacheIsFresh) {
+      return;
+    }
+
     _isLoading = true;
     _errorMessage = null;
     notifyListeners();
@@ -45,6 +73,9 @@ class ReservationViewModel extends ChangeNotifier {
     try {
       // Charger depuis le backend (base de données unique)
       _reservations = await BackendApiService.getProfessionalReservations(professionnelId);
+      _lastProfessionalIdLoaded = professionnelId;
+      _lastUserIdLoaded = null;
+      _lastLoadedAt = DateTime.now();
       _isLoading = false;
       notifyListeners();
     } catch (e) {
@@ -225,17 +256,34 @@ class ReservationViewModel extends ChangeNotifier {
     );
   }
 
-  /// Supprime une réservation
-  Future<bool> deleteReservation(int reservationId) async {
+  /// Supprime une réservation côté serveur puis rafraîchit la liste locale.
+  Future<bool> deleteReservation(
+    int reservationId, {
+    required int currentUserId,
+    required bool isProfessional,
+  }) async {
     _isLoading = true;
     _errorMessage = null;
     notifyListeners();
 
     try {
-      // Supprimer directement dans le backend
-      // TODO: Implémenter la suppression via API si nécessaire
-      // Pour l'instant, retirer de la liste locale
+      final ok =
+          await BackendApiService.deleteReservationById(reservationId);
+      if (!ok) {
+        _errorMessage =
+            'Impossible de supprimer la réservation (serveur ou droits)';
+        _isLoading = false;
+        notifyListeners();
+        return false;
+      }
+
       _reservations.removeWhere((r) => r.id == reservationId);
+
+      if (isProfessional) {
+        await loadProfessionalReservations(currentUserId);
+      } else {
+        await loadUserReservations(currentUserId);
+      }
 
       _isLoading = false;
       notifyListeners();

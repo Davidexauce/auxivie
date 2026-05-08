@@ -28,7 +28,7 @@ class MessageValidator {
     
     // Détecter les mots-clés suspects (ex: "appeler directement", "hors plateforme")
     if (_containsSuspiciousKeywords(text)) {
-      return '⚠️ Pour votre sécurité, toutes les communications doivent passer par la plateforme. Les prestations doivent être réservées et payées via Auxivie.';
+      return '⚠️ Pour votre sécurité, toutes les communications doivent passer par la plateforme. Les prestations doivent être réservées et payées via Aidalia.';
     }
     
     return null; // Message valide

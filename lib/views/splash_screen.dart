@@ -9,7 +9,12 @@ import 'home_screen.dart';
 
 /// Écran de démarrage (Splash Screen)
 class SplashScreen extends StatefulWidget {
-  const SplashScreen({super.key});
+  final bool disableAutoNavigation;
+
+  const SplashScreen({
+    super.key,
+    this.disableAutoNavigation = false,
+  });
 
   @override
   State<SplashScreen> createState() => _SplashScreenState();
@@ -19,16 +24,25 @@ class _SplashScreenState extends State<SplashScreen> {
   @override
   void initState() {
     super.initState();
+    if (widget.disableAutoNavigation) return;
     _initializeApp();
   }
 
   Future<void> _initializeApp() async {
     // Initialiser le AuthViewModel pour restaurer l'utilisateur connecté
     final authViewModel = Provider.of<AuthViewModel>(context, listen: false);
-    await authViewModel.init();
-
-    // Attendre 2 secondes pour l'affichage du splash
-    await Future.delayed(const Duration(seconds: 2));
+    final minDisplay = Future<void>.delayed(const Duration(milliseconds: 220));
+    try {
+      // Borne de sécurité courte: priorité à l'affichage rapide de l'écran suivant.
+      await authViewModel
+          .init()
+          .timeout(const Duration(seconds: 2));
+    } on TimeoutException {
+      // Préférences / stockage anormalement lent : on affiche quand même la suite
+    } catch (_) {
+      // Erreur silencieuse au démarrage : l’utilisateur pourra se reconnecter
+    }
+    await minDisplay;
 
     if (!mounted) return;
 
@@ -55,10 +69,9 @@ class _SplashScreenState extends State<SplashScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            // Logo Auxivie (texte uniquement avec dégradé)
+            // Logo Aidalia (SVG)
             const AuxivieLogo(
-              fontSize: 56,
-              fontWeight: FontWeight.bold,
+              width: 320,
             ),
             const SizedBox(height: 24),
             Text(

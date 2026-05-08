@@ -1,0 +1,31 @@
+CHECKLIST — Réponse Apple Guideline 2.1 (Information Needed)
+============================================================
+
+Dans le dépôt : voir `reponse_review_apple_EN.txt` à copier-coller dans App Store Connect (Resolution Center), puis dupliquer le même contenu (ou un résumé) dans App Review Information → Notes.
+
+À faire avant d’envoyer la réponse
+----------------------------------
+
+[ ] Enregistrer la vidéo sur iPhone PHYSIQUE, iOS à jour (idéalement la même version majeure que votre build testé).
+[ ] La vidéo commence au lancement depuis l’écran d’accueil (pas depuis Xcode).
+[ ] Montrer : consentement si premier lancement → connexion OU inscription → onglets principaux → messages → signalement → paiement Stripe si un parcours payable existe → suppression de compte sur un compte démo jetable.
+[ ] Uploader la vidéo ou fournir un lien stable ; coller le lien dans la réponse.
+[ ] Remplir la liste des appareils réellement testés (modèle + version iOS).
+[ ] Créer / vérifier deux comptes démo (famille + pro), les mettre dans App Store Connect → App Review Information (identifiants + mot de passe) ET dans le texte de réponse.
+[ ] Vérifier que la route backend DELETE compte existe : l’app appelle DELETE /users/:id avec jeton Bearer. Si le serveur ne l’expose pas encore, implémentez-la avant renvoi ou la démo “Supprimer le compte” échouera pour les reviewers.
+
+Backend — suppression de compte (pour équipe technique)
+--------------------------------------------------------
+L’app mobile envoie : DELETE https://auxivie.org/api/users/{userId}
+Headers : Authorization: Bearer <token>, Content-Type: application/json, x-request-type: mobile
+Succès attendu : HTTP 200, 204 ou 202.
+
+Fichiers modifiés dans le projet (suppression réelle)
+-----------------------------------------------------
+• lib/services/backend_api_service.dart — méthode deleteUserAccount
+• lib/views/profile/profile_screen.dart — flux Profil → Confidentialité → Supprimer le compte
+
+Captures / Guidelines rappelées par Apple
+-----------------------------------------
+• Captures App Store : montrer l’app en usage réel, pas seulement splash/login.
+• Abonnements : si vous en ajoutez, afficher titre, durée, prix, CGU et politique de confidentialité (3.1.2).

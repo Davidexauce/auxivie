@@ -36,13 +36,10 @@ class ChoiceScreen extends StatelessWidget {
             // Header avec logo (texte uniquement)
             Padding(
               padding: const EdgeInsets.fromLTRB(24, 20, 24, 0),
-              child: Row(
-                children: [
-                  const AuxivieLogoCompact(
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ],
+              child: const Center(
+                child: AuxivieLogoCompact(
+                  size: 140,
+                ),
               ),
             ),
             

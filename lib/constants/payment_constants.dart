@@ -1,7 +1,8 @@
 class PaymentConstants {
-  // Clé publique Stripe (PRODUCTION/LIVE)
+  // Clé publique Stripe injectée au build si besoin:
+  // flutter run/build --dart-define=STRIPE_PUBLISHABLE_KEY=pk_xxx
   static const String stripePublishableKey =
-      'pk_live_51SaaqvQ3cUJNrEfLs5aS95Uc8B78vALVgmcqgKqfQioqyL7PMOtlVrdaymJI99GwWhMDEDcbgGg9N5m4XFH11mvM00SYO12EBh';
+      String.fromEnvironment('STRIPE_PUBLISHABLE_KEY', defaultValue: '');
 
   // Messages d'erreur
   static const String errorPaymentFailed = 'Le paiement a échoué';

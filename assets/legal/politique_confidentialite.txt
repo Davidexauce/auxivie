@@ -1,0 +1,97 @@
+POLITIQUE DE CONFIDENTIALITÉ – AIDALIA
+Dernière mise à jour : 08/05/2026
+
+1. Qui est responsable du traitement ?
+Le responsable de traitement des données personnelles collectées via l’application mobile Aidalia (la « Plateforme ») est la micro-entreprise Aidalia, 12 rue Basfroi, 75011 Paris, France — SIREN 104 621 669 (ci-après « Aidalia »).
+Contact (privacy / RGPD) : christ.emmanuel12@outlook.fr
+2. À quoi sert cette politique ?
+Cette politique explique :
+quelles données nous collectons,
+pourquoi (finalités) et sur quelles bases légales,
+avec qui nous les partageons,
+combien de temps nous les conservons,
+vos droits et comment les exercer.
+Elle s’applique aux Utilisateurs Particuliers/Familles et Professionnels (au sens des CGU).
+3. Quelles données collectons-nous ?
+3.1 Données fournies par vous
+Compte & identité : nom, prénom, photo (facultatif), date de naissance (si demandée), adresse email, numéro de téléphone (si fourni), mot de passe (haché).
+Profil : description, compétences, zones d’intervention, disponibilités, préférences, tarifs indiqués par le Professionnel (si applicable), langues, expériences, etc.
+Demandes & réservations : détails de la mission, dates/heures, adresse d’intervention (si nécessaire), instructions pratiques.
+Messagerie : contenu des messages, pièces jointes éventuelles (si vous activez cette fonctionnalité), métadonnées (date/heure, destinataire).
+Support : échanges avec l’assistance, signalements, pièces justificatives pertinentes.
+3.2 Données de paiement (Stripe)
+Les paiements sont traités via Stripe.
+Aidalia reçoit et conserve des informations liées au paiement telles que :
+statut du paiement, montant, devise, identifiants de transaction,
+informations nécessaires à la facturation et au reversement.
+Aidalia ne stocke pas directement les numéros complets de carte : ceux-ci sont traités par Stripe.
+3.3 Données techniques et d’usage
+identifiants techniques (ID appareil, OS, version de l’app),
+logs, adresse IP (selon configuration), horodatages,
+données de navigation in-app (écrans consultés, actions) pour sécurité/diagnostic.
+3.4 Données que vous choisissez de partager à d’autres utilisateurs
+La Plateforme peut permettre l’échange de coordonnées (téléphone, email) via la messagerie ou autrement. Lorsque vous les partagez, le destinataire peut les utiliser hors Plateforme (voir §12).
+4. Données sensibles (santé) : notre approche
+Aidalia n’a pas vocation à traiter des données de santé.
+Nous vous demandons de ne pas partager de documents médicaux (ordonnances, comptes rendus, dossiers) ni d’informations médicales détaillées via la Plateforme.
+Toutefois, compte tenu du secteur (aide à domicile), des informations pouvant révéler indirectement un état de santé peuvent apparaître dans des descriptions (ex : « personne dépendante », « Alzheimer »). Nous limitons ce risque par :
+minimisation : ne collecter que ce qui est nécessaire,
+règles d’usage et modération (signalement/retrait),
+mesures de sécurité renforcées.
+5. Pourquoi traitons-nous vos données ? (finalités & bases légales)
+Nous traitons vos données pour :
+Créer et gérer votre compte (base : exécution du contrat – CGU).
+Mettre en relation Familles et Professionnels (base : exécution du contrat).
+Messagerie et communications liées au service (base : exécution du contrat ; notifications marketing le cas échéant : consentement).
+Paiement, commission, reversement au Professionnel, facturation (bases : exécution du contrat + obligation légale + intérêt légitime sécurité/anti-fraude).
+Sécurité, prévention fraude, modération, signalements (bases : intérêt légitime + obligation légale).
+Support & gestion des litiges (annulation, no-show, chargeback) (bases : exécution du contrat + intérêt légitime).
+Amélioration du service & statistiques (base : intérêt légitime ; si traceurs non essentiels : consentement).
+6. Qui reçoit vos données ? (destinataires)
+Vos données peuvent être accessibles :
+Aux autres utilisateurs : selon vos réglages et vos actions (profil, messages, coordonnées si vous les partagez).
+À nos prestataires (sous-traitants) : hébergement, email/SMS/push, analytics, support, sécurité, dans la limite nécessaire.
+À Stripe : traitement des paiements, vérifications, prévention fraude.
+Aux autorités : uniquement si la loi l’exige (réquisition, obligation légale).
+Nous exigeons contractuellement de nos sous-traitants qu’ils protègent vos données conformément au RGPD.
+7. Transferts hors Union Européenne
+Certains prestataires (dont Stripe ou certains outils analytics) peuvent traiter des données hors UE. Dans ce cas, nous mettons en place des garanties appropriées et des mesures supplémentaires si nécessaire.
+8. Combien de temps conservons-nous vos données ?
+
+Compte : pendant la durée d’utilisation + jusqu’à suppression, puis archivage limité (obligations légales / gestion litiges).
+Profil / mises en relation : durée du compte, puis suppression/archivage.
+Messagerie : durée du compte, puis suppression/archivage technique limité.
+Données de réservation / paiement / facturation : archivage 6 à 10 ans selon obligations comptables et preuve.
+Logs de sécurité : généralement 6 à 12 mois.
+Support & litiges : durée nécessaire au traitement puis archivage probatoire.
+Lors de la suppression du compte, certaines données peuvent être conservées en archivage si la loi l’impose (comptabilité) ou pour gérer des litiges (dans des limites strictes).
+9. Sécurité
+Aidalia met en place des mesures raisonnables et adaptées :
+contrôle d’accès et limitation par rôles,
+chiffrement en transit (HTTPS/TLS),
+sécurisation des environnements d’hébergement,
+mesures anti-abus et détection fraude,
+procédures de gestion d’incident.
+Aucune plateforme ne peut garantir une sécurité absolue : en cas d’incident, nous appliquerons nos procédures et, si nécessaire, notifierons la CNIL et/ou les personnes concernées.
+10. Vos droits
+Vous disposez des droits suivants, sous conditions : accès, rectification, suppression, opposition et limitation, portabilité (pour les traitements fondés sur le contrat/consentement), retrait du consentement (si applicable), directives post-mortem (France).
+Exercer vos droits : christ.emmanuel12@outlook.fr (objet : « RGPD ») ou via l’app lorsque la fonctionnalité est proposée.
+Nous pouvons demander un justificatif d’identité si doute raisonnable.
+Vous pouvez aussi introduire une réclamation auprès de la CNIL.
+11. Cookies / traceurs / SDK dans l’application
+Selon les outils intégrés dans l’app (analytics, crash reporting, publicité), des traceurs/identifiants peuvent être utilisés :
+Essentiels (fonctionnement/sécurité) : pas de consentement requis.
+Non essentiels (mesure d’audience avancée, marketing, publicité) : consentement requis via un écran de paramétrage.
+À finaliser : lister les SDK (ex. Firebase, Sentry, etc.) et mettre un module de consentement si nécessaire.
+12. Coordonnées partagées entre utilisateurs
+Si vous communiquez volontairement votre numéro, email ou toute donnée personnelle à un autre utilisateur :
+le destinataire peut l’utiliser en dehors de la Plateforme, sous sa propre responsabilité,
+nous vous recommandons de limiter ces échanges et de privilégier la messagerie interne,
+vous pouvez signaler tout usage abusif via christ.emmanuel12@outlook.fr ou la rubrique support dans l’app.
+13. Mineurs
+La Plateforme est réservée aux personnes de 18 ans et plus. Si nous découvrons un compte mineur, nous devrons le supprimer.
+14. Modifications de la politique
+Nous pouvons modifier la politique pour refléter des évolutions légales/techniques. En cas de changement substantiel, nous vous informerons via l’app (notification/écran).
+15. Contact
+Pour toute question relative à la confidentialité : christ.emmanuel12@outlook.fr
+Support : christ.emmanuel12@outlook.fr (rubrique support dans l’app)

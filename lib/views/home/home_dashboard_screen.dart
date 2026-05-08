@@ -22,6 +22,8 @@ class HomeDashboardScreen extends StatefulWidget {
 }
 
 class _HomeDashboardScreenState extends State<HomeDashboardScreen> with WidgetsBindingObserver {
+  DateTime? _lastLoadAt;
+  static const Duration _minReloadInterval = Duration(seconds: 20);
   @override
   void initState() {
     super.initState();
@@ -42,7 +44,7 @@ class _HomeDashboardScreenState extends State<HomeDashboardScreen> with WidgetsB
     super.didChangeAppLifecycleState(state);
     // Recharger les données quand l'app revient au premier plan
     if (state == AppLifecycleState.resumed && mounted) {
-      _loadData();
+      _loadData(forceRefresh: true);
     }
   }
 
@@ -53,13 +55,27 @@ class _HomeDashboardScreenState extends State<HomeDashboardScreen> with WidgetsB
     // Le rechargement se fait via didChangeAppLifecycleState et initState
   }
 
-  void _loadData() {
+  void _loadData({bool forceRefresh = false}) {
     if (!mounted) return;
+    final now = DateTime.now();
+    if (!forceRefresh &&
+        _lastLoadAt != null &&
+        now.difference(_lastLoadAt!) < _minReloadInterval) {
+      return;
+    }
+
     final reservationViewModel = Provider.of<ReservationViewModel>(context, listen: false);
     final messageViewModel = Provider.of<MessageViewModel>(context, listen: false);
-    
-    reservationViewModel.loadUserReservations(widget.currentUser.id!);
-    messageViewModel.loadConversations(widget.currentUser.id!);
+
+    _lastLoadAt = now;
+    reservationViewModel.loadUserReservations(
+      widget.currentUser.id!,
+      forceRefresh: forceRefresh,
+    );
+    messageViewModel.loadConversations(
+      widget.currentUser.id!,
+      forceRefresh: forceRefresh,
+    );
   }
 
   @override
@@ -76,7 +92,7 @@ class _HomeDashboardScreenState extends State<HomeDashboardScreen> with WidgetsB
       child: SafeArea(
         child: RefreshIndicator(
         onRefresh: () async {
-          _loadData();
+          _loadData(forceRefresh: true);
         },
         child: SingleChildScrollView(
           physics: const AlwaysScrollableScrollPhysics(),
@@ -127,6 +143,12 @@ class _HomeDashboardScreenState extends State<HomeDashboardScreen> with WidgetsB
                 },
               ),
               const SizedBox(height: 24),
+
+              // FAQ pour les familles
+              if (!isProfessional) ...[
+                _FAQSection(),
+                const SizedBox(height: 24),
+              ],
 
               // Conseils pratiques personnalisés
               _PracticalTipsSection(isProfessional: isProfessional),
@@ -677,6 +699,266 @@ class _TipCard extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+/// Section FAQ pour les familles
+class _FAQSection extends StatefulWidget {
+  const _FAQSection();
+
+  @override
+  State<_FAQSection> createState() => _FAQSectionState();
+}
+
+class _FAQSectionState extends State<_FAQSection> {
+  int? _expandedIndex;
+
+  final List<Map<String, String>> _faqItems = [
+    {
+      'question': '1️⃣ Aidalia, c\'est quoi exactement ?',
+      'answer': 'Aidalia est une plateforme de mise en relation entre familles et auxiliaires de vie indépendants.\nNous facilitons une rencontre sécurisée et transparente.',
+    },
+    {
+      'question': '2️⃣ Pourquoi le paiement passe par Aidalia ?',
+      'answer': 'Le paiement à la réservation permet de sécuriser la mission, d\'éviter les annulations abusives et de protéger aussi bien la famille que l\'auxiliaire.',
+    },
+    {
+      'question': '3️⃣ Qui est responsable de la prestation ?',
+      'answer': 'La prestation est réalisée par l\'auxiliaire de vie, en toute indépendance.\nAidalia n\'emploie pas les auxiliaires et n\'intervient pas dans l\'exécution des missions.',
+    },
+    {
+      'question': '4️⃣ Et si quelque chose ne se passe pas comme prévu ?',
+      'answer': 'En cas de problème, Aidalia agit comme tiers de confiance pour faciliter l\'échange et trouver une solution.',
+    },
+    {
+      'question': '5️⃣ Les auxiliaires sont-ils sérieux ?',
+      'answer': 'Les auxiliaires inscrits s\'engagent à disposer d\'un statut légal et d\'une assurance professionnelle.',
+    },
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // En-tête FAQ avec fond clair pour maximum de visibilité
+        Container(
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(
+              color: AppTheme.primary,
+              width: 3,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: AppTheme.primary.withValues(alpha: 0.3),
+                blurRadius: 20,
+                offset: const Offset(0, 8),
+                spreadRadius: 3,
+              ),
+            ],
+          ),
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  color: AppTheme.primary,
+                  borderRadius: BorderRadius.circular(16),
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppTheme.primary.withValues(alpha: 0.4),
+                      blurRadius: 8,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: const Icon(
+                  Icons.help_center_rounded,
+                  color: Colors.white,
+                  size: 32,
+                ),
+              ),
+              const SizedBox(width: 18),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Text(
+                          'FAQ',
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 26,
+                            letterSpacing: 1.0,
+                            color: AppTheme.primary,
+                            height: 1.0,
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                          decoration: BoxDecoration(
+                            color: AppTheme.primary.withValues(alpha: 0.15),
+                            borderRadius: BorderRadius.circular(10),
+                            border: Border.all(
+                              color: AppTheme.primary,
+                              width: 2,
+                            ),
+                          ),
+                          child: Text(
+                            '${_faqItems.length} questions',
+                            style: TextStyle(
+                              color: AppTheme.primary,
+                              fontSize: 12,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 10),
+                    Text(
+                      'Un cadre de confiance pour votre famille',
+                      style: TextStyle(
+                        color: AppTheme.textPrimary,
+                        fontSize: 15,
+                        fontWeight: FontWeight.w700,
+                        height: 1.3,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 20),
+        ...List.generate(_faqItems.length, (index) {
+          final item = _faqItems[index];
+          final isExpanded = _expandedIndex == index;
+          
+          return Container(
+            margin: const EdgeInsets.only(bottom: 16),
+            decoration: BoxDecoration(
+              color: AppTheme.cardBackground,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: isExpanded 
+                    ? AppTheme.primary
+                    : AppTheme.primary.withValues(alpha: 0.2),
+                width: isExpanded ? 2.5 : 1.5,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: isExpanded
+                      ? AppTheme.primary.withValues(alpha: 0.2)
+                      : AppTheme.primary.withValues(alpha: 0.08),
+                  blurRadius: isExpanded ? 12 : 8,
+                  offset: const Offset(0, 4),
+                  spreadRadius: isExpanded ? 1 : 0,
+                ),
+              ],
+            ),
+            child: Theme(
+              data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+              child: ExpansionTile(
+                tilePadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                childrenPadding: const EdgeInsets.only(left: 16, right: 16, bottom: 16),
+                initiallyExpanded: isExpanded,
+                onExpansionChanged: (expanded) {
+                  setState(() {
+                    _expandedIndex = expanded ? index : null;
+                  });
+                },
+                leading: Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: AppTheme.primary.withValues(alpha: 0.15),
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(
+                      color: AppTheme.primary.withValues(alpha: 0.3),
+                      width: 1.5,
+                    ),
+                  ),
+                  child: Icon(
+                    isExpanded ? Icons.remove_circle_rounded : Icons.add_circle_rounded,
+                    color: AppTheme.primary,
+                    size: 24,
+                  ),
+                ),
+                title: Text(
+                  item['question']!,
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: AppTheme.textPrimary,
+                    fontSize: 14,
+                    height: 1.3,
+                  ),
+                ),
+                trailing: Icon(
+                  isExpanded ? Icons.expand_less : Icons.expand_more,
+                  color: AppTheme.primary,
+                ),
+                children: [
+                  Container(
+                    margin: const EdgeInsets.only(bottom: 8),
+                    padding: const EdgeInsets.all(18),
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: [
+                          AppTheme.primary.withValues(alpha: 0.08),
+                          AppTheme.primary.withValues(alpha: 0.12),
+                        ],
+                      ),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: AppTheme.primary.withValues(alpha: 0.2),
+                        width: 1,
+                      ),
+                    ),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: AppTheme.primary.withValues(alpha: 0.15),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Icon(
+                            Icons.info_rounded,
+                            color: AppTheme.primary,
+                            size: 22,
+                          ),
+                        ),
+                        const SizedBox(width: 14),
+                        Expanded(
+                          child: Text(
+                            item['answer']!,
+                            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                              color: AppTheme.textPrimary,
+                              height: 1.6,
+                              fontSize: 13,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        }),
+      ],
     );
   }
 }

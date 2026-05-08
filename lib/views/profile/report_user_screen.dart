@@ -3,6 +3,8 @@ import '../../services/backend_api_service.dart';
 import '../../theme/app_theme.dart';
 import '../../models/user_model.dart';
 
+// ignore_for_file: deprecated_member_use
+
 /// Écran pour signaler un utilisateur
 class ReportUserScreen extends StatefulWidget {
   final UserModel reportedUser;

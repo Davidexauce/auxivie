@@ -1,0 +1,816 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Aidalia — L'aide à domicile de confiance</title>
+  <meta name="description" content="Aidalia connecte familles et professionnels de l'aide à domicile. Inscrivez-vous, échangez, réservez et payez en confiance sur iOS et Android." />
+  <meta name="robots" content="index,follow,max-image-preview:large,max-snippet:-1,max-video-preview:-1" />
+  <meta name="googlebot" content="index,follow" />
+  <meta name="author" content="Aidalia" />
+  <meta name="theme-color" content="#0d8f6f" />
+  <meta name="application-name" content="Aidalia" />
+  <meta name="apple-mobile-web-app-title" content="Aidalia" />
+
+  <link rel="canonical" href="https://aidalia.auxivie.org/" />
+  <link rel="alternate" hreflang="fr" href="https://aidalia.auxivie.org/" />
+  <link rel="alternate" hreflang="x-default" href="https://aidalia.auxivie.org/" />
+
+  <meta property="og:type" content="website" />
+  <meta property="og:locale" content="fr_FR" />
+  <meta property="og:site_name" content="Aidalia" />
+  <meta property="og:title" content="Aidalia — L'aide à domicile de confiance" />
+  <meta property="og:description" content="Aidalia connecte familles et professionnels de l'aide à domicile. Inscrivez-vous, échangez, réservez et payez en confiance sur iOS et Android." />
+  <meta property="og:url" content="https://aidalia.auxivie.org/" />
+
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="Aidalia — L'aide à domicile de confiance" />
+  <meta name="twitter:description" content="Familles et professionnels : inscrivez-vous sur Aidalia pour échanger, réserver et payer en confiance." />
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,600;0,9..144,700;1,9..144,300&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet" />
+
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "Organization",
+        "name": "Aidalia",
+        "url": "https://aidalia.auxivie.org/",
+        "logo": "https://aidalia.auxivie.org/images/app_icon_1024.png"
+      },
+      {
+        "@type": "WebSite",
+        "name": "Aidalia",
+        "url": "https://aidalia.auxivie.org/",
+        "inLanguage": "fr-FR"
+      },
+      {
+        "@type": "SoftwareApplication",
+        "name": "Aidalia",
+        "applicationCategory": "BusinessApplication",
+        "operatingSystem": "iOS, Android",
+        "offers": {
+          "@type": "Offer",
+          "price": "0",
+          "priceCurrency": "EUR"
+        },
+        "description": "Application de mise en relation entre familles et professionnels de l'aide à domicile."
+      },
+      {
+        "@type": "FAQPage",
+        "mainEntity": [
+          {
+            "@type": "Question",
+            "name": "Qui peut s'inscrire sur Aidalia ?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "Les familles qui cherchent une aide à domicile de confiance, et les professionnels indépendants qui proposent leurs services. L'inscription est ouverte à tous."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "L'inscription est-elle compliquée ?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "Pas du tout. Créer votre compte prend moins de 2 minutes depuis l'application. Quelques informations de base suffisent pour démarrer."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "Puis-je échanger avec un auxiliaire avant de réserver ?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "Oui, absolument. La messagerie intégrée vous permet d'échanger librement avant toute réservation. Prenez le temps de vous assurer que c'est le bon profil."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "Comment fonctionne le paiement ?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "Les paiements sont traités via Stripe, l'un des systèmes de paiement les plus sécurisés au monde. Vos données bancaires ne sont jamais stockées sur nos serveurs."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "Aidalia est-elle disponible dans toute la France ?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "Nous lançons progressivement en Île-de-France et étendons notre couverture régulièrement. Inscrivez-vous dès maintenant pour être parmi les premiers dans votre ville."
+            }
+          }
+        ]
+      }
+    ]
+  }
+  </script>
+
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --green: #0d8f6f;
+      --green-dark: #096b53;
+      --green-light: #e6f7f2;
+      --green-mid: #b2e4d6;
+      --cream: #faf8f3;
+      --sand: #f0ece2;
+      --charcoal: #1a1a1a;
+      --muted: #6b7280;
+      --white: #ffffff;
+      --radius: 20px;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: 'DM Sans', sans-serif;
+      background: var(--cream);
+      color: var(--charcoal);
+      overflow-x: hidden;
+    }
+
+    /* ── NAV ── */
+    nav {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 18px 40px;
+      background: rgba(250,248,243,0.92);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid rgba(13,143,111,0.1);
+    }
+    .nav-logo {
+      font-family: 'Fraunces', serif;
+      font-size: 1.5rem; font-weight: 700;
+      color: var(--green);
+      letter-spacing: -0.5px;
+    }
+    .nav-links { display: flex; gap: 32px; list-style: none; }
+    .nav-links a {
+      text-decoration: none; color: var(--charcoal);
+      font-size: 0.9rem; font-weight: 400;
+      opacity: 0.7; transition: opacity 0.2s;
+    }
+    .nav-links a:hover { opacity: 1; }
+    .nav-cta {
+      background: var(--green); color: var(--white);
+      padding: 10px 22px; border-radius: 50px;
+      text-decoration: none; font-size: 0.9rem; font-weight: 500;
+      transition: background 0.2s, transform 0.15s;
+    }
+    .nav-cta:hover { background: var(--green-dark); transform: translateY(-1px); }
+
+    /* ── HERO ── */
+    .hero {
+      min-height: 100vh;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      text-align: center;
+      padding: 120px 24px 80px;
+      position: relative;
+      overflow: hidden;
+    }
+    .hero::before {
+      content: '';
+      position: absolute; inset: 0;
+      background: radial-gradient(ellipse 80% 60% at 50% 0%, rgba(13,143,111,0.12) 0%, transparent 70%);
+      pointer-events: none;
+    }
+    .hero-badge {
+      display: inline-flex; align-items: center; gap: 8px;
+      background: var(--green-light); color: var(--green-dark);
+      border: 1px solid var(--green-mid);
+      padding: 6px 16px; border-radius: 50px;
+      font-size: 0.82rem; font-weight: 500;
+      margin-bottom: 32px;
+      animation: fadeUp 0.6s ease both;
+    }
+    .hero-badge span { width: 7px; height: 7px; background: var(--green); border-radius: 50%; display: inline-block; animation: pulse 2s infinite; }
+    @keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.5;transform:scale(1.4)} }
+
+    .hero h1 {
+      font-family: 'Fraunces', serif;
+      font-size: clamp(2.6rem, 6vw, 5rem);
+      font-weight: 700;
+      line-height: 1.1;
+      letter-spacing: -1.5px;
+      max-width: 820px;
+      margin-bottom: 24px;
+      animation: fadeUp 0.7s 0.1s ease both;
+    }
+    .hero h1 em {
+      font-style: italic; color: var(--green);
+      font-weight: 300;
+    }
+    .hero-sub {
+      font-size: 1.15rem; color: var(--muted);
+      max-width: 520px; line-height: 1.7;
+      margin-bottom: 44px;
+      animation: fadeUp 0.7s 0.2s ease both;
+    }
+    .hero-actions {
+      display: flex; gap: 14px; flex-wrap: wrap; justify-content: center;
+      margin-bottom: 60px;
+      animation: fadeUp 0.7s 0.3s ease both;
+    }
+    .btn-primary {
+      background: var(--green); color: var(--white);
+      padding: 15px 32px; border-radius: 50px;
+      text-decoration: none; font-size: 1rem; font-weight: 500;
+      transition: all 0.2s; display: inline-flex; align-items: center; gap: 8px;
+      box-shadow: 0 4px 20px rgba(13,143,111,0.3);
+    }
+    .btn-primary:hover { background: var(--green-dark); transform: translateY(-2px); box-shadow: 0 8px 28px rgba(13,143,111,0.4); }
+    .btn-secondary {
+      background: transparent; color: var(--charcoal);
+      padding: 15px 32px; border-radius: 50px;
+      text-decoration: none; font-size: 1rem; font-weight: 400;
+      border: 1.5px solid rgba(0,0,0,0.15);
+      transition: all 0.2s;
+    }
+    .btn-secondary:hover { border-color: var(--green); color: var(--green); }
+
+    .hero-trust {
+      display: flex; align-items: center; gap: 28px; flex-wrap: wrap; justify-content: center;
+      animation: fadeUp 0.7s 0.4s ease both;
+    }
+    .trust-item {
+      display: flex; align-items: center; gap: 8px;
+      font-size: 0.85rem; color: var(--muted);
+    }
+    .trust-icon { font-size: 1rem; }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(24px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ── SECTION GÉNÉRIQUE ── */
+    section { padding: 96px 24px; }
+    .container { max-width: 1100px; margin: 0 auto; }
+    .section-label {
+      display: inline-block;
+      font-size: 0.75rem; font-weight: 500; letter-spacing: 2px;
+      text-transform: uppercase; color: var(--green);
+      margin-bottom: 16px;
+    }
+    .section-title {
+      font-family: 'Fraunces', serif;
+      font-size: clamp(2rem, 4vw, 3rem);
+      font-weight: 700; line-height: 1.15;
+      letter-spacing: -1px;
+      margin-bottom: 16px;
+    }
+    .section-title em { font-style: italic; color: var(--green); font-weight: 300; }
+    .section-sub {
+      font-size: 1.05rem; color: var(--muted); line-height: 1.7;
+      max-width: 520px;
+    }
+
+    /* ── POUR QUI ── */
+    .pour-qui { background: var(--white); }
+    .pour-qui-grid {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 24px;
+      margin-top: 56px;
+    }
+    .profile-card {
+      border-radius: var(--radius);
+      padding: 48px 40px;
+      position: relative; overflow: hidden;
+      transition: transform 0.3s;
+    }
+    .profile-card:hover { transform: translateY(-4px); }
+    .profile-card.famille {
+      background: linear-gradient(135deg, #e6f7f2 0%, #d0f0e5 100%);
+      border: 1px solid var(--green-mid);
+    }
+    .profile-card.pro {
+      background: linear-gradient(135deg, #0d8f6f 0%, #065a45 60%, #043d2f 100%);
+      color: var(--white);
+    }
+    .profile-card .card-emoji { font-size: 2.5rem; margin-bottom: 20px; display: block; }
+    .profile-card .card-tag {
+      display: inline-block;
+      font-size: 0.72rem; font-weight: 600; letter-spacing: 2px;
+      text-transform: uppercase; margin-bottom: 16px;
+      padding: 4px 12px; border-radius: 50px;
+    }
+    .famille .card-tag { background: var(--green); color: white; }
+    .pro .card-tag { background: rgba(255,255,255,0.2); color: white; }
+    .profile-card h3 {
+      font-family: 'Fraunces', serif;
+      font-size: 1.6rem; font-weight: 700;
+      line-height: 1.2; margin-bottom: 16px;
+      letter-spacing: -0.5px;
+    }
+    .pro h3 { color: var(--white); }
+    .profile-card p { font-size: 0.95rem; line-height: 1.7; opacity: 0.75; margin-bottom: 28px; }
+    .card-features { list-style: none; display: flex; flex-direction: column; gap: 10px; margin-bottom: 32px; }
+    .card-features li {
+      display: flex; align-items: center; gap: 10px;
+      font-size: 0.9rem;
+    }
+    .card-features li::before {
+      content: '✓';
+      width: 22px; height: 22px;
+      background: var(--green); color: white;
+      border-radius: 50%; display: flex; align-items: center; justify-content: center;
+      font-size: 0.7rem; font-weight: 700;
+      flex-shrink: 0;
+    }
+    .pro .card-features li::before { background: rgba(255,255,255,0.2); }
+    .card-btn {
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 12px 24px; border-radius: 50px;
+      text-decoration: none; font-size: 0.9rem; font-weight: 500;
+      transition: all 0.2s;
+    }
+    .famille .card-btn { background: var(--green); color: white; }
+    .famille .card-btn:hover { background: var(--green-dark); }
+    .pro .card-btn { background: white; color: var(--charcoal); }
+    .pro .card-btn:hover { background: var(--green-light); }
+
+    /* ── FONCTIONNALITÉS ── */
+    .features { background: var(--sand); }
+    .features-header { margin-bottom: 56px; }
+    .features-grid {
+      display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px;
+    }
+    .feature-card {
+      background: var(--white);
+      border-radius: var(--radius);
+      padding: 32px 28px;
+      transition: all 0.3s;
+      border: 1px solid transparent;
+    }
+    .feature-card:hover {
+      border-color: var(--green-mid);
+      transform: translateY(-3px);
+      box-shadow: 0 12px 32px rgba(13,143,111,0.1);
+    }
+    .feature-icon {
+      width: 48px; height: 48px;
+      background: var(--green-light);
+      border-radius: 14px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.3rem; margin-bottom: 20px;
+    }
+    .feature-card h4 {
+      font-family: 'Fraunces', serif;
+      font-size: 1.1rem; font-weight: 600;
+      margin-bottom: 10px; letter-spacing: -0.3px;
+    }
+    .feature-card p { font-size: 0.88rem; color: var(--muted); line-height: 1.7; }
+
+    /* ── COMMENT ÇA MARCHE ── */
+    .how { background: var(--white); }
+    .steps {
+      display: grid; grid-template-columns: repeat(4, 1fr);
+      gap: 0; margin-top: 56px; position: relative;
+    }
+    .steps::before {
+      content: '';
+      position: absolute; top: 32px; left: 10%; right: 10%;
+      height: 2px;
+      background: linear-gradient(to right, var(--green-mid), var(--green-mid));
+      z-index: 0;
+    }
+    .step { text-align: center; padding: 0 20px; position: relative; z-index: 1; }
+    .step-num {
+      width: 64px; height: 64px;
+      background: var(--green); color: white;
+      border-radius: 50%; display: flex; align-items: center; justify-content: center;
+      font-family: 'Fraunces', serif;
+      font-size: 1.4rem; font-weight: 700;
+      margin: 0 auto 24px;
+      border: 4px solid var(--white);
+      box-shadow: 0 0 0 2px var(--green-mid);
+    }
+    .step h4 {
+      font-family: 'Fraunces', serif;
+      font-size: 1rem; font-weight: 600;
+      margin-bottom: 10px;
+    }
+    .step p { font-size: 0.85rem; color: var(--muted); line-height: 1.6; }
+
+    /* ── CHIFFRES ── */
+    .stats {
+      background: var(--green);
+      color: white; text-align: center;
+      padding: 80px 24px;
+    }
+    .stats-grid {
+      display: grid; grid-template-columns: repeat(3, 1fr);
+      gap: 40px; max-width: 700px; margin: 0 auto;
+    }
+    .stat-num {
+      font-family: 'Fraunces', serif;
+      font-size: 3rem; font-weight: 700;
+      letter-spacing: -2px; margin-bottom: 8px;
+    }
+    .stat-label { font-size: 0.9rem; opacity: 0.8; }
+
+    /* ── FAQ ── */
+    .faq { background: var(--sand); }
+    .faq-list { display: flex; flex-direction: column; gap: 12px; margin-top: 48px; }
+    .faq-item {
+      background: var(--white);
+      border-radius: 14px;
+      overflow: hidden;
+      border: 1px solid transparent;
+      transition: border-color 0.2s;
+    }
+    .faq-item:hover { border-color: var(--green-mid); }
+    .faq-q {
+      width: 100%; text-align: left;
+      padding: 22px 28px;
+      background: none; border: none; cursor: pointer;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 1rem; font-weight: 500; color: var(--charcoal);
+      display: flex; justify-content: space-between; align-items: center;
+      gap: 16px;
+    }
+    .faq-q span { transition: transform 0.3s; font-size: 1.2rem; color: var(--green); }
+    .faq-item.open .faq-q span { transform: rotate(45deg); }
+    .faq-a {
+      max-height: 0; overflow: hidden;
+      transition: max-height 0.35s ease, padding 0.35s;
+      padding: 0 28px;
+      font-size: 0.92rem; color: var(--muted); line-height: 1.75;
+    }
+    .faq-item.open .faq-a { max-height: 480px; padding: 0 28px 22px; }
+
+    /* ── INSCRIPTION ── */
+    .inscription {
+      background: linear-gradient(135deg, var(--charcoal) 0%, #1e3a34 100%);
+      color: white; text-align: center; padding: 100px 24px;
+      position: relative; overflow: hidden;
+    }
+    .inscription::before {
+      content: '';
+      position: absolute; inset: 0;
+      background: radial-gradient(ellipse 60% 80% at 50% 100%, rgba(13,143,111,0.25) 0%, transparent 70%);
+    }
+    .inscription .section-title { color: white; }
+    .inscription .section-sub { color: rgba(255,255,255,0.65); margin: 0 auto 48px; }
+    .form-card {
+      background: rgba(255,255,255,0.07);
+      border: 1px solid rgba(255,255,255,0.12);
+      border-radius: var(--radius);
+      padding: 40px;
+      max-width: 480px; margin: 0 auto;
+      backdrop-filter: blur(10px);
+      position: relative; z-index: 1;
+    }
+    .form-toggle {
+      display: flex; gap: 8px; margin-bottom: 28px;
+      background: rgba(255,255,255,0.08); border-radius: 50px; padding: 4px;
+    }
+    .toggle-btn {
+      flex: 1; padding: 10px; border-radius: 50px;
+      border: none; cursor: pointer;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.9rem; font-weight: 500;
+      transition: all 0.25s;
+      color: rgba(255,255,255,0.6);
+      background: transparent;
+    }
+    .toggle-btn.active { background: var(--green); color: white; }
+    .form-group { margin-bottom: 16px; }
+    .form-group input, .form-group textarea, .form-group select {
+      width: 100%;
+      padding: 14px 18px;
+      border-radius: 12px;
+      border: 1px solid rgba(255,255,255,0.15);
+      background: rgba(255,255,255,0.08);
+      color: white; font-family: 'DM Sans', sans-serif; font-size: 0.95rem;
+      outline: none; transition: border-color 0.2s;
+    }
+    .form-group input::placeholder, .form-group textarea::placeholder { color: rgba(255,255,255,0.4); }
+    .form-group input:focus, .form-group select:focus { border-color: var(--green); }
+    .form-group select { color: rgba(255,255,255,0.7); }
+    .form-group select option { background: #1a1a1a; color: white; }
+    .form-submit {
+      width: 100%; padding: 16px;
+      background: var(--green); color: white;
+      border: none; border-radius: 50px;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 1rem; font-weight: 500; cursor: pointer;
+      transition: all 0.2s; margin-top: 8px;
+    }
+    .form-submit:hover { background: var(--green-dark); transform: translateY(-1px); }
+    .form-note { font-size: 0.78rem; color: rgba(255,255,255,0.4); margin-top: 12px; }
+
+    /* ── FOOTER ── */
+    footer {
+      background: var(--charcoal); color: rgba(255,255,255,0.5);
+      text-align: center; padding: 32px 24px;
+      font-size: 0.85rem;
+    }
+    footer a { color: var(--green); text-decoration: none; }
+    footer a:hover { text-decoration: underline; }
+
+    /* ── RESPONSIVE ── */
+    @media (max-width: 768px) {
+      nav { padding: 16px 20px; }
+      .nav-links { display: none; }
+      .pour-qui-grid { grid-template-columns: 1fr; }
+      .features-grid { grid-template-columns: 1fr 1fr; }
+      .steps { grid-template-columns: 1fr 1fr; gap: 32px; }
+      .steps::before { display: none; }
+      .stats-grid { grid-template-columns: 1fr; gap: 24px; }
+      .profile-card { padding: 32px 24px; }
+    }
+    @media (max-width: 480px) {
+      .features-grid { grid-template-columns: 1fr; }
+      .steps { grid-template-columns: 1fr; }
+      .hero h1 { font-size: 2.2rem; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <div class="nav-logo">Aidalia</div>
+  <ul class="nav-links">
+    <li><a href="#pour-qui">Pour qui</a></li>
+    <li><a href="#fonctionnalites">Fonctionnalités</a></li>
+    <li><a href="#parcours">Comment ça marche</a></li>
+    <li><a href="#faq">FAQ</a></li>
+  </ul>
+  <a href="#inscription" class="nav-cta">S'inscrire →</a>
+</nav>
+
+<!-- HERO -->
+<section class="hero" id="top">
+  <div class="hero-badge">
+    <span></span> Disponible sur iOS & Android
+  </div>
+  <h1>Prenez soin de ceux<br/>que vous aimez.<br/><em>On s'occupe du reste.</em></h1>
+  <p class="hero-sub">Plus besoin de chercher sur 10 sites différents. Aidalia réunit familles et auxiliaires de vie en un seul endroit — simple, sécurisé, humain.</p>
+  <div class="hero-actions">
+    <a href="#inscription" class="btn-primary">Je m'inscris sur Aidalia →</a>
+    <a href="#pour-qui" class="btn-secondary">Voir si c'est pour moi</a>
+  </div>
+  <div class="hero-trust">
+    <div class="trust-item"><span class="trust-icon">💬</span> Messagerie intégrée</div>
+    <div class="trust-item"><span class="trust-icon">🔒</span> Paiement sécurisé Stripe</div>
+    <div class="trust-item"><span class="trust-icon">✅</span> Profils vérifiés</div>
+    <div class="trust-item"><span class="trust-icon">📅</span> Réservation en 2 min</div>
+  </div>
+</section>
+
+<!-- POUR QUI -->
+<section class="pour-qui" id="pour-qui">
+  <div class="container">
+    <div class="section-label">Pour qui ?</div>
+    <h2 class="section-title">Une app.<br/><em>Deux univers.</em></h2>
+    <p class="section-sub">Que vous cherchiez une aide fiable pour votre proche ou que vous vouliez développer votre activité, Aidalia est fait pour vous.</p>
+    <div class="pour-qui-grid">
+      <!-- Famille -->
+      <div class="profile-card famille">
+        <span class="card-emoji">👨‍👩‍👧</span>
+        <span class="card-tag">Familles</span>
+        <h3>Votre proche est entre de bonnes mains — vous le savez avant même la première intervention.</h3>
+        <p>Fini le bouche-à-oreille hasardeux. Trouvez un auxiliaire de vie qualifié, échangez librement, réservez en toute sérénité.</p>
+        <ul class="card-features">
+          <li>Recherche de profils selon vos besoins</li>
+          <li>Messagerie directe dans l'application</li>
+          <li>Réservation claire avec suivi des statuts</li>
+          <li>Paiement sécurisé et rassurant</li>
+        </ul>
+        <a href="#inscription" class="card-btn">Je cherche une aide →</a>
+      </div>
+      <!-- Pro -->
+      <div class="profile-card pro">
+        <span class="card-emoji">💼</span>
+        <span class="card-tag">Professionnels</span>
+        <h3>Fini la prospection. Les familles viennent à vous.</h3>
+        <p>Créez votre profil une fois, gérez vos missions depuis votre téléphone. Concentrez-vous sur ce qui compte : votre métier.</p>
+        <ul class="card-features">
+          <li>Profil professionnel visible et complet</li>
+          <li>Demandes de familles qualifiées</li>
+          <li>Planning et réservations centralisés</li>
+          <li>Canal de communication unique et pro</li>
+        </ul>
+        <a href="#inscription" class="card-btn">Je développe mon activité →</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FONCTIONNALITÉS -->
+<section class="features" id="fonctionnalites">
+  <div class="container">
+    <div class="features-header">
+      <div class="section-label">Fonctionnalités</div>
+      <h2 class="section-title">Tout ce dont vous avez besoin.<br/><em>Rien de superflu.</em></h2>
+      <p class="section-sub">Chaque fonctionnalité a été pensée pour simplifier votre quotidien, pas pour le compliquer.</p>
+    </div>
+    <div class="features-grid">
+      <div class="feature-card">
+        <div class="feature-icon">👤</div>
+        <h4>Profils détaillés</h4>
+        <p>Expérience, catégorie, tarif, ville — vous choisissez en connaissance de cause, pas au hasard.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">💬</div>
+        <h4>Messagerie centralisée</h4>
+        <p>Fini les échanges éparpillés. Tout se passe dans l'app, proprement, en sécurité.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">📅</div>
+        <h4>Réservation simplifiée</h4>
+        <p>Du premier contact à l'intervention confirmée — un parcours fluide, sans friction.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">🔒</div>
+        <h4>Paiement sécurisé</h4>
+        <p>Transactions fiables avec Stripe. Votre argent et vos données sont protégés à chaque étape.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">📋</div>
+        <h4>Suivi des interactions</h4>
+        <p>Historique clair et accessible. Retrouvez chaque échange, chaque mission, en un coup d'œil.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">🛡️</div>
+        <h4>Confiance & transparence</h4>
+        <p>Cadre légal sécurisé, signalements intégrés. Vous êtes protégé, des deux côtés.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- COMMENT ÇA MARCHE -->
+<section class="how" id="parcours">
+  <div class="container">
+    <div class="section-label">Le parcours</div>
+    <h2 class="section-title">Prêt en 4 étapes.<br/><em>Vraiment.</em></h2>
+    <div class="steps">
+      <div class="step">
+        <div class="step-num">1</div>
+        <h4>Je rejoins Aidalia en 2 minutes</h4>
+        <p>Famille ou professionnel — un parcours simple, pensé pour aller vite.</p>
+      </div>
+      <div class="step">
+        <div class="step-num">2</div>
+        <h4>Je trouve le profil qui me correspond</h4>
+        <p>Recherche, profil complet, premier échange dans la messagerie.</p>
+      </div>
+      <div class="step">
+        <div class="step-num">3</div>
+        <h4>Je planifie sans prise de tête</h4>
+        <p>Date, heure, statut de réservation — tout au même endroit.</p>
+      </div>
+      <div class="step">
+        <div class="step-num">4</div>
+        <h4>Je paie en sécurité, c'est réglé</h4>
+        <p>Paiement sécurisé et suivi transparent. Vous pouvez souffler.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- STATS -->
+<section class="stats">
+  <div class="container">
+    <div class="stats-grid">
+      <div>
+        <div class="stat-num">2 min</div>
+        <div class="stat-label">Pour créer votre compte</div>
+      </div>
+      <div>
+        <div class="stat-num">100%</div>
+        <div class="stat-label">Sécurisé avec Stripe</div>
+      </div>
+      <div>
+        <div class="stat-num">iOS & Android</div>
+        <div class="stat-label">Disponible partout</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FAQ -->
+<section class="faq" id="faq">
+  <div class="container">
+    <div class="section-label">Questions fréquentes</div>
+    <h2 class="section-title">Vous avez des questions ?<br/><em>On a les réponses.</em></h2>
+    <div class="faq-list">
+      <div class="faq-item">
+        <button class="faq-q">Qui peut s'inscrire sur Aidalia ? <span>+</span></button>
+        <div class="faq-a">Les familles qui cherchent une aide à domicile de confiance, et les professionnels indépendants qui proposent leurs services. L'inscription est ouverte à tous.</div>
+      </div>
+      <div class="faq-item">
+        <button class="faq-q">L'inscription est-elle compliquée ? <span>+</span></button>
+        <div class="faq-a">Pas du tout. Créer votre compte prend moins de 2 minutes depuis l'application. Quelques informations de base suffisent pour démarrer.</div>
+      </div>
+      <div class="faq-item">
+        <button class="faq-q">Puis-je échanger avec un auxiliaire avant de réserver ? <span>+</span></button>
+        <div class="faq-a">Oui, absolument. La messagerie intégrée vous permet d'échanger librement avant toute réservation. Prenez le temps de vous assurer que c'est le bon profil.</div>
+      </div>
+      <div class="faq-item">
+        <button class="faq-q">Comment fonctionne le paiement ? <span>+</span></button>
+        <div class="faq-a">Les paiements sont traités via Stripe, l'un des systèmes de paiement les plus sécurisés au monde. Vos données bancaires ne sont jamais stockées sur nos serveurs.</div>
+      </div>
+      <div class="faq-item">
+        <button class="faq-q">Aidalia est-elle disponible dans toute la France ? <span>+</span></button>
+        <div class="faq-a">Nous lançons progressivement en Île-de-France et étendons notre couverture régulièrement. Inscrivez-vous dès maintenant pour être parmi les premiers dans votre ville.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- INSCRIPTION -->
+<section class="inscription" id="inscription">
+  <div class="container">
+    <div class="section-label" style="color: rgba(255,255,255,0.5);">Rejoindre Aidalia</div>
+    <h2 class="section-title">La bonne aide commence ici.<br/><em>Et ça prend 2 minutes.</em></h2>
+    <p class="section-sub">Choisissez votre profil et recevez votre lien d'accès à l'application directement dans votre boîte mail.</p>
+    <div class="form-card">
+      <div class="form-toggle">
+        <button type="button" class="toggle-btn active" onclick="setProfile(this, 'famille')">👨‍👩‍👧 Je suis une famille</button>
+        <button type="button" class="toggle-btn" onclick="setProfile(this, 'pro')">💼 Je suis un professionnel</button>
+      </div>
+      <div class="form-group">
+        <input type="text" placeholder="Nom et prénom" />
+      </div>
+      <div class="form-group">
+        <input type="email" placeholder="Adresse email" />
+      </div>
+      <div class="form-group">
+        <select id="besoin-select">
+          <option value="" disabled selected>Votre besoin principal</option>
+          <option>Aide aux personnes âgées</option>
+          <option>Aide au handicap</option>
+          <option>Aide ménagère</option>
+          <option>Garde d'enfants</option>
+          <option>Accompagnement quotidien</option>
+          <option>Autre</option>
+        </select>
+      </div>
+      <button type="button" class="form-submit">Recevoir mon lien d'inscription →</button>
+      <p class="form-note">🔒 Vos données sont protégées. Aucun spam, promis.</p>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <p>© <span id="footerYear">2026</span> Aidalia — <a href="mentions-legales.html">Mentions légales</a> · <a href="cgu.html">CGU</a> · <a href="mailto:christ.emmanuel12@outlook.fr?subject=Contact%20Aidalia">Contact</a></p>
+</footer>
+
+<script>
+  // FAQ accordion
+  document.querySelectorAll('.faq-q').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const item = btn.parentElement;
+      const isOpen = item.classList.contains('open');
+      document.querySelectorAll('.faq-item').forEach(i => i.classList.remove('open'));
+      if (!isOpen) item.classList.add('open');
+    });
+  });
+
+  // Profile toggle
+  function setProfile(btn, type) {
+    document.querySelectorAll('.toggle-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    const select = document.getElementById('besoin-select');
+    select.innerHTML = '<option value="" disabled selected>Votre besoin principal</option>';
+    const options = type === 'famille'
+      ? ['Aide aux personnes âgées','Aide au handicap','Aide ménagère','Garde d\'enfants','Accompagnement quotidien','Autre']
+      : ['Auxiliaire de vie','Aide ménagère','Garde d\'enfants','Accompagnement','Autre spécialité'];
+    options.forEach(o => {
+      const opt = document.createElement('option');
+      opt.textContent = o;
+      select.appendChild(opt);
+    });
+  }
+
+  // Scroll animations
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(e => {
+      if (e.isIntersecting) {
+        e.target.style.opacity = '1';
+        e.target.style.transform = 'translateY(0)';
+      }
+    });
+  }, { threshold: 0.1 });
+
+  document.querySelectorAll('.feature-card, .profile-card, .step, .faq-item').forEach(el => {
+    el.style.opacity = '0';
+    el.style.transform = 'translateY(20px)';
+    el.style.transition = 'opacity 0.5s ease, transform 0.5s ease';
+    observer.observe(el);
+  });
+
+  const y = document.getElementById('footerYear');
+  if (y) y.textContent = String(new Date().getFullYear());
+</script>
+</body>
+</html>

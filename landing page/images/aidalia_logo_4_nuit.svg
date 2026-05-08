@@ -1,0 +1,30 @@
+<svg width="1280" height="480" viewBox="0 0 1280 480" xmlns="http://www.w3.org/2000/svg">
+  <rect width="1280" height="480" rx="24" fill="#0f2d1a"/>
+  <circle cx="280" cy="240" r="180" fill="#1a5c30" opacity="0.4"/>
+
+  <g transform="translate(80, 60) scale(1.55)">
+    <circle cx="115" cy="130" r="108" fill="#2dc653"/>
+    <circle cx="150" cy="118" r="87" fill="#0f2d1a"/>
+    <circle cx="93" cy="78" r="14" fill="#2dc653"/>
+    <circle cx="85" cy="67" r="7" fill="#2dc653"/>
+    <path d="M80 93 C76 112 74 136 74 152 L114 152 C114 136 112 112 108 93 C104 88 94 85 93 85 C90 85 83 88 80 93Z" fill="#2dc653"/>
+    <rect x="80" y="150" width="12" height="28" rx="6" fill="#2dc653"/>
+    <rect x="100" y="150" width="12" height="28" rx="6" fill="#2dc653"/>
+    <circle cx="140" cy="68" r="17" fill="#2dc653"/>
+    <path d="M120 86 C116 108 114 134 114 154 L166 154 C166 134 164 108 160 86 C156 80 147 77 140 77 C133 77 124 80 120 86Z" fill="#2dc653"/>
+    <path d="M118 112 C104 122 97 140 99 156 C103 161 109 158 111 152 C109 140 115 128 125 120Z" fill="#2dc653"/>
+    <path d="M162 112 C176 122 183 140 181 156 C177 161 171 158 169 152 C171 140 165 128 155 120Z" fill="#2dc653"/>
+    <rect x="120" y="152" width="14" height="34" rx="7" fill="#2dc653"/>
+    <rect x="142" y="152" width="14" height="34" rx="7" fill="#2dc653"/>
+    <path d="M152 90 Q165 105 167 121 Q169 136 160 144" fill="none" stroke="#2dc653" stroke-width="4" stroke-linecap="round"/>
+    <circle cx="159" cy="146" r="5.5" fill="#2dc653"/>
+    <rect x="170" y="36" width="11" height="32" rx="5" fill="#2dc653"/>
+    <rect x="162" y="44" width="26" height="11" rx="5" fill="#2dc653"/>
+  </g>
+
+  <line x1="450" y1="80" x2="450" y2="400" stroke="#2dc653" stroke-width="1.5" opacity="0.3"/>
+
+  <text x="870" y="272" font-family="Arial Black, Franklin Gothic Heavy, Impact, sans-serif" font-size="160" font-weight="900" fill="white" text-anchor="middle" letter-spacing="8">AIDALIA</text>
+  <text x="870" y="330" font-family="Arial, Helvetica, sans-serif" font-size="26" fill="#2dc653" text-anchor="middle" letter-spacing="10">AIDE � DOMICILE</text>
+</svg>
+

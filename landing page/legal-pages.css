@@ -1,0 +1,119 @@
+:root {
+  --green: #0d8f6f;
+  --green-dark: #096b53;
+  --cream: #faf8f3;
+  --charcoal: #1a1a1a;
+  --muted: #6b7280;
+  --white: #ffffff;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+html { scroll-behavior: smooth; }
+
+body {
+  font-family: 'DM Sans', system-ui, sans-serif;
+  background: var(--cream);
+  color: var(--charcoal);
+  line-height: 1.65;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.legal-top {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 16px 24px;
+  background: rgba(250, 248, 243, 0.95);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid rgba(13, 143, 111, 0.12);
+}
+
+.legal-top a.logo {
+  font-family: 'Fraunces', Georgia, serif;
+  font-size: 1.35rem;
+  font-weight: 700;
+  color: var(--green);
+  text-decoration: none;
+  letter-spacing: -0.5px;
+}
+
+.legal-top a.back {
+  color: var(--charcoal);
+  text-decoration: none;
+  font-size: 0.9rem;
+  opacity: 0.75;
+}
+
+.legal-top a.back:hover { opacity: 1; color: var(--green); }
+
+.legal-main {
+  flex: 1;
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 40px 24px 64px;
+  width: 100%;
+}
+
+.legal-main h1 {
+  font-family: 'Fraunces', Georgia, serif;
+  font-size: clamp(1.75rem, 4vw, 2.25rem);
+  font-weight: 700;
+  margin-bottom: 8px;
+  letter-spacing: -0.5px;
+}
+
+.legal-main .meta {
+  font-size: 0.85rem;
+  color: var(--muted);
+  margin-bottom: 32px;
+}
+
+.legal-main h2 {
+  font-family: 'Fraunces', Georgia, serif;
+  font-size: 1.15rem;
+  font-weight: 600;
+  margin: 28px 0 12px;
+  color: var(--charcoal);
+}
+
+.legal-main p, .legal-main li {
+  font-size: 0.95rem;
+  color: var(--charcoal);
+  margin-bottom: 12px;
+}
+
+.legal-main ul {
+  padding-left: 1.25rem;
+  margin-bottom: 16px;
+}
+
+.legal-main li { margin-bottom: 8px; }
+
+.legal-main a {
+  color: var(--green);
+  text-decoration: none;
+}
+
+.legal-main a:hover { text-decoration: underline; }
+
+.legal-footer {
+  background: var(--charcoal);
+  color: rgba(255, 255, 255, 0.5);
+  text-align: center;
+  padding: 28px 24px;
+  font-size: 0.85rem;
+}
+
+.legal-footer a {
+  color: var(--green);
+  text-decoration: none;
+}
+
+.legal-footer a:hover { text-decoration: underline; }

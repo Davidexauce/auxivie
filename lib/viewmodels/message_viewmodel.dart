@@ -10,6 +10,10 @@ class MessageViewModel extends ChangeNotifier {
   final Map<int, UserModel> _partners = {}; // Map<partnerId, user>
   bool _isLoading = false;
   String? _errorMessage;
+  int? _lastUserIdLoaded;
+  DateTime? _lastLoadedAt;
+
+  static const Duration _cacheTtl = Duration(seconds: 20);
 
   /// Conversations chargées
   Map<int, List<MessageModel>> get conversations => _conversations;
@@ -33,7 +37,17 @@ class MessageViewModel extends ChangeNotifier {
   }
 
   /// Charge toutes les conversations d'un utilisateur
-  Future<void> loadConversations(int userId) async {
+  Future<void> loadConversations(int userId, {bool forceRefresh = false}) async {
+    final now = DateTime.now();
+    final cacheIsFresh =
+        _lastLoadedAt != null && now.difference(_lastLoadedAt!) < _cacheTtl;
+    if (!forceRefresh &&
+        _lastUserIdLoaded == userId &&
+        _conversations.isNotEmpty &&
+        cacheIsFresh) {
+      return;
+    }
+
     _isLoading = true;
     _errorMessage = null;
     notifyListeners();
@@ -41,18 +55,27 @@ class MessageViewModel extends ChangeNotifier {
     try {
       // Récupérer les partenaires de conversation depuis le backend
       final partnerIds = await BackendApiService.getConversationPartners(userId);
-      
-      // Charger chaque conversation depuis le backend
-      for (final partnerId in partnerIds) {
-        final messages = await BackendApiService.getConversation(userId, partnerId);
+
+      // Charger conversations + partenaires en parallèle pour accélérer l'ouverture.
+      final futures = partnerIds.map((partnerId) async {
+        final results = await Future.wait<dynamic>([
+          BackendApiService.getConversation(userId, partnerId),
+          _partners.containsKey(partnerId)
+              ? Future<UserModel?>.value(_partners[partnerId])
+              : BackendApiService.getUserById(partnerId),
+        ]);
+
+        final messages = results[0] as List<MessageModel>;
+        final partner = results[1] as UserModel?;
         _conversations[partnerId] = messages;
-        
-        // Charger les infos du partenaire depuis le backend
-        final partner = await BackendApiService.getUserById(partnerId);
         if (partner != null) {
           _partners[partnerId] = partner;
         }
-      }
+      });
+      await Future.wait(futures);
+
+      _lastUserIdLoaded = userId;
+      _lastLoadedAt = DateTime.now();
 
       _isLoading = false;
       notifyListeners();

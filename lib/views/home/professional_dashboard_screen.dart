@@ -25,6 +25,9 @@ class ProfessionalDashboardScreen extends StatefulWidget {
 class _ProfessionalDashboardScreenState extends State<ProfessionalDashboardScreen> with WidgetsBindingObserver {
   List<Map<String, dynamic>> _badges = [];
   bool _badgesLoaded = false;
+  DateTime? _lastLoadAt;
+  DateTime? _lastBadgesLoadAt;
+  static const Duration _minReloadInterval = Duration(seconds: 20);
 
   @override
   void initState() {
@@ -47,8 +50,8 @@ class _ProfessionalDashboardScreenState extends State<ProfessionalDashboardScree
     super.didChangeAppLifecycleState(state);
     // Recharger les données quand l'app revient au premier plan
     if (state == AppLifecycleState.resumed && mounted) {
-      _loadData();
-      _loadBadges();
+      _loadData(forceRefresh: true);
+      _loadBadges(forceRefresh: true);
     }
   }
 
@@ -59,17 +62,38 @@ class _ProfessionalDashboardScreenState extends State<ProfessionalDashboardScree
     // Le rechargement se fait via didChangeAppLifecycleState et initState
   }
 
-  void _loadData() {
+  void _loadData({bool forceRefresh = false}) {
     if (!mounted) return;
+    final now = DateTime.now();
+    if (!forceRefresh &&
+        _lastLoadAt != null &&
+        now.difference(_lastLoadAt!) < _minReloadInterval) {
+      return;
+    }
+
     final reservationViewModel = Provider.of<ReservationViewModel>(context, listen: false);
     final messageViewModel = Provider.of<MessageViewModel>(context, listen: false);
-    
-    reservationViewModel.loadProfessionalReservations(widget.currentUser.id!);
-    messageViewModel.loadConversations(widget.currentUser.id!);
+
+    _lastLoadAt = now;
+    reservationViewModel.loadProfessionalReservations(
+      widget.currentUser.id!,
+      forceRefresh: forceRefresh,
+    );
+    messageViewModel.loadConversations(
+      widget.currentUser.id!,
+      forceRefresh: forceRefresh,
+    );
   }
 
-  Future<void> _loadBadges() async {
+  Future<void> _loadBadges({bool forceRefresh = false}) async {
     if (widget.currentUser.id == null) return;
+    final now = DateTime.now();
+    if (!forceRefresh &&
+        _lastBadgesLoadAt != null &&
+        now.difference(_lastBadgesLoadAt!) < _minReloadInterval &&
+        _badgesLoaded) {
+      return;
+    }
     
     try {
       final badges = await BackendApiService.getBadges(widget.currentUser.id!);
@@ -77,12 +101,14 @@ class _ProfessionalDashboardScreenState extends State<ProfessionalDashboardScree
         setState(() {
           _badges = badges.map((b) => b.toMap()).toList();
           _badgesLoaded = true;
+          _lastBadgesLoadAt = DateTime.now();
         });
       }
     } catch (e) {
       if (mounted) {
         setState(() {
           _badgesLoaded = true;
+          _lastBadgesLoadAt = DateTime.now();
         });
       }
     }
@@ -100,7 +126,8 @@ class _ProfessionalDashboardScreenState extends State<ProfessionalDashboardScree
       child: SafeArea(
         child: RefreshIndicator(
         onRefresh: () async {
-          _loadData();
+          _loadData(forceRefresh: true);
+          await _loadBadges(forceRefresh: true);
         },
         child: SingleChildScrollView(
           physics: const AlwaysScrollableScrollPhysics(),

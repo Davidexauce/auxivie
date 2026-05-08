@@ -159,4 +159,11 @@ class AuthViewModel extends ChangeNotifier {
     _errorMessage = null;
     notifyListeners();
   }
+
+  /// Réservé aux captures App Store / tests d’intégration (utilisateur fictif, sans API).
+  void setScreenshotDemoUser(UserModel user) {
+    _currentUser = user;
+    _errorMessage = null;
+    notifyListeners();
+  }
 }

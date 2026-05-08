@@ -1,0 +1,98 @@
+Hello App Review Team,
+
+Thank you for your message. Below is the additional information requested under Guideline 2.1.
+
+---
+1) Screen recording (physical device, latest OS tested)
+
+Recording link or attachment: [ADD LINK OR “SEE ATTACHED FILE”]
+Device used for recording: [e.g. iPhone 15 Pro, iOS 18.x]
+
+The recording starts from the Home Screen with a cold launch of the app, then demonstrates:
+• First-launch privacy/consent flow when applicable (Consent screen before entering the app).
+• Welcome screen (“Bienvenue”) → login (“Connexion Famille” or “Connexion Professionnel”) or registration via “Inscrivez-vous” → dialog “Choisissez votre profil” → Famille or Professionnel.
+• Main tab bar (labels in French): Accueil → Recherche (familles) or Tableau (professionnels) → Messages → Planning → Profil.
+• Family core flow: Recherche → open a professional profile → optional messaging/booking paths → Planning for reservations.
+• Professional core flow: Tableau → reservations/messages as available on the demo account.
+• User-generated content: Messages tab → open a conversation.
+• Reporting: from a professional or family profile screen, use the app bar action “Signaler” (ReportUser modal). Alternatively: Planning → open a reservation → “Signaler un problème”.
+• Payments: reach Stripe Payment Sheet from the reservation flow (create reservation / reservation detail → payment when the backend exposes a payable state). Use test card if applicable.
+• Permissions (when triggered): Profil → Documents → “Ajouter un document” may prompt for camera, photo library, or file picker; purpose strings in Info.plist describe each use.
+• Account deletion: Profil (tab) → scroll to section “Confidentialité” → “Supprimer le compte” → confirm. Use a disposable demo account for this step.
+
+Note: There is no separate in-app “block user” control; users report problematic behavior via “Signaler” / “Signaler un problème”, and moderation is handled by our team via the backend.
+
+---
+2) Devices and OS versions tested before submission
+
+[List each device model and iOS version you actually tested, for example:]
+• iPhone [model], iOS [version]
+• iPhone [model], iOS [version]
+
+Minimum deployment target: iOS 14.0.
+
+---
+3) App purpose and target audience
+
+Display name on device: Aidalia.
+
+Aidalia (Auxivie) is a French-language marketplace that connects families with home-care / domestic help professionals (“aide à domicile”). Families can search for professionals, manage multi-day reservations, exchange in-app messages, and pay through Stripe. Professionals can manage profile-related data, availability, bookings, and messaging.
+
+Target audience: families seeking home assistance and independent professionals offering those services, primarily in France.
+
+Problem solved: simplifying discovery, booking coordination, in-app communication, and secure payment for home-care arrangements.
+
+---
+4) Reviewer access — demo accounts and navigation
+
+Replace bracketed credentials before sending.
+
+Family (client) demo:
+• Email: [FAMILY_REVIEW_EMAIL]
+• Password: [FAMILY_REVIEW_PASSWORD]
+
+Professional demo:
+• Email: [PRO_REVIEW_EMAIL]
+• Password: [PRO_REVIEW_PASSWORD]
+
+Quick navigation:
+• Login: Welcome → “Connexion Famille” or “Connexion Professionnel” → enter credentials.
+• Search (family): Tab “Recherche” → select a professional.
+• Messages: Tab “Messages”.
+• Reservations / payment: Tab “Planning” → open or create a reservation → proceed to payment when available.
+• Report user: Open a professional or family profile → app bar “Signaler”.
+• Report reservation issue: Tab “Planning” → reservation detail → “Signaler un problème”.
+• Legal / privacy: Profil → “Informations légales” or “Gérer mes consentements”.
+• Account deletion: Profil → “Confidentialité” → “Supprimer le compte” (use throwaway demo account).
+
+No sample files are required for core flows; optional PDF/image only if testing document upload from Profil → Documents.
+
+---
+5) External services and platforms
+
+• Backend REST API: https://auxivie.org/api (authentication, users, reservations, messaging, documents, reports, etc.).
+• Payments: Stripe (Stripe Payment Sheet via flutter_stripe).
+• Apple permission prompts as declared: camera, photo library, saving to photo library, document picker, contacts (see Info.plist usage descriptions).
+• This build does not show an App Tracking Transparency prompt (no IDFA-based tracking).
+
+---
+6) Regional differences
+
+The service is aimed primarily at France. The same feature set is shipped in all regions; any geographic restriction is enforced server-side if applicable.
+
+---
+7) Regulated industry / third-party protected material
+
+The app is a consumer marketplace for introducing families and home-care professionals and for related bookings and payments. It does not provide regulated medical diagnosis or treatment. We distribute only content and branding we are authorized to use.
+
+[Optional: add company legal name, SIREN, relevant registrations or insurance if you want to strengthen this answer.]
+
+---
+
+We will keep a copy of this text in App Store Connect → App Review Information → Notes for future submissions.
+
+Thank you for continuing the review.
+
+Best regards,
+[Your name]
+[Company / legal entity]

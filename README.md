@@ -52,6 +52,11 @@ Configuration dans `lib/config/app_config.dart`
 
 ### Stripe
 Clés Stripe configurées dans `lib/services/payment_service.dart`
+En fallback, la clé publishable peut être injectée au build:
+
+```bash
+flutter run --dart-define=STRIPE_PUBLISHABLE_KEY=pk_xxx
+```
 
 ## 📝 Structure du projet
 

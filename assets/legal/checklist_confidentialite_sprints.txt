@@ -1,0 +1,78 @@
+CHECK-LIST CONFIDENTIALITÉ / RGPD – PLAN EN SPRINTS (AIDALIA)
+
+Abréviations et définitions
+RGPD : Règlement Général sur la Protection des Données (règlement européen sur les données personnelles).
+CNIL : Commission Nationale de l’Informatique et des Libertés (autorité française de contrôle).
+DPO : Délégué à la Protection des Données (Data Protection Officer).
+DPA : Data Processing Agreement (accord de sous-traitance au sens du RGPD).
+SDK : Software Development Kit (composant logiciel intégré dans l’app, ex. analytics, crash reporting).
+CMP : Consent Management Platform (outil de recueil/gestion du consentement aux traceurs).
+KYC : Know Your Customer (vérification d’identité/activité, souvent exigée pour les paiements).
+RBAC : Role-Based Access Control (gestion des accès par rôles).
+MFA : Multi-Factor Authentication (authentification multifacteur).
+Logs : journaux techniques (événements de sécurité, d’accès, d’erreurs, etc.).
+Chargeback : rétrofacturation initiée par la banque du payeur (contestation du paiement).
+App stores : Apple App Store et Google Play Store.
+Hypothèses retenues pour Aidalia
+Application mobile uniquement (pas de site web).
+Marketplace : la famille paie sur la plateforme ; commission prélevée ; reversement au professionnel après réalisation.
+Paiement via Stripe.
+Messagerie intégrée ; échange possible de numéros/coordonnées.
+Pas d’AIPD/DPIA et pas de DPO (choix de l’équipe).
+Sprint 1 — Baseline conformité & app stores (1 jour)
+Objectif : être publiable / défendable (documents + écrans + process minimum).
+Livrables – Documents & écrans
+Politique de confidentialité intégrée dans l’app (Paramètres → Légal) + lien en bas
+Mentions légales dans l’app (éditeur, RCS, hébergeur, contact).
+Écran « Confidentialité » avec : email de contact privacy, lien vers politique, bouton « Supprimer mon compte ».
+Avertissement dans les champs texte et/ou messagerie : « Ne partagez pas de documents médicaux, ni de données de santé ».
+Livrables – Process droits utilisateurs
+Boîte mail privacy@… (ou canal support taggé « RGPD »).
+Procédure simple : comment on gère les droits d’accès / suppression / rectification (responsable interne, délais, modèles de réponse).
+Suppression compte : expliquer dans l’app ce qui est supprimé vs archivé (paiements/facturation).
+Definition of Done (DoD) – Sprint 1
+La politique est accessible en 2 taps ; contact privacy disponible ; suppression compte possible.
+Les déclarations App Store/Play Store sont cohérentes.
+Les règles sectorielles (pas de documents médicaux) sont visibles et comprises.
+Sprint 2 — Données, rétention & sous-traitants (1–2 semaines)
+Objectif : maîtriser ce que vous collectez, combien de temps, et avec qui.
+Minimisation des données
+Revoir les champs obligatoires (profil pro / demande famille) : supprimer tout champ non nécessaire.
+Décider si l’adresse exacte est visible avant paiement (déconseillé) ou seulement après réservation.
+Décider la règle d’affichage/échange du numéro (ex. après match / après paiement / optionnel).
+Durées de conservation (à écrire et à appliquer)
+Définir des durées cibles : comptes, messages, réservations, logs sécurité, support, paiements/factures.
+Implémenter au minimum : rotation/purge des logs, purge des tickets support anciens.
+Définir une règle messagerie (ex. suppression/anonymisation après fermeture du compte).
+Sous-traitants
+Lister tous les prestataires (hébergeur, push, analytics, support, email/SMS, sécurité, etc.).
+Signer un DPA avec chaque prestataire (obligations RGPD).
+Stripe : documentation interne « qui fait quoi » (KYC, reversements, anti-fraude) + mention claire dans la politique.
+Definition of Done (DoD) – Sprint 2
+Cartographie simple : quelles données, où, combien de temps.
+Purge logs + support en place.
+Prestataires clés couverts par DPA ; Stripe clairement documenté.
+Sprint 3 — Sécurité, anti-abus & traçabilité (1–2 semaines)
+Objectif : réduire les risques (secteur sensible + paiements + messagerie).
+Sécurité
+MFA obligatoire pour les accès admin/back-office.
+RBAC (droits par rôle) + journalisation des actions admin sensibles.
+Sauvegardes chiffrées + test de restauration.
+Gestion des secrets (clés API) : coffre + rotation.
+Messagerie & signalement
+Bouton « Signaler » dans la conversation + catégories (harcèlement, arnaque, santé, etc.).
+File de traitement support/modération + délais internes.
+Règles anti-spam / anti-harcèlement (limites d’envoi, blocage).
+Paiement & litiges
+Process chargeback : checklist preuves + responsable + délais.
+Suspension reversement en cas de fraude/litige (aligné CGV) + journalisation.
+Definition of Done (DoD) – Sprint 3
+Un incident (fraude, abus, violation) a un chemin clair de traitement.
+Accès internes sécurisés et traçables.
+Paiements/chargebacks gérés avec un processus documenté.
+Sprint 4 — Consentement SDK & conformité avancée (optionnel)
+Objectif : être clean si vous avez analytics/trackers non essentiels.
+Inventaire des SDK + classification essentiel / non essentiel.
+Si non essentiel : CMP (écran de consentement) + preuve du consentement + retrait facile.
+Documentation interne (1 page) : base légale par traitement.
+
