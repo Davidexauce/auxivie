@@ -1,7 +1,7 @@
-# Christelle Projet — Aidalia / Auxivie
+# Christelle Projet — Aidalya
 
 Dépôt **serveur + dashboard web** uniquement.  
-L’**application mobile Flutter** (iOS / Android) est dans un projet séparé : **`App flutter Auxivie`** sur cette machine.
+L’**application mobile Flutter** (iOS / Android) est dans un projet séparé : **`App flutter Auxivie`** sur cette machine (package Dart `aidalya`).
 
 ## Contenu
 

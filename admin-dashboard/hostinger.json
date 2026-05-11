@@ -1,7 +1,7 @@
 {
   "name": "auxivie-admin-dashboard",
   "version": "1.0.0",
-  "description": "Dashboard d'administration Auxivie",
+  "description": "Dashboard d'administration Aidalya",
   "type": "nextjs",
   "build": {
     "command": "npm install && npm run build",

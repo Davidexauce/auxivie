@@ -43,7 +43,7 @@ export default function Login() {
   return (
     <div className={styles.container}>
       <div className={styles.loginBox}>
-        <h1 className={styles.title}>Auxivie Admin</h1>
+        <h1 className={styles.title}>Aidalya Admin</h1>
         <p className={styles.subtitle}>Connexion à l'espace administrateur</p>
         
         <form onSubmit={handleSubmit} className={styles.form}>

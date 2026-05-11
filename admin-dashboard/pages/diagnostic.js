@@ -214,7 +214,7 @@ export default function Diagnostic() {
 
   return (
     <div style={{ padding: '40px', fontFamily: 'Arial, sans-serif', maxWidth: '900px', margin: '0 auto' }}>
-      <h1>🔍 Diagnostic - Auxivie Admin</h1>
+      <h1>🔍 Diagnostic - Aidalya Admin</h1>
       <p>Cette page teste la connectivité entre votre navigateur et le serveur API.</p>
 
       <div style={{ marginTop: '20px', padding: '15px', backgroundColor: '#f0fdf4', borderRadius: '8px', border: '1px solid #86efac' }}>

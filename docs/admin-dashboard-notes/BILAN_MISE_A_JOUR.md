@@ -1,4 +1,4 @@
-# 📊 Bilan Mis à Jour - Dashboard Admin Auxivie
+# 📊 Bilan Mis à Jour - Dashboard Admin Aidalya
 
 **Date:** 10 Décembre 2025  
 **Version:** 1.0.1  

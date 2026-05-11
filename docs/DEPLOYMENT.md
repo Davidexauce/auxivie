@@ -1,4 +1,4 @@
-# 🚀 Auxivie Admin Dashboard - Déploiement en Production
+# 🚀 Aidalya Admin Dashboard - Déploiement en Production
 
 **Date de déploiement:** 9 Décembre 2025
 **Status:** ✅ EN PRODUCTION
@@ -326,7 +326,7 @@ ssh -fN -o ServerAliveInterval=60 -o ExitOnForwardFailure=yes -R 127.0.0.1:30000
 
 ```ini
 [Unit]
-Description=Reverse SSH Tunnel to VPS for Auxivie
+Description=Reverse SSH Tunnel to VPS for Aidalya
 After=network.target
 
 [Service]
@@ -378,7 +378,7 @@ EOF
 sudo systemctl enable --now wg-quick@wg0
 ```
 
-3) Sur le serveur interne (Auxivie) : installer WireGuard, générer clés, config client et autoriser routing vers 127.0.0.1:3001
+3) Sur le serveur interne (Aidalya) : installer WireGuard, générer clés, config client et autoriser routing vers 127.0.0.1:3001
 
 ```bash
 sudo apt update && sudo apt install -y wireguard qrencode

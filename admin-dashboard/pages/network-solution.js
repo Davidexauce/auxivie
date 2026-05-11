@@ -1,7 +1,7 @@
 export default function NetworkSolution() {
   return (
     <div style={{ padding: '40px', fontFamily: 'Arial, sans-serif', maxWidth: '900px', margin: '0 auto', lineHeight: '1.6' }}>
-      <h1>✅ Solution Réseau - Auxivie Admin</h1>
+      <h1>✅ Solution Réseau - Aidalya Admin</h1>
       
       <div style={{ backgroundColor: '#f0fdf4', border: '2px solid #16a34a', borderRadius: '8px', padding: '20px', marginBottom: '30px' }}>
         <h2 style={{ marginTop: 0 }}>🎯 Solution Radicale Déployée</h2>

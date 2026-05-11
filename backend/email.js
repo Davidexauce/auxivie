@@ -1,4 +1,4 @@
-// Module d'envoi d'emails pour Auxivie
+// Module d'envoi d'emails pour Aidalya
 const nodemailer = require('nodemailer');
 
 // Configuration du transporteur email
@@ -34,7 +34,7 @@ const sendEmail = async (to, subject, html, text = null) => {
 
   // L'adresse expéditrice est toujours contact@auxivie.org
   const fromEmail = 'contact@auxivie.org';
-  const fromName = 'Auxivie';
+  const fromName = 'Aidalya';
 
   const mailOptions = {
     from: `"${fromName}" <${fromEmail}>`,
@@ -57,7 +57,7 @@ const sendEmail = async (to, subject, html, text = null) => {
 
 // Fonction pour envoyer un email de notification de message depuis l'admin
 const sendAdminMessageNotification = async (userEmail, userName, messageContent) => {
-  const subject = 'Nouveau message de l\'équipe Auxivie';
+  const subject = 'Nouveau message de l\'équipe Aidalya';
   const html = `
     <!DOCTYPE html>
     <html>
@@ -103,11 +103,11 @@ const sendAdminMessageNotification = async (userEmail, userName, messageContent)
     <body>
       <div class="container">
         <div class="header">
-          <h1>Auxivie</h1>
+          <h1>Aidalya</h1>
         </div>
         <div class="content">
           <p>Bonjour ${userName || 'Cher utilisateur'},</p>
-          <p>Vous avez reçu un nouveau message de l'équipe Auxivie :</p>
+          <p>Vous avez reçu un nouveau message de l'équipe Aidalya :</p>
           <div class="message">
             ${messageContent.replace(/\n/g, '<br>')}
           </div>
@@ -115,7 +115,7 @@ const sendAdminMessageNotification = async (userEmail, userName, messageContent)
         </div>
         <div class="footer">
           <p>Cet email a été envoyé depuis contact@auxivie.org</p>
-          <p>&copy; ${new Date().getFullYear()} Auxivie. Tous droits réservés.</p>
+          <p>&copy; ${new Date().getFullYear()} Aidalya. Tous droits réservés.</p>
         </div>
       </div>
     </body>

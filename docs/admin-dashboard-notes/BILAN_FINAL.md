@@ -1,4 +1,4 @@
-# 📊 Bilan Final - Dashboard Admin Auxivie
+# 📊 Bilan Final - Dashboard Admin Aidalya
 
 **Date:** 10 Décembre 2025  
 **Version:** 1.1.0  

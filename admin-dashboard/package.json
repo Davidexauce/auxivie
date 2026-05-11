@@ -1,7 +1,7 @@
 {
   "name": "auxivie-admin-dashboard",
   "version": "1.0.0",
-  "description": "Dashboard d'administration Auxivie - Gestion des utilisateurs, documents, réservations, paiements et avis",
+  "description": "Dashboard d'administration Aidalya — gestion des utilisateurs, documents, réservations, paiements et avis",
   "main": "server.js",
   "scripts": {
     "dev": "next dev",

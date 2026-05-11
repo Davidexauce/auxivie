@@ -1,4 +1,4 @@
-# ✅ Checklist de Production - Auxivie Admin Dashboard
+# ✅ Checklist de Production - Aidalya Admin Dashboard
 
 **Date:** 9 Décembre 2025
 **Status:** ✅ DÉPLOYÉ EN PRODUCTION

@@ -1,4 +1,4 @@
-# 🎉 Fonctionnalités Ajoutées - Dashboard Admin Auxivie
+# 🎉 Fonctionnalités Ajoutées - Dashboard Admin Aidalya
 
 **Date:** 10 Décembre 2025  
 **Version:** 1.2.0

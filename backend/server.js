@@ -288,7 +288,7 @@ app.post('/api/auth/register-admin', async (req, res) => {
 
 // Route de santé
 app.get('/api/health', (req, res) => {
-  res.json({ status: 'ok', message: 'Auxivie API' });
+  res.json({ status: 'ok', message: 'Aidalya API' });
 });
 
 // Middleware d'authentification
@@ -1316,7 +1316,7 @@ app.post('/api/users/sync', async (req, res) => {
 // Route racine
 app.get('/', (req, res) => {
   res.json({
-    message: 'Auxivie API',
+    message: 'Aidalya API',
     version: '1.0.0',
     endpoints: {
       health: '/api/health',

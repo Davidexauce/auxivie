@@ -129,7 +129,7 @@ export default function Register() {
   return (
     <div className={styles.container}>
       <div className={styles.registerBox}>
-        <h1 className={styles.title}>Auxivie Admin</h1>
+        <h1 className={styles.title}>Aidalya Admin</h1>
         <p className={styles.subtitle}>Création d'un compte administrateur</p>
         
         <form onSubmit={handleSubmit} className={styles.form}>

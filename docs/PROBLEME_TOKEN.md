@@ -33,7 +33,7 @@ fatal: unable to access 'https://github.com/Davidexauce/auxivie.git/': The reque
 
 1. Allez sur https://github.com/settings/tokens/new
 2. Sélectionnez "Generate new token (classic)"
-3. Donnez-lui le nom "Auxivie Push"
+3. Donnez-lui le nom "Aidalya Push"
 4. Cochez la permission **`repo`** (toutes les permissions repo)
 5. Cliquez sur "Generate token"
 6. Copiez le token (il commence par `ghp_`)
