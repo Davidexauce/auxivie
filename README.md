@@ -77,4 +77,4 @@ Propriétaire - Tous droits réservés
 
 ## 👥 Équipe
 
-Auxivie Development Team
+Équipe Aidalya

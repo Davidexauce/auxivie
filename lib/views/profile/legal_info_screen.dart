@@ -40,7 +40,7 @@ class LegalInfoScreen extends StatelessWidget {
           _docTile(
             context,
             title: 'Checklist confidentialité (sprints)',
-            subtitle: 'Plan interne RGPD (AIDALIA)',
+            subtitle: 'Plan interne RGPD (AIDALYA)',
             assetPath: 'assets/legal/checklist_confidentialite_sprints.txt',
             icon: Icons.checklist_rounded,
           ),

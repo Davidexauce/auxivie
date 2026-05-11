@@ -1,7 +1,7 @@
 # Rapport de vérification de conformité — Aidalya (app Flutter)
 
 **Date indicative du rapport :** 2026-05-09  
-**Périmètre :** application mobile (`App flutter Auxivie`), documents légaux embarqués, configuration iOS/Android ; rappels backend (`Christelle Projet`) lorsque pertinent.
+**Périmètre :** application mobile Aidalya (projet Flutter), documents légaux embarqués, configuration iOS/Android ; rappels backend (`Christelle Projet`) lorsque pertinent.
 
 Ce document est une **auto-évaluation** : il ne remplace pas un audit juridique ni une revue App Store officielle.
 

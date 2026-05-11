@@ -1,5 +1,5 @@
 ================================================================================
-AUDIT TECHNIQUE — Aidalya / Auxivie (Flutter)
+AUDIT TECHNIQUE — Aidalya (Flutter)
 Date indicative : 2026-05-09
 Périmètre : dossier lib/ (~73 fichiers Dart), services, flux principaux
 ================================================================================
