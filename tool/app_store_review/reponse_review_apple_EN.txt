@@ -34,9 +34,9 @@ Minimum deployment target: iOS 14.0.
 ---
 3) App purpose and target audience
 
-Display name on device: Aidalia.
+Display name on device: Aidalya.
 
-Aidalia (Auxivie) is a French-language marketplace that connects families with home-care / domestic help professionals (“aide à domicile”). Families can search for professionals, manage multi-day reservations, exchange in-app messages, and pay through Stripe. Professionals can manage profile-related data, availability, bookings, and messaging.
+Aidalya is a French-language marketplace that connects families with home-care / domestic help professionals (“aide à domicile”). Families can search for professionals, manage multi-day reservations, exchange in-app messages, and pay through Stripe. Professionals can manage profile-related data, availability, bookings, and messaging.
 
 Target audience: families seeking home assistance and independent professionals offering those services, primarily in France.
 

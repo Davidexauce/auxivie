@@ -1,4 +1,4 @@
-CHECK-LIST CONFIDENTIALITÉ / RGPD – PLAN EN SPRINTS (AIDALIA)
+CHECK-LIST CONFIDENTIALITÉ / RGPD – PLAN EN SPRINTS (AIDALYA)
 
 Abréviations et définitions
 RGPD : Règlement Général sur la Protection des Données (règlement européen sur les données personnelles).
@@ -13,7 +13,7 @@ MFA : Multi-Factor Authentication (authentification multifacteur).
 Logs : journaux techniques (événements de sécurité, d’accès, d’erreurs, etc.).
 Chargeback : rétrofacturation initiée par la banque du payeur (contestation du paiement).
 App stores : Apple App Store et Google Play Store.
-Hypothèses retenues pour Aidalia
+Hypothèses retenues pour Aidalya
 Application mobile uniquement (pas de site web).
 Marketplace : la famille paie sur la plateforme ; commission prélevée ; reversement au professionnel après réalisation.
 Paiement via Stripe.

@@ -160,7 +160,7 @@ class _HomeScreenState extends State<HomeScreen> {
         title: ShaderMask(
           shaderCallback: (bounds) => AppTheme.textGradient.createShader(bounds),
           child: const Text(
-            'Aidalia',
+            'Aidalya',
             style: TextStyle(
               color: Colors.white,
               fontWeight: FontWeight.bold,

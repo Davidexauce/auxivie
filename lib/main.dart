@@ -13,7 +13,7 @@ import 'viewmodels/reservation_viewmodel.dart';
 import 'viewmodels/settings_viewmodel.dart';
 import 'utils/app_logger.dart';
 import 'theme/app_theme.dart';
-import 'widgets/auxivie_logo.dart';
+import 'widgets/aidalya_logo.dart';
 import 'views/splash_screen.dart';
 import 'views/maintenance/maintenance_screen.dart';
 import 'widgets/consent/consent_gate.dart';
@@ -35,27 +35,27 @@ void main() async {
     statusBarBrightness: Brightness.dark, // iOS: light content
   ));
 
-  runApp(const AuxivieApp());
+  runApp(const AidalyaApp());
 }
 
-class AuxivieApp extends StatefulWidget {
+class AidalyaApp extends StatefulWidget {
   /// Active un démarrage allégé pour les tests widgets (pas de tâches arrière-plan).
   final bool disableBackgroundStartupTasks;
 
   /// Désactive la navigation automatique du splash (utile en test pour éviter des timers).
   final bool disableSplashAutoNavigation;
 
-  const AuxivieApp({
+  const AidalyaApp({
     super.key,
     this.disableBackgroundStartupTasks = false,
     this.disableSplashAutoNavigation = false,
   });
 
   @override
-  State<AuxivieApp> createState() => _AuxivieAppState();
+  State<AidalyaApp> createState() => _AidalyaAppState();
 }
 
-class _AuxivieAppState extends State<AuxivieApp> {
+class _AidalyaAppState extends State<AidalyaApp> {
   final SettingsViewModel _settingsViewModel = SettingsViewModel();
   bool _isInitializing = true;
 
@@ -157,7 +157,7 @@ class _AuxivieAppState extends State<AuxivieApp> {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const AuxivieLogoCompact(size: 120),
+                  const AidalyaLogoCompact(size: 120),
                   const SizedBox(height: 28),
                   const CircularProgressIndicator(),
                   const SizedBox(height: 16),
@@ -189,7 +189,7 @@ class _AuxivieAppState extends State<AuxivieApp> {
           // Vérifier le mode maintenance
           if (settingsViewModel.settings?.maintenanceMode == true) {
             return MaterialApp(
-              title: 'Aidalia',
+              title: 'Aidalya',
               debugShowCheckedModeBanner: false,
               theme: AppTheme.lightTheme,
               darkTheme: AppTheme.darkTheme,
@@ -199,7 +199,7 @@ class _AuxivieAppState extends State<AuxivieApp> {
           }
 
           return MaterialApp(
-            title: 'Aidalia',
+            title: 'Aidalya',
             debugShowCheckedModeBanner: false,
             theme: AppTheme.lightTheme,
             darkTheme: AppTheme.darkTheme,

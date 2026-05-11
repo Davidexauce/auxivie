@@ -1,8 +1,8 @@
-POLITIQUE DE CONFIDENTIALITÉ – AIDALIA
+POLITIQUE DE CONFIDENTIALITÉ – AIDALYA
 Dernière mise à jour : 08/05/2026
 
 1. Qui est responsable du traitement ?
-Le responsable de traitement des données personnelles collectées via l’application mobile Aidalia (la « Plateforme ») est la micro-entreprise Aidalia, 12 rue Basfroi, 75011 Paris, France — SIREN 104 621 669 (ci-après « Aidalia »).
+Le responsable de traitement des données personnelles collectées via l’application mobile Aidalya (la « Plateforme ») est la micro-entreprise Aidalya, 12 rue Basfroi, 75011 Paris, France — SIREN 104 621 669 (ci-après « Aidalya »).
 Contact (privacy / RGPD) : christ.emmanuel12@outlook.fr
 2. À quoi sert cette politique ?
 Cette politique explique :
@@ -21,10 +21,10 @@ Messagerie : contenu des messages, pièces jointes éventuelles (si vous activez
 Support : échanges avec l’assistance, signalements, pièces justificatives pertinentes.
 3.2 Données de paiement (Stripe)
 Les paiements sont traités via Stripe.
-Aidalia reçoit et conserve des informations liées au paiement telles que :
+Aidalya reçoit et conserve des informations liées au paiement telles que :
 statut du paiement, montant, devise, identifiants de transaction,
 informations nécessaires à la facturation et au reversement.
-Aidalia ne stocke pas directement les numéros complets de carte : ceux-ci sont traités par Stripe.
+Aidalya ne stocke pas directement les numéros complets de carte : ceux-ci sont traités par Stripe.
 3.3 Données techniques et d’usage
 identifiants techniques (ID appareil, OS, version de l’app),
 logs, adresse IP (selon configuration), horodatages,
@@ -32,7 +32,7 @@ données de navigation in-app (écrans consultés, actions) pour sécurité/diag
 3.4 Données que vous choisissez de partager à d’autres utilisateurs
 La Plateforme peut permettre l’échange de coordonnées (téléphone, email) via la messagerie ou autrement. Lorsque vous les partagez, le destinataire peut les utiliser hors Plateforme (voir §12).
 4. Données sensibles (santé) : notre approche
-Aidalia n’a pas vocation à traiter des données de santé.
+Aidalya n’a pas vocation à traiter des données de santé.
 Nous vous demandons de ne pas partager de documents médicaux (ordonnances, comptes rendus, dossiers) ni d’informations médicales détaillées via la Plateforme.
 Toutefois, compte tenu du secteur (aide à domicile), des informations pouvant révéler indirectement un état de santé peuvent apparaître dans des descriptions (ex : « personne dépendante », « Alzheimer »). Nous limitons ce risque par :
 minimisation : ne collecter que ce qui est nécessaire,
@@ -66,7 +66,7 @@ Logs de sécurité : généralement 6 à 12 mois.
 Support & litiges : durée nécessaire au traitement puis archivage probatoire.
 Lors de la suppression du compte, certaines données peuvent être conservées en archivage si la loi l’impose (comptabilité) ou pour gérer des litiges (dans des limites strictes).
 9. Sécurité
-Aidalia met en place des mesures raisonnables et adaptées :
+Aidalya met en place des mesures raisonnables et adaptées :
 contrôle d’accès et limitation par rôles,
 chiffrement en transit (HTTPS/TLS),
 sécurisation des environnements d’hébergement,

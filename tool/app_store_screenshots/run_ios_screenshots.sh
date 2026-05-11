@@ -3,7 +3,7 @@
 # Usage :
 #   ./tool/app_store_screenshots/run_ios_screenshots.sh
 #   ./tool/app_store_screenshots/run_ios_screenshots.sh "iPhone 16 Pro"
-#   ./tool/app_store_screenshots/run_ios_screenshots.sh "Aidalia iPad"
+#   ./tool/app_store_screenshots/run_ios_screenshots.sh "Aidalya iPad"
 #
 # Ensuite, redimensionnez si besoin :
 #   ./tool/app_store_screenshots/resize_for_app_store.sh portrait ./mes_png ./out_iphone67 iphone67

@@ -1,5 +1,5 @@
 ================================================================================
-AUDIT TECHNIQUE — Aidalia / Auxivie (Flutter)
+AUDIT TECHNIQUE — Aidalya / Auxivie (Flutter)
 Date indicative : 2026-05-09
 Périmètre : dossier lib/ (~73 fichiers Dart), services, flux principaux
 ================================================================================
@@ -20,7 +20,7 @@ Limites : pas d’audit runtime sur API réelle, pas de tests E2E device dans ce
 
 3. ARCHITECTURE GLOBALE
 -----------------------
-• Point d’entrée : main.dart → AuxivieApp → SettingsViewModel.initialize (fast startup).
+• Point d’entrée : main.dart → AidalyaApp → SettingsViewModel.initialize (fast startup).
 • Si maintenanceMode (API settings) → MaintenanceScreen.
 • Sinon : MaterialApp → ConsentGate → SplashScreen → ChoiceScreen ou HomeScreen.
 • State : Provider (Auth, Profile, Message, Reservation, Settings).

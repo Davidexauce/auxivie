@@ -1,9 +1,9 @@
-MENTIONS LÉGALES – APPLICATION AIDALIA
+MENTIONS LÉGALES – APPLICATION AIDALYA
 Dernière mise à jour : 08/05/2026
 
 1. Éditeur de l’application et du service
-L’application mobile « Aidalia » et la plateforme de mise en relation associée sont éditées par :
-Aidalia, micro-entreprise (entrepreneur individuel) immatriculée au Registre national des entreprises (RNE).
+L’application mobile « Aidalya » et la plateforme de mise en relation associée sont éditées par :
+Aidalya, micro-entreprise (entrepreneur individuel) immatriculée au Registre national des entreprises (RNE).
 
 2. Coordonnées de l’entreprise
 Adresse du siège et de l’établissement principal :
@@ -19,7 +19,7 @@ Activité déclarée : exploitation d’une plateforme numérique de mise en rel
 Régime de la micro-entreprise. TVA non applicable, article 293 B du CGI (franchise en base de TVA).
 
 4. Directeur de la publication
-Aidalia.
+Aidalya.
 
 5. Contact
 Courriel : christ.emmanuel12@outlook.fr
@@ -33,10 +33,10 @@ Site : https://www.hostinger.fr
 Les données de l’application mobile et le traitement des paiements peuvent également impliquer des prestataires techniques et de paiement (dont Stripe) conformément à la politique de confidentialité.
 
 7. Propriété intellectuelle
-Les éléments de l’application (textes, visuels, marque « Aidalia » dans la limite des droits détenus) sont protégés. Toute reproduction non autorisée est interdite.
+Les éléments de l’application (textes, visuels, marque « Aidalya » dans la limite des droits détenus) sont protégés. Toute reproduction non autorisée est interdite.
 
 8. Nom de domaine
-Nom de domaine déclaré dans la formalité d’immatriculation : aidalia.org.
-Site de présentation utilisé : https://aidalia.auxivie.org
+Nom de domaine déclaré dans la formalité d’immatriculation : aidalya.org.
+Site de présentation utilisé : https://aidalya.auxivie.org
 
 Pour toute réclamation relative aux contenus : utilisez les coordonnées de contact ci-dessus.

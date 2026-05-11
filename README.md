@@ -1,6 +1,6 @@
-# Auxivie - Application Mobile Flutter
+# Aidalya — Application mobile Flutter
 
-Plateforme de mise en relation entre professionnels de l'aide à domicile et familles.
+Plateforme de mise en relation entre professionnels de l'aide à domicile et familles (marque **Aidalya**).
 
 ## 📱 Plateformes supportées
 

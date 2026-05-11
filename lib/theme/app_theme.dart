@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-/// Configuration du thème de l'application Auxivie - Palette CareLink
+/// Configuration du thème de l'application Aidalya — Palette CareLink
 class AppTheme {
   // Couleurs principales CareLink
   static const Color primary = Color(0xFF16a34a); // green-600

@@ -14,7 +14,7 @@ import '../models/report_model.dart';
 import '../models/settings_model.dart';
 import '../config/app_config.dart';
 
-/// Service pour les appels API vers le backend Dashboard Auxivie
+/// Service pour les appels API vers le backend Dashboard Aidalya
 class BackendApiService {
   static String get baseUrl => AppConfig.apiBaseUrl;
 

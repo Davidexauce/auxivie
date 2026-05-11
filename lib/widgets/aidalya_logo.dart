@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 
 /// Widget réutilisable pour afficher le logo de l'app (PNG fiable iOS/Android)
-class AuxivieLogo extends StatelessWidget {
+class AidalyaLogo extends StatelessWidget {
   final double? width;
   final double? height;
   final TextAlign? textAlign;
 
-  const AuxivieLogo({
+  const AidalyaLogo({
     super.key,
     this.width,
     this.height,
@@ -41,11 +41,11 @@ class AuxivieLogo extends StatelessWidget {
   }
 }
 
-/// Version compacte du logo pour l'AppBar (SVG)
-class AuxivieLogoCompact extends StatelessWidget {
+/// Version compacte du logo pour l'AppBar
+class AidalyaLogoCompact extends StatelessWidget {
   final double? size;
 
-  const AuxivieLogoCompact({
+  const AidalyaLogoCompact({
     super.key,
     this.size,
   });
@@ -60,4 +60,3 @@ class AuxivieLogoCompact extends StatelessWidget {
     );
   }
 }
-

@@ -1,18 +1,18 @@
 import 'dart:io';
 
-import 'package:auxivie/models/user_model.dart';
-import 'package:auxivie/services/backend_api_service.dart';
-import 'package:auxivie/services/consent_service.dart';
-import 'package:auxivie/theme/app_theme.dart';
-import 'package:auxivie/viewmodels/auth_viewmodel.dart';
-import 'package:auxivie/viewmodels/message_viewmodel.dart';
-import 'package:auxivie/viewmodels/profile_viewmodel.dart';
-import 'package:auxivie/viewmodels/reservation_viewmodel.dart';
-import 'package:auxivie/viewmodels/settings_viewmodel.dart';
-import 'package:auxivie/views/auth/choice_screen.dart';
-import 'package:auxivie/views/auth/login_screen.dart';
-import 'package:auxivie/views/home_screen.dart';
-import 'package:auxivie/views/splash_screen.dart';
+import 'package:aidalya/models/user_model.dart';
+import 'package:aidalya/services/backend_api_service.dart';
+import 'package:aidalya/services/consent_service.dart';
+import 'package:aidalya/theme/app_theme.dart';
+import 'package:aidalya/viewmodels/auth_viewmodel.dart';
+import 'package:aidalya/viewmodels/message_viewmodel.dart';
+import 'package:aidalya/viewmodels/profile_viewmodel.dart';
+import 'package:aidalya/viewmodels/reservation_viewmodel.dart';
+import 'package:aidalya/viewmodels/settings_viewmodel.dart';
+import 'package:aidalya/views/auth/choice_screen.dart';
+import 'package:aidalya/views/auth/login_screen.dart';
+import 'package:aidalya/views/home_screen.dart';
+import 'package:aidalya/views/splash_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:intl/date_symbol_data_local.dart';
@@ -42,7 +42,7 @@ void main() {
   UserModel demoFamille() => UserModel(
         id: 90001,
         name: 'Sophie Martin',
-        email: 'famille.demo@aidalia.app',
+        email: 'famille.demo@aidalya.app',
         password: '',
         categorie: 'Famille',
         userType: 'famille',
@@ -53,7 +53,7 @@ void main() {
   UserModel demoPro() => UserModel(
         id: 90002,
         name: 'Jean Dupont',
-        email: 'pro.demo@aidalia.app',
+        email: 'pro.demo@aidalya.app',
         password: '',
         categorie: 'Auxiliaire de vie',
         userType: 'professionnel',

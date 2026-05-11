@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../viewmodels/auth_viewmodel.dart';
 import '../../theme/app_theme.dart';
-import '../../widgets/auxivie_logo.dart';
+import '../../widgets/aidalya_logo.dart';
 import 'login_screen.dart';
 import 'register_screen.dart';
 import '../home_screen.dart';
@@ -37,7 +37,7 @@ class ChoiceScreen extends StatelessWidget {
             Padding(
               padding: const EdgeInsets.fromLTRB(24, 20, 24, 0),
               child: const Center(
-                child: AuxivieLogoCompact(
+                child: AidalyaLogoCompact(
                   size: 140,
                 ),
               ),

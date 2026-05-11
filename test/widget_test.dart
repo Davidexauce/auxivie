@@ -8,12 +8,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:auxivie/main.dart';
+import 'package:aidalya/main.dart';
 
 void main() {
   testWidgets('App loads successfully', (WidgetTester tester) async {
     // Build app root in deterministic test mode (no background startup timers).
-    await tester.pumpWidget(const AuxivieApp(
+    await tester.pumpWidget(const AidalyaApp(
       disableBackgroundStartupTasks: true,
       disableSplashAutoNavigation: true,
     ));

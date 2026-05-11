@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'dart:async';
 import '../theme/app_theme.dart';
-import '../widgets/auxivie_logo.dart';
+import '../widgets/aidalya_logo.dart';
 import '../viewmodels/auth_viewmodel.dart';
 import 'auth/choice_screen.dart';
 import 'home_screen.dart';
@@ -69,8 +69,8 @@ class _SplashScreenState extends State<SplashScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            // Logo Aidalia (SVG)
-            const AuxivieLogo(
+            // Logo Aidalya
+            const AidalyaLogo(
               width: 320,
             ),
             const SizedBox(height: 24),

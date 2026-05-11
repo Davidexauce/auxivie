@@ -716,20 +716,20 @@ class _FAQSectionState extends State<_FAQSection> {
 
   final List<Map<String, String>> _faqItems = [
     {
-      'question': '1️⃣ Aidalia, c\'est quoi exactement ?',
-      'answer': 'Aidalia est une plateforme de mise en relation entre familles et auxiliaires de vie indépendants.\nNous facilitons une rencontre sécurisée et transparente.',
+      'question': '1️⃣ Aidalya, c\'est quoi exactement ?',
+      'answer': 'Aidalya est une plateforme de mise en relation entre familles et auxiliaires de vie indépendants.\nNous facilitons une rencontre sécurisée et transparente.',
     },
     {
-      'question': '2️⃣ Pourquoi le paiement passe par Aidalia ?',
+      'question': '2️⃣ Pourquoi le paiement passe par Aidalya ?',
       'answer': 'Le paiement à la réservation permet de sécuriser la mission, d\'éviter les annulations abusives et de protéger aussi bien la famille que l\'auxiliaire.',
     },
     {
       'question': '3️⃣ Qui est responsable de la prestation ?',
-      'answer': 'La prestation est réalisée par l\'auxiliaire de vie, en toute indépendance.\nAidalia n\'emploie pas les auxiliaires et n\'intervient pas dans l\'exécution des missions.',
+      'answer': 'La prestation est réalisée par l\'auxiliaire de vie, en toute indépendance.\nAidalya n\'emploie pas les auxiliaires et n\'intervient pas dans l\'exécution des missions.',
     },
     {
       'question': '4️⃣ Et si quelque chose ne se passe pas comme prévu ?',
-      'answer': 'En cas de problème, Aidalia agit comme tiers de confiance pour faciliter l\'échange et trouver une solution.',
+      'answer': 'En cas de problème, Aidalya agit comme tiers de confiance pour faciliter l\'échange et trouver une solution.',
     },
     {
       'question': '5️⃣ Les auxiliaires sont-ils sérieux ?',

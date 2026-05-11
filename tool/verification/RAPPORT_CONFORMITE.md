@@ -1,4 +1,4 @@
-# Rapport de vérification de conformité — Aidalia (app Flutter)
+# Rapport de vérification de conformité — Aidalya (app Flutter)
 
 **Date indicative du rapport :** 2026-05-09  
 **Périmètre :** application mobile (`App flutter Auxivie`), documents légaux embarqués, configuration iOS/Android ; rappels backend (`Christelle Projet`) lorsque pertinent.
@@ -11,12 +11,12 @@ Ce document est une **auto-évaluation** : il ne remplace pas un audit juridique
 
 | Élément | Statut |
 |--------|--------|
-| Nom affiché iOS (`CFBundleDisplayName`) | **Aidalia** |
-| Nom Android (`android:label`) | **Aidalia** |
-| Politique de confidentialité embarquée | **Aidalia** (entête du fichier) |
+| Nom affiché iOS (`CFBundleDisplayName`) | **Aidalya** |
+| Nom Android (`android:label`) | **Aidalya** |
+| Politique de confidentialité embarquée | **Aidalya** (entête du fichier) |
 | ATS exception domaine `auxivie.org` | Conservé (cohérent avec l’API actuelle) |
 
-**À suivre :** harmoniser partout le vocabulaire métier (CGU, stores, site) si la marque publique est uniquement « Aidalia ».
+**À suivre :** harmoniser partout le vocabulaire métier (CGU, stores, site) si la marque publique est uniquement « Aidalya ».
 
 ---
 

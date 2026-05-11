@@ -12,7 +12,7 @@ class SupportScreen extends StatelessWidget {
     final Uri emailUri = Uri(
       scheme: 'mailto',
       path: email,
-      queryParameters: {'subject': 'Support Aidalia'},
+      queryParameters: {'subject': 'Support Aidalya'},
     );
     try {
       if (await canLaunchUrl(emailUri)) {
