@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://aidalya.auxivie.org/sitemap.xml
+Sitemap: https://auxivie.org/sitemap.xml
