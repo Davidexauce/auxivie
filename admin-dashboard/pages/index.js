@@ -1,18 +1,15 @@
 import { useEffect } from 'react';
-import { useRouter } from 'next/router';
 
 export default function Home() {
-  const router = useRouter();
-
   useEffect(() => {
-    // Vérifier si l'utilisateur est connecté
-    const token = localStorage.getItem('token');
-    if (token) {
-      router.push('/dashboard');
-    } else {
-      router.push('/login');
+    // Navigation pleine page : fiable avec export statique / hydratation (router.push peut rester bloqué).
+    try {
+      const token = localStorage.getItem('token');
+      window.location.replace(token ? '/dashboard' : '/login');
+    } catch {
+      window.location.replace('/login');
     }
-  }, [router]);
+  }, []);
 
   return (
     <div style={{ 
