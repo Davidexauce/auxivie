@@ -1,5 +1,5 @@
 {
-  "name": "auxivie-admin-dashboard",
+  "name": "aidalya-admin-dashboard",
   "version": "1.0.0",
   "description": "Dashboard d'administration Aidalya — gestion des utilisateurs, documents, réservations, paiements et avis",
   "main": "server.js",
@@ -18,7 +18,7 @@
     "nextjs",
     "admin",
     "dashboard",
-    "auxivie"
+    "aidalya"
   ],
   "author": "",
   "license": "ISC",
