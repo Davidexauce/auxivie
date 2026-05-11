@@ -42,7 +42,8 @@
 
 ## 🌐 Déploiement Infrastructure
 
-- [x] Nginx reverse proxy auxivie.org → localhost:3000 ✅
+- [x] Nginx : **auxivie.org** → landing + proxy `/api/` → backend ✅
+- [x] Nginx : **aidalia.auxivie.org** → Next.js (dashboard) ✅
 - [x] Nginx reverse proxy api.auxivie.org → localhost:3001 ✅
 - [x] Certificats SSL Let's Encrypt ✅
 - [x] Auto-renew SSL configuré ✅
@@ -52,8 +53,8 @@
 
 | Test | URL | Résultat | Date |
 |------|-----|----------|------|
-| Page Login | https://auxivie.org/login | ✅ 200 OK | 9 Déc |
-| Page Register | https://auxivie.org/register | ✅ 200 OK | 9 Déc |
+| Page Login | https://aidalia.auxivie.org/login | À valider après bascule DNS/Nginx |
+| Page Register | https://aidalia.auxivie.org/register | À valider après bascule DNS/Nginx |
 | Login API | https://api.auxivie.org/api/auth/login | ✅ 200 OK | 9 Déc |
 | Register API | https://api.auxivie.org/api/auth/register-admin | ✅ 201 OK | 9 Déc |
 | Database | auth-db1054.hstgr.io:3306 | ✅ Connected | 9 Déc |
@@ -108,10 +109,11 @@ ID  Name              Mode   Restarts Status    Memory
 
 ## 🌍 URLs Publiques
 
-- **Admin Dashboard:** https://auxivie.org
-- **API Backend:** https://api.auxivie.org
-- **Login:** https://auxivie.org/login
-- **Register:** https://auxivie.org/register
+- **Site vitrine:** https://auxivie.org
+- **Admin Dashboard:** https://aidalia.auxivie.org
+- **API Backend:** https://api.auxivie.org (ou https://auxivie.org/api)
+- **Login:** https://aidalia.auxivie.org/login
+- **Register:** https://aidalia.auxivie.org/register
 
 ## 📋 Prochaines Étapes Recommandées
 
@@ -138,8 +140,8 @@ curl -X POST https://api.auxivie.org/api/auth/register-admin \
   -d '{"email":"test@auxivie.org","password":"Test@123","name":"Test","adminKey":"auxivie-admin-2025"}'
 
 # Test Pages
-curl https://auxivie.org/login
-curl https://auxivie.org/register
+curl https://aidalia.auxivie.org/login
+curl https://aidalia.auxivie.org/register
 ```
 
 ## ⚠️ Points d'Attention

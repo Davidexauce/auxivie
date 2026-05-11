@@ -8,12 +8,15 @@
 ## 📋 Résumé du Déploiement
 
 ### Services Actifs
+- ✅ **Site vitrine Aidalya** (HTML statique)
+  - URL publique : **https://auxivie.org** (fichiers de la landing ; ne plus y servir le dashboard Next.js)
+  
 - ✅ **Admin Dashboard Frontend** (Next.js)
-  - Port: 3000 (local) → https://auxivie.org
+  - Port: 3000 (local) → **https://aidalia.auxivie.org**
   - Process PM2: admin-dashboard (id: 0)
   
 - ✅ **API Backend** (Express.js)
-  - Port: 3001 (local) → https://api.auxivie.org
+  - Port: 3001 (local) → **https://auxivie.org/api** (reverse proxy sur le domaine principal) et/ou **https://api.auxivie.org**
   - Process PM2: api (id: 3)
   
 - ✅ **Base de Données** (MySQL)
@@ -22,9 +25,13 @@
   - Status: Connectée ✅
 
 - ✅ **Web Server** (Nginx)
-  - Reverse proxy: auxivie.org → localhost:3000
-  - Reverse proxy: api.auxivie.org → localhost:3001
+  - **auxivie.org** : landing statique + proxy `/api/` (et éventuellement `/uploads/`) → localhost:3001
+  - **aidalia.auxivie.org** → localhost:3000 (Next.js admin)
+  - **api.auxivie.org** → localhost:3001 (si conservé)
   - SSL/TLS: Let's Encrypt (auto-renew)
+
+**Backend — variable `CORS_ORIGIN` (production)** : inclure au minimum  
+`https://auxivie.org,https://www.auxivie.org,https://aidalia.auxivie.org,https://www.aidalia.auxivie.org,https://api.auxivie.org`
 
 ---
 
@@ -45,10 +52,11 @@
 
 | Page | URL | Description |
 |------|-----|-------------|
-| **Login** | https://auxivie.org/login | Page de connexion admin |
-| **Register** | https://auxivie.org/register | Page d'inscription admin |
-| **Dashboard** | https://auxivie.org/dashboard | Tableau de bord (nécessite login) |
-| **API Health** | https://api.auxivie.org/ | État de l'API |
+| **Landing Aidalya** | https://auxivie.org/ | Site vitrine (statique) |
+| **Login admin** | https://aidalia.auxivie.org/login | Connexion dashboard |
+| **Register admin** | https://aidalia.auxivie.org/register | Inscription admin |
+| **Dashboard** | https://aidalia.auxivie.org/dashboard | Tableau de bord (auth requise) |
+| **API Health** | https://api.auxivie.org/ ou https://auxivie.org/api/ | État de l'API |
 
 ---
 
@@ -135,7 +143,7 @@ PORT=3001
 NODE_ENV=production
 JWT_SECRET=your-secret-key
 CREDENTIALS: ADMIN_REGISTRATION_KEY is stored on the server's `.env` (REDACTED)
-CORS_ORIGIN=https://auxivie.org,https://api.auxivie.org
+CORS_ORIGIN=https://auxivie.org,https://www.auxivie.org,https://aidalia.auxivie.org,https://www.aidalia.auxivie.org,https://api.auxivie.org
 API_URL=https://api.auxivie.org
 ```
 
@@ -189,13 +197,13 @@ pm2 restart admin-dashboard api --update-env
 
 ### Test 1: Page de Login ✅
 ```bash
-curl -s https://auxivie.org/login -I | head -1
+curl -s https://aidalia.auxivie.org/login -I | head -1
 # HTTP/1.1 200 OK
 ```
 
 ### Test 2: Page d'Inscription ✅
 ```bash
-curl -s https://auxivie.org/register -I | head -1
+curl -s https://aidalia.auxivie.org/register -I | head -1
 # HTTP/1.1 200 OK
 ```
 
@@ -424,7 +432,8 @@ location /api/ {
 
 Vérifications à la fin
 - Depuis un appareil externe (téléphone), tester:
-  - https://auxivie.org/login
+  - https://aidalia.auxivie.org/login
+  - https://auxivie.org/
   - https://auxivie.org/api/health
 - Sur VPS: `curl -s http://127.0.0.1:30000/api/health` (si SSH tunnel) ou `curl -s http://10.10.0.2:3001/api/health` (si WireGuard)
 

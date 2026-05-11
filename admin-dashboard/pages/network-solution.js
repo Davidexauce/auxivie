@@ -9,7 +9,8 @@ export default function NetworkSolution() {
           <strong>Votre problème de connectivité a été résolu de manière définitive!</strong>
         </p>
         <p>
-          L'API est maintenant accessible via <strong>un seul domaine</strong> - <code style={{ backgroundColor: '#e0f2fe', padding: '2px 6px', borderRadius: '3px' }}>auxivie.org</code>
+          L’API métier est exposée sur <strong><code style={{ backgroundColor: '#e0f2fe', padding: '2px 6px', borderRadius: '3px' }}>auxivie.org</code></strong> (chemins <code>/api/</code>), le <strong>site vitrine</strong> Aidalya est servi sur ce même domaine, et le <strong>dashboard administrateur</strong> est sur{' '}
+          <strong><code style={{ backgroundColor: '#e0f2fe', padding: '2px 6px', borderRadius: '3px' }}>aidalia.auxivie.org</code></strong>.
         </p>
       </div>
 
@@ -24,13 +25,12 @@ export default function NetworkSolution() {
       </div>
 
       <div style={{ backgroundColor: '#f0fdf4', border: '2px solid #16a34a', borderRadius: '8px', padding: '20px', marginBottom: '30px' }}>
-        <h3>✅ Nouveau système (radical)</h3>
+        <h3>✅ Déploiement actuel</h3>
         <ul>
-          <li>API accessible via <code>auxivie.org/api</code> (même domaine que le dashboard)</li>
-          <li>Impossible à bloquer sans bloquer le dashboard</li>
-          <li>Fonctionne sur <strong>tous les réseaux</strong></li>
-          <li>Plus simple, plus fiable, plus rapide</li>
-          <li>Utilise Nginx reverse proxy (très performant)</li>
+          <li>API via <code>https://auxivie.org/api</code> (reverse proxy Nginx → backend port 3001)</li>
+          <li>Dashboard Next.js sur <code>https://aidalia.auxivie.org</code></li>
+          <li>Les appels du navigateur depuis le dashboard sont autorisés par CORS (origine <code>aidalia.auxivie.org</code>)</li>
+          <li>Fallback possible via <code>api.auxivie.org</code> selon la configuration réseau</li>
         </ul>
       </div>
 
@@ -97,7 +97,7 @@ location /api/ {'{'}
       <div style={{ backgroundColor: '#fefce8', border: '2px solid #eab308', borderRadius: '8px', padding: '20px', marginBottom: '30px' }}>
         <h3>⚡ Testez maintenant</h3>
         <ol style={{ paddingLeft: '20px' }}>
-          <li>Visitez <code>https://auxivie.org/login</code> depuis votre téléphone ou ordinateur</li>
+          <li>Visitez <code>https://aidalia.auxivie.org/login</code> depuis votre téléphone ou ordinateur</li>
           <li>Essayez de vous connecter avec vos identifiants admin</li>
           <li>Cela devrait fonctionner immédiatement, sans fallback ni délai</li>
         </ol>
@@ -106,18 +106,16 @@ location /api/ {'{'}
       <div style={{ backgroundColor: '#f3f4f6', border: '1px solid #d1d5db', borderRadius: '8px', padding: '20px' }}>
         <h3>📚 Explications supplémentaires</h3>
         
-        <h4>Pourquoi c'est "radical"?</h4>
+        <h4>Pourquoi deux hôtes ?</h4>
         <p>
-          C'est une solution définitive qui élimine complètement le problème à la racine. Au lieu d'essayer de contourner 
-          un blocage réseau, on utilise simplement <strong>le même domaine pour tout</strong>. Votre réseau ne peut pas bloquer 
-          <code>auxivie.org</code> sans bloquer le dashboard en même temps, ce qui n'aurait aucun sens.
+          Le domaine principal <code>auxivie.org</code> sert la landing page marketing et proxifie <code>/api/</code> vers le backend.
+          L’administration est isolée sur <code>aidalia.auxivie.org</code> pour clarifier les rôles (public vs outil interne).
         </p>
         
         <h4>Comment ça fonctionne en arrière-plan?</h4>
         <p>
-          Nginx (le serveur web) intercepte toutes les requêtes vers <code>https://auxivie.org/api/*</code> et les 
-          redirige ("proxifie") vers le backend Express.js qui tourne sur le port 3001. Du point de vue du navigateur, 
-          tout vient du même domaine - c'est transparant et très performant.
+          Sur <code>auxivie.org</code>, Nginx envoie les requêtes <code>/api/*</code> vers Express (port 3001) et sert les fichiers statiques de la landing pour les autres URLs.
+          Sur <code>aidalia.auxivie.org</code>, Nginx pointe vers l’application Next.js du dashboard (port 3000 en interne).
         </p>
         
         <h4>Y a-t-il des inconvénients?</h4>
@@ -126,7 +124,7 @@ location /api/ {'{'}
         </p>
         <ul>
           <li>✅ Pas de problème de blocage réseau</li>
-          <li>✅ Pas de CORS compliqué (même domaine = CORS simple)</li>
+          <li>✅ CORS configuré côté API pour accepter le dashboard (<code>aidalia.auxivie.org</code>)</li>
           <li>✅ Pas de fallback (plus rapide)</li>
           <li>✅ Plus facile à déployer et maintenir</li>
           <li>✅ Meilleure performance (pas de retries)</li>

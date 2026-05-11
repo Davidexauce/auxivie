@@ -89,7 +89,7 @@ const corsOptions = {
   origin: process.env.CORS_ORIGIN 
     ? process.env.CORS_ORIGIN.split(',').map(origin => origin.trim())
     : process.env.NODE_ENV === 'production'
-      ? ['https://www.auxivie.org', 'https://auxivie.org', 'https://api.auxivie.org', 'http://178.16.131.24:3001']
+      ? ['https://www.auxivie.org', 'https://auxivie.org', 'https://www.aidalia.auxivie.org', 'https://aidalia.auxivie.org', 'https://api.auxivie.org', 'http://178.16.131.24:3001']
       : '*', // En développement, autoriser toutes les origines
   credentials: true,
   optionsSuccessStatus: 200,
@@ -202,7 +202,7 @@ app.post('/api/auth/login', async (req, res) => {
 
 // Redirection rapide : /login -> frontend
 app.get('/login', (req, res) => {
-  return res.redirect(301, 'https://auxivie.org/login');
+  return res.redirect(301, 'https://aidalia.auxivie.org/login');
 });
 
 // ========== ENDPOINT D'ENREGISTREMENT ADMIN ==========

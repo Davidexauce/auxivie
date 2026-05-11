@@ -1,6 +1,6 @@
 // Récupérer l'URL de l'API depuis les variables d'environnement
-// SOLUTION RADICALE: Utiliser UNIQUEMENT le domaine principal (auxivie.org)
-// Cela élimine complètement les problèmes de blocage de sous-domaines
+// API exposée sur le domaine principal : https://auxivie.org/api (proxy Nginx → backend).
+// Le dashboard admin est servi sur https://aidalia.auxivie.org (Next.js).
 const getApiBaseUrl = () => {
   if (typeof window !== 'undefined') {
     // Côté client: toujours utiliser le même domaine
@@ -83,12 +83,12 @@ async function apiCall(endpoint, options = {}) {
       
       diagnosticMessage += 'Causes possibles:\n' +
         '• Vérifiez votre connexion internet\n' +
-        '• Vérifiez que auxivie.org est accessible\n' +
+        '• Vérifiez que https://auxivie.org répond (API /api)\n' +
         '• Votre navigateur ou réseau bloque les connexions\n\n' +
         'Solutions:\n' +
         '• Essayez sur un autre navigateur\n' +
         '• Essayez sur un autre réseau ou avec un VPN\n' +
-        '• Visitez https://auxivie.org/diagnostic pour tester la connexion';
+        '• Visitez https://aidalia.auxivie.org/diagnostic pour tester la connexion';
       
       throw new Error(diagnosticMessage);
     }

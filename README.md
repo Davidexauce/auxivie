@@ -3,11 +3,13 @@
 Dépôt **serveur + dashboard web** uniquement.  
 L’**application mobile Flutter Aidalya** (iOS / Android) est dans un projet séparé sur cette machine (répertoire local « App flutter Auxivie », package Dart `aidalya`).
 
+**Routage public :** site vitrine **https://auxivie.org** ; dashboard admin **https://aidalia.auxivie.org** ; API **https://auxivie.org/api** (et optionnellement `api.auxivie.org`). À refléter dans Nginx et dans `CORS_ORIGIN` du backend.
+
 ## Contenu
 
 | Dossier | Rôle |
 |---------|------|
-| **`backend/`** | API Node.js (Express, MySQL), Stripe, auth JWT — déployée derrière `auxivie.org` / Hostinger. |
+| **`backend/`** | API Node.js (Express, MySQL), Stripe, auth JWT — déployée derrière `auxivie.org/api` / Hostinger. |
 | **`admin-dashboard/`** | Interface Next.js pour l’administration. |
 | **`docs/`** | Notes d’intégration, déploiement et historiques de corrections. |
 

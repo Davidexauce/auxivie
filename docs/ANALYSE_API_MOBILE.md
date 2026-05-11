@@ -8,17 +8,17 @@ Cette analyse compare le backend en production (Hostinger) avec l'application mo
 
 ### Backend (Production)
 - **URL principale**: `https://api.auxivie.org` (selon app_config.dart)
-- **URL alternative**: `https://auxivie.org` (utilisée par admin-dashboard)
+- **URL alternative**: `https://auxivie.org/api` (proxy Nginx ; base utilisée par `admin-dashboard/lib/api.js`)
 - **Port**: 3001
 
 ### Admin Dashboard
-- Utilise: `https://auxivie.org` (même domaine, pas de sous-domaine)
-- Fonctionne correctement en production
+- Public : **`https://aidalia.auxivie.org`** (Next.js)
+- Les requêtes API du navigateur pointent vers **`https://auxivie.org`** + `/api/...` ; le backend doit autoriser l’origine **`aidalia.auxivie.org`** (CORS).
 
 ### Application Mobile
 - Configuration actuelle: `https://api.auxivie.org` (Environment.production)
 - ✅ **Recommandation**: Utiliser `https://api.auxivie.org` (domaine direct du backend)
-- **Alternative**: Si `api.auxivie.org` ne fonctionne pas, utiliser `https://auxivie.org` (comme l'admin-dashboard)
+- **Alternative**: Si `api.auxivie.org` ne fonctionne pas, utiliser `https://auxivie.org/api` (comme le dashboard admin via `lib/api.js`)
 
 ## 🔐 Authentification
 
@@ -100,7 +100,7 @@ L'application mobile n'envoie **PAS** les champs suivants requis par le backend:
 
 ### Configuration actuelle:
 ```javascript
-origin: ['https://www.auxivie.org', 'https://auxivie.org', 'https://api.auxivie.org', 'http://178.16.131.24:3001']
+origin: ['https://www.auxivie.org', 'https://auxivie.org', 'https://www.aidalia.auxivie.org', 'https://aidalia.auxivie.org', 'https://api.auxivie.org', 'http://178.16.131.24:3001']
 ```
 
 ⚠️ **Problème potentiel**: Les applications mobiles n'ont pas d'origine HTTP spécifique. Le CORS ne s'applique qu'aux requêtes depuis un navigateur web. Les applications mobiles utilisent directement HTTP/HTTPS et ne sont pas affectées par CORS.
