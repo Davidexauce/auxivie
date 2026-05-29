@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../viewmodels/auth_viewmodel.dart';
 import '../viewmodels/message_viewmodel.dart';
+import '../constants/app_brand.dart';
 import '../theme/app_theme.dart';
 import 'professionals/professionals_list_screen.dart';
 import 'messages/messages_list_screen.dart';
@@ -160,7 +161,7 @@ class _HomeScreenState extends State<HomeScreen> {
         title: ShaderMask(
           shaderCallback: (bounds) => AppTheme.textGradient.createShader(bounds),
           child: const Text(
-            'Aidalya',
+            AppBrand.name,
             style: TextStyle(
               color: Colors.white,
               fontWeight: FontWeight.bold,

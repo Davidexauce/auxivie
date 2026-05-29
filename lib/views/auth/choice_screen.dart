@@ -33,13 +33,10 @@ class ChoiceScreen extends StatelessWidget {
         child: SafeArea(
           child: Column(
             children: [
-            // Header avec logo (texte uniquement)
             Padding(
-              padding: const EdgeInsets.fromLTRB(24, 20, 24, 0),
-              child: const Center(
-                child: AidalyaLogoCompact(
-                  size: 140,
-                ),
+              padding: const EdgeInsets.fromLTRB(24, 16, 24, 8),
+              child: Center(
+                child: AidalyaLogo.homeHeader(),
               ),
             ),
             

@@ -12,6 +12,7 @@ import 'viewmodels/message_viewmodel.dart';
 import 'viewmodels/reservation_viewmodel.dart';
 import 'viewmodels/settings_viewmodel.dart';
 import 'utils/app_logger.dart';
+import 'constants/app_brand.dart';
 import 'theme/app_theme.dart';
 import 'widgets/aidalya_logo.dart';
 import 'views/splash_screen.dart';
@@ -157,7 +158,7 @@ class _AidalyaAppState extends State<AidalyaApp> {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const AidalyaLogoCompact(size: 120),
+                  const AidalyaLogoCompact(width: 180),
                   const SizedBox(height: 28),
                   const CircularProgressIndicator(),
                   const SizedBox(height: 16),
@@ -189,7 +190,7 @@ class _AidalyaAppState extends State<AidalyaApp> {
           // Vérifier le mode maintenance
           if (settingsViewModel.settings?.maintenanceMode == true) {
             return MaterialApp(
-              title: 'Aidalya',
+              title: AppBrand.name,
               debugShowCheckedModeBanner: false,
               theme: AppTheme.lightTheme,
               darkTheme: AppTheme.darkTheme,
@@ -199,7 +200,7 @@ class _AidalyaAppState extends State<AidalyaApp> {
           }
 
           return MaterialApp(
-            title: 'Aidalya',
+            title: AppBrand.name,
             debugShowCheckedModeBanner: false,
             theme: AppTheme.lightTheme,
             darkTheme: AppTheme.darkTheme,

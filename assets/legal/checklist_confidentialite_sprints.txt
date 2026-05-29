@@ -1,4 +1,4 @@
-CHECK-LIST CONFIDENTIALITÉ / RGPD – PLAN EN SPRINTS (AIDALYA)
+CHECK-LIST CONFIDENTIALITÉ / RGPD – PLAN EN SPRINTS (Aidalya)
 
 Abréviations et définitions
 RGPD : Règlement Général sur la Protection des Données (règlement européen sur les données personnelles).

@@ -1,62 +1,60 @@
 import 'package:flutter/material.dart';
 
-/// Widget réutilisable pour afficher le logo de l'app (PNG fiable iOS/Android)
+/// Logo officiel Aidalya (feuille + nom + baseline).
+const String kAidalyaLogoAsset = 'assets/images/aidalya_logo_official.png';
+
+/// Logo Aidalya pour splash, accueil et barres d’outils.
 class AidalyaLogo extends StatelessWidget {
-  final double? width;
-  final double? height;
-  final TextAlign? textAlign;
+  /// Largeur du logo (hauteur proportionnelle ~0,6× largeur).
+  final double width;
+
+  /// Variante compacte pour en-tête horizontal.
+  final bool horizontal;
 
   const AidalyaLogo({
     super.key,
-    this.width,
-    this.height,
-    this.textAlign,
+    this.width = 300,
+    this.horizontal = false,
   });
+
+  /// Grand logo centré (splash).
+  factory AidalyaLogo.splash({Key? key}) {
+    return AidalyaLogo(key: key, width: 320, horizontal: false);
+  }
+
+  /// En-tête accueil / connexion.
+  factory AidalyaLogo.homeHeader({Key? key}) {
+    return AidalyaLogo(key: key, width: 220, horizontal: true);
+  }
 
   @override
   Widget build(BuildContext context) {
-    return Align(
-      alignment: _toAlignment(textAlign ?? TextAlign.center),
-      child: Image.asset(
-        'assets/images/app_icon_1024.png',
-        width: width ?? 260,
-        height: height,
-        fit: BoxFit.contain,
-      ),
+    final w = horizontal ? width.clamp(160.0, 260.0) : width;
+    return Image.asset(
+      kAidalyaLogoAsset,
+      width: w,
+      fit: BoxFit.contain,
+      filterQuality: FilterQuality.high,
     );
-  }
-
-  Alignment _toAlignment(TextAlign align) {
-    switch (align) {
-      case TextAlign.left:
-      case TextAlign.start:
-        return Alignment.centerLeft;
-      case TextAlign.right:
-      case TextAlign.end:
-        return Alignment.centerRight;
-      case TextAlign.center:
-      case TextAlign.justify:
-        return Alignment.center;
-    }
   }
 }
 
-/// Version compacte du logo pour l'AppBar
+/// Petite marque (chargement initial, barres d’outils).
 class AidalyaLogoCompact extends StatelessWidget {
-  final double? size;
+  final double width;
 
   const AidalyaLogoCompact({
     super.key,
-    this.size,
+    this.width = 160,
   });
 
   @override
   Widget build(BuildContext context) {
     return Image.asset(
-      'assets/images/app_icon_1024.png',
-      width: size ?? 120,
-      height: size != null ? (size! * 120 / 260) : null,
+      kAidalyaLogoAsset,
+      width: width,
       fit: BoxFit.contain,
+      filterQuality: FilterQuality.high,
     );
   }
 }

@@ -1,3 +1,5 @@
+import '../utils/user_display_name.dart';
+
 /// Modèle de données pour un utilisateur
 class UserModel {
   final int? id;
@@ -138,11 +140,24 @@ class UserModel {
       }
     }
    
+    final experience = _parseInt(map['experience']);
+    final rawName = map['name']?.toString() ?? '';
+    final firstName = map['firstName']?.toString();
+    final lastName = map['lastName']?.toString();
+
     return UserModel(
       id: _parseInt(map['id']),
-      name: map['name']?.toString() ?? '',
-      firstName: map['firstName']?.toString(),
-      lastName: map['lastName']?.toString(),
+      name: sanitizeUserDisplayName(
+        buildUserDisplayName(
+          name: rawName,
+          firstName: firstName,
+          lastName: lastName,
+          experience: experience,
+        ),
+        experience: experience,
+      ),
+      firstName: firstName,
+      lastName: lastName,
       email: email,
       password: map['password']?.toString() ?? '', // Peut être absent depuis l'API
       phone: phone,
@@ -151,7 +166,7 @@ class UserModel {
       categorie: map['categorie']?.toString() ?? 'Famille',
       ville: map['ville']?.toString(),
       tarif: _parseDouble(map['tarif']),
-      experience: _parseInt(map['experience']),
+      experience: experience,
       photo: map['photo']?.toString(),
       userType: map['userType']?.toString() ??
           map['user_type']?.toString() ??

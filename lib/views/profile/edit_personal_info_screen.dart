@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../services/backend_api_service.dart';
 import '../../models/user_model.dart';
+import '../../utils/user_display_name.dart';
 
 class EditPersonalInfoScreen extends StatefulWidget {
   final UserModel user;
@@ -232,19 +233,14 @@ class _EditPersonalInfoScreenState extends State<EditPersonalInfoScreen> {
         }
       }
       
-      // Construire le name
-      String nameToUse = _nameController.text.trim();
-      if (_firstNameController.text.trim().isNotEmpty || _lastNameController.text.trim().isNotEmpty) {
-        final firstName = _firstNameController.text.trim();
-        final lastName = _lastNameController.text.trim();
-        if (firstName.isNotEmpty && lastName.isNotEmpty) {
-          nameToUse = '$firstName $lastName';
-        } else if (firstName.isNotEmpty) {
-          nameToUse = firstName;
-        } else if (lastName.isNotEmpty) {
-          nameToUse = lastName;
-        }
-      }
+      final firstName = _firstNameController.text.trim();
+      final lastName = _lastNameController.text.trim();
+      final nameToUse = buildUserDisplayName(
+        name: _nameController.text.trim(),
+        firstName: firstName.isNotEmpty ? firstName : null,
+        lastName: lastName.isNotEmpty ? lastName : null,
+        experience: experience,
+      );
       
       final updates = <String, dynamic>{
         'name': nameToUse,

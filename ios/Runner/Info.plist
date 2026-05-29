@@ -34,7 +34,18 @@
 		<false/>
 		<key>NSExceptionDomains</key>
 		<dict>
-			<key>auxivie.org</key>
+			<key>api.auxivie.org</key>
+			<dict>
+				<key>NSExceptionMinimumTLSVersion</key>
+				<string>TLSv1.2</string>
+				<key>NSExceptionRequiresForwardSecrecy</key>
+				<true/>
+				<key>NSIncludesSubdomains</key>
+				<true/>
+				<key>NSTemporaryExceptionAllowsInsecureHTTPLoads</key>
+				<false/>
+			</dict>
+			<key>aidalya.org</key>
 			<dict>
 				<key>NSExceptionMinimumTLSVersion</key>
 				<string>TLSv1.2</string>

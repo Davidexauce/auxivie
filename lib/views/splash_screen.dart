@@ -69,18 +69,7 @@ class _SplashScreenState extends State<SplashScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            // Logo Aidalya
-            const AidalyaLogo(
-              width: 320,
-            ),
-            const SizedBox(height: 24),
-            Text(
-              'Aide à domicile',
-              style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                    color: AppTheme.textSecondary,
-                    fontWeight: FontWeight.w500,
-                  ),
-            ),
+            AidalyaLogo.splash(),
           ],
         ),
         ),

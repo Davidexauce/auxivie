@@ -28,7 +28,7 @@ Plateforme de mise en relation entre professionnels de l'aide à domicile et fam
 
 - **Framework**: Flutter 3.x
 - **State Management**: Provider
-- **Base de données**: Backend API (https://auxivie.org/api)
+- **Base de données**: Backend API Aidalya (`https://api.auxivie.org/api`)
 - **Paiements**: Stripe
 - **Langage**: Dart 3.x
 
@@ -46,7 +46,7 @@ flutter run
 
 ### API Backend
 L'application est configurée pour utiliser l'API à l'adresse:
-- Staging/Production: `https://auxivie.org/api`
+- Staging/Production: `https://api.auxivie.org/api` (voir `lib/constants/app_brand.dart`)
 
 Configuration dans `lib/config/app_config.dart`
 

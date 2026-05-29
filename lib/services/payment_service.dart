@@ -1,6 +1,7 @@
 import 'package:flutter_stripe/flutter_stripe.dart';
 import '../config/app_config.dart';
 import '../services/backend_api_service.dart';
+import '../constants/app_brand.dart';
 import '../constants/payment_constants.dart';
 
 /// Service pour gérer les paiements Stripe
@@ -106,7 +107,7 @@ class PaymentService {
       await Stripe.instance.initPaymentSheet(
         paymentSheetParameters: SetupPaymentSheetParameters(
           paymentIntentClientSecret: clientSecret,
-          merchantDisplayName: 'Aidalya',
+          merchantDisplayName: AppBrand.name,
         ),
       );
 

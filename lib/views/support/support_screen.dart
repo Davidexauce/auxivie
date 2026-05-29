@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../viewmodels/settings_viewmodel.dart';
+import '../../constants/app_brand.dart';
 import '../../theme/app_theme.dart';
 
 /// Écran de support avec informations de contact
@@ -12,7 +13,7 @@ class SupportScreen extends StatelessWidget {
     final Uri emailUri = Uri(
       scheme: 'mailto',
       path: email,
-      queryParameters: {'subject': 'Support Aidalya'},
+      queryParameters: {'subject': 'Support ${AppBrand.name}'},
     );
     try {
       if (await canLaunchUrl(emailUri)) {

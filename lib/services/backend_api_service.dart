@@ -13,6 +13,7 @@ import '../models/document_model.dart';
 import '../models/report_model.dart';
 import '../models/settings_model.dart';
 import '../config/app_config.dart';
+import '../utils/user_display_name.dart';
 
 /// Service pour les appels API vers le backend Dashboard Aidalya
 class BackendApiService {
@@ -540,8 +541,14 @@ class BackendApiService {
   }
 
   static Future<Map<String, dynamic>?> createUser(UserModel user) async {
+    final displayName = buildUserDisplayName(
+      name: user.name,
+      firstName: user.firstName,
+      lastName: user.lastName,
+      experience: user.experience,
+    );
     return await syncUser({
-      'name': user.name,
+      'name': displayName,
       'firstName': user.firstName,
       'lastName': user.lastName,
       'email': user.email,
@@ -568,6 +575,9 @@ class BackendApiService {
   /// Met à jour un utilisateur
   static Future<bool> updateUser(int userId, Map<String, dynamic> updates) async {
     try {
+      final existingUser = await getUserById(userId);
+      if (existingUser == null) return false;
+
       // Essayer d'abord d'utiliser PUT /users/:id (route dédiée pour mise à jour)
       // Si elle n'existe pas, on utilisera syncUser en fallback
       try {
@@ -575,9 +585,24 @@ class BackendApiService {
         final userData = <String, dynamic>{};
         
         // Ne mettre que les champs qui sont dans updates (pas tous les champs)
-        if (updates.containsKey('name')) userData['name'] = updates['name'];
-        if (updates.containsKey('firstName')) userData['firstName'] = updates['firstName'];
-        if (updates.containsKey('lastName')) userData['lastName'] = updates['lastName'];
+        if (updates.containsKey('name') ||
+            updates.containsKey('firstName') ||
+            updates.containsKey('lastName')) {
+          userData['name'] = buildUserDisplayName(
+            name: (updates['name'] as String?) ?? existingUser.name,
+            firstName: updates['firstName'] as String? ?? existingUser.firstName,
+            lastName: updates['lastName'] as String? ?? existingUser.lastName,
+            experience: updates.containsKey('experience')
+                ? updates['experience'] as int?
+                : existingUser.experience,
+          );
+        }
+        if (updates.containsKey('firstName')) {
+          userData['firstName'] = updates['firstName'];
+        }
+        if (updates.containsKey('lastName')) {
+          userData['lastName'] = updates['lastName'];
+        }
         if (updates.containsKey('email')) userData['email'] = updates['email'];
         if (updates.containsKey('password') && updates['password'] != null && updates['password'].toString().isNotEmpty) {
           userData['password'] = updates['password'];
@@ -630,35 +655,40 @@ class BackendApiService {
       }
       
       // Fallback: Utiliser syncUser avec tous les champs (sans password si pas modifié)
-      final user = await getUserById(userId);
-      if (user == null) return false;
+      final displayName = buildUserDisplayName(
+        name: (updates['name'] as String?) ?? existingUser.name,
+        firstName: updates['firstName'] as String? ?? existingUser.firstName,
+        lastName: updates['lastName'] as String? ?? existingUser.lastName,
+        experience: updates.containsKey('experience')
+            ? updates['experience'] as int?
+            : existingUser.experience,
+      );
 
-      // Fusionner les mises à jour
       final userDataSync = <String, dynamic>{
         'id': userId,
-        'name': updates['name'] ?? user.name,
-        'firstName': updates['firstName'] ?? user.firstName,
-        'lastName': updates['lastName'] ?? user.lastName,
-        'email': updates['email'] ?? user.email,
+        'name': displayName,
+        'firstName': updates['firstName'] ?? existingUser.firstName,
+        'lastName': updates['lastName'] ?? existingUser.lastName,
+        'email': updates['email'] ?? existingUser.email,
         // Ne pas envoyer password si on ne le modifie pas (sécurité)
         if (updates.containsKey('password') && updates['password'] != null && updates['password'].toString().isNotEmpty)
           'password': updates['password'],
-        'phone': updates['phone'] ?? user.phone,
-        'dateOfBirth': updates['dateOfBirth'] ?? user.dateOfBirth,
-        'address': updates['address'] ?? user.address,
-        'categorie': updates['categorie'] ?? user.categorie,
-        'ville': updates['ville'] ?? user.ville,
-        'tarif': updates['tarif']?.toString() ?? user.tarif?.toString(),
-        'experience': updates['experience']?.toString() ?? user.experience?.toString(),
-        'photo': updates['photo'] ?? user.photo,
-        'userType': user.userType,
-        'user_type': user.userType,
-        'dateNaissance': updates['dateNaissance'] ?? user.dateNaissance?.toIso8601String(),
-        'besoin': updates['besoin'] ?? user.besoin,
-        'preference': updates['preference'] ?? user.preference,
-        'mission': updates['mission'] ?? user.mission,
-        'particularite': updates['particularite'] ?? user.particularite,
-        'rib': updates.containsKey('rib') ? updates['rib'] : user.rib,
+        'phone': updates['phone'] ?? existingUser.phone,
+        'dateOfBirth': updates['dateOfBirth'] ?? existingUser.dateOfBirth,
+        'address': updates['address'] ?? existingUser.address,
+        'categorie': updates['categorie'] ?? existingUser.categorie,
+        'ville': updates['ville'] ?? existingUser.ville,
+        'tarif': updates['tarif']?.toString() ?? existingUser.tarif?.toString(),
+        'experience': updates['experience']?.toString() ?? existingUser.experience?.toString(),
+        'photo': updates['photo'] ?? existingUser.photo,
+        'userType': existingUser.userType,
+        'user_type': existingUser.userType,
+        'dateNaissance': updates['dateNaissance'] ?? existingUser.dateNaissance?.toIso8601String(),
+        'besoin': updates['besoin'] ?? existingUser.besoin,
+        'preference': updates['preference'] ?? existingUser.preference,
+        'mission': updates['mission'] ?? existingUser.mission,
+        'particularite': updates['particularite'] ?? existingUser.particularite,
+        'rib': updates.containsKey('rib') ? updates['rib'] : existingUser.rib,
       };
 
       final result = await syncUser(userDataSync);

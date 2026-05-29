@@ -1,3 +1,5 @@
+import '../constants/app_brand.dart';
+
 /// Modèle pour les paramètres système de la plateforme
 class SettingsModel {
   // Général
@@ -52,7 +54,7 @@ class SettingsModel {
     return SettingsModel(
       platformFee: (map['platformFee'] as num?)?.toDouble() ?? 15.0,
       cancellationDelay: (map['cancellationDelay'] as num?)?.toInt() ?? 24,
-      contactEmail: map['contactEmail'] as String? ?? 'contact@auxivie.org',
+      contactEmail: map['contactEmail'] as String? ?? AppBrand.contactEmail,
       supportPhone: map['supportPhone'] as String? ?? '+33 6 52 24 85 94',
       minReservationHours: (map['minReservationHours'] as num?)?.toInt() ?? 2,
       maxReservationHours: (map['maxReservationHours'] as num?)?.toInt() ?? 24,
@@ -75,7 +77,7 @@ class SettingsModel {
     return SettingsModel(
       platformFee: 15.0,
       cancellationDelay: 24,
-      contactEmail: 'contact@auxivie.org',
+      contactEmail: AppBrand.contactEmail,
       supportPhone: '+33 6 52 24 85 94',
       minReservationHours: 2,
       maxReservationHours: 24,

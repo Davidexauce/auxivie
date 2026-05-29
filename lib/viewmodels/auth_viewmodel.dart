@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import '../models/user_model.dart';
 import '../services/backend_api_service.dart';
+import '../utils/user_display_name.dart';
 
 /// ViewModel pour la gestion de l'authentification
 class AuthViewModel extends ChangeNotifier {
@@ -82,7 +83,7 @@ class AuthViewModel extends ChangeNotifier {
       // Créer le nouvel utilisateur directement dans le backend (base unique)
       // Le backend gérera la vérification d'email existant
       final user = UserModel(
-        name: name,
+        name: sanitizeUserDisplayName(name.trim(), experience: experience),
         email: email,
         password: password, // En production, hasher avec bcrypt
         phone: phone,
