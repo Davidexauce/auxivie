@@ -27,22 +27,26 @@ export default function Payments() {
   const loadPayments = async () => {
     try {
       const data = await paymentsAPI.getAll();
-      let filtered = data;
-      
+      const list = Array.isArray(data) ? data : [];
+      let filtered = list;
+
       if (filter !== 'all') {
-        filtered = data.filter(p => p.status === filter);
+        filtered = list.filter((p) => p.status === filter);
       }
-      
+
       setPayments(filtered);
     } catch (error) {
       console.error('Erreur:', error);
+      setPayments([]);
     } finally {
       setLoading(false);
     }
   };
 
   const formatDate = (dateString) => {
+    if (dateString == null || dateString === '') return '—';
     const date = new Date(dateString);
+    if (Number.isNaN(date.getTime())) return '—';
     return date.toLocaleDateString('fr-FR', {
       year: 'numeric',
       month: 'long',
@@ -51,11 +55,26 @@ export default function Payments() {
   };
 
   const formatAmount = (amount) => {
+    const n = Number(amount);
+    if (Number.isNaN(n)) return '—';
     return new Intl.NumberFormat('fr-FR', {
       style: 'currency',
       currency: 'EUR',
-    }).format(amount);
+    }).format(n);
   };
+
+  // Pagination (hooks toujours avant tout return conditionnel — règles de React)
+  const totalPages = Math.max(1, Math.ceil(payments.length / itemsPerPage) || 1);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const paginatedPayments = payments.slice(startIndex, endIndex);
+
+  useEffect(() => {
+    if (payments.length === 0) return;
+    if (currentPage > totalPages && totalPages > 0) {
+      setCurrentPage(1);
+    }
+  }, [totalPages, currentPage, payments.length]);
 
   if (loading) {
     return (
@@ -64,19 +83,6 @@ export default function Payments() {
       </Layout>
     );
   }
-
-  // Pagination
-  const totalPages = Math.ceil(payments.length / itemsPerPage);
-  const startIndex = (currentPage - 1) * itemsPerPage;
-  const endIndex = startIndex + itemsPerPage;
-  const paginatedPayments = payments.slice(startIndex, endIndex);
-
-  // Réinitialiser la page si nécessaire
-  useEffect(() => {
-    if (currentPage > totalPages && totalPages > 0) {
-      setCurrentPage(1);
-    }
-  }, [totalPages, currentPage]);
 
   return (
     <Layout>
@@ -151,16 +157,18 @@ export default function Payments() {
                   </td>
                 </tr>
               ) : (
-                paginatedPayments.map((payment) => (
-                  <tr key={payment.id}>
+                paginatedPayments.map((payment, idx) => (
+                  <tr key={payment.id != null ? String(payment.id) : `row-${idx}`}>
                     <td>{payment.id}</td>
                     <td>#{payment.reservationId}</td>
                     <td>{payment.userName || `User ${payment.userId}`}</td>
                     <td className={styles.amount}>{formatAmount(payment.amount)}</td>
-                    <td>{payment.method || '-'}</td>
+                    <td>{payment.method || payment.paymentMethod || '-'}</td>
                     <td>{formatDate(payment.createdAt)}</td>
                     <td>
-                      <span className={`${styles.status} ${styles[payment.status]}`}>
+                      <span
+                        className={`${styles.status} ${payment.status && styles[payment.status] ? styles[payment.status] : ''}`}
+                      >
                         {payment.status === 'pending' && 'En attente'}
                         {payment.status === 'completed' && 'Complété'}
                         {payment.status === 'failed' && 'Échoué'}

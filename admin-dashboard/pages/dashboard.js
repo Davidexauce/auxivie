@@ -25,19 +25,23 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Vérifier l'authentification
     const token = localStorage.getItem('token');
     if (!token) {
-      router.push('/login');
+      window.location.replace('/login');
       return;
     }
 
-    // Charger les infos de l'admin connecté
     const u = localStorage.getItem('user');
-    if (u) setAdmin(JSON.parse(u));
+    if (u) {
+      try {
+        setAdmin(JSON.parse(u));
+      } catch {
+        localStorage.removeItem('user');
+      }
+    }
 
     loadStats();
-  }, [router]);
+  }, []);
 
   const loadStats = async () => {
     try {

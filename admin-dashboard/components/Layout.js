@@ -9,9 +9,13 @@ export default function Layout({ children }) {
   const [user, setUser] = useState(null);
 
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const u = localStorage.getItem('user');
-      if (u) setUser(JSON.parse(u));
+    if (typeof window === 'undefined') return;
+    const u = localStorage.getItem('user');
+    if (!u) return;
+    try {
+      setUser(JSON.parse(u));
+    } catch {
+      localStorage.removeItem('user');
     }
   }, []);
 

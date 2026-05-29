@@ -1,11 +1,9 @@
 import { useState } from 'react';
-import { useRouter } from 'next/router';
 import Link from 'next/link';
 import { authAPI } from '../lib/api';
 import styles from '../styles/Register.module.css';
 
 export default function Register() {
-  const router = useRouter();
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -103,7 +101,7 @@ export default function Register() {
         
         // Rediriger vers le dashboard après 2 secondes
         setTimeout(() => {
-          router.push('/dashboard');
+          window.location.replace('/dashboard');
         }, 2000);
       } else {
         setError('Erreur lors de l\'enregistrement : token manquant');

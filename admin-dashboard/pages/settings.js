@@ -96,7 +96,8 @@ export default function Settings() {
           <div className={styles.adminCard} style={{ marginBottom: '20px' }}>
             <h2 style={{ marginBottom: '20px' }}>Configuration générale</h2>
             <p style={{ color: '#666', marginBottom: '20px' }}>
-              Les paramètres système seront disponibles ici une fois l'API configurée.
+              Les paramètres sont stockés côté serveur (table <code>app_settings</code>) via l’API{' '}
+              <code>/api/settings</code>.
             </p>
             <div style={{ 
               padding: '15px', 
@@ -104,9 +105,9 @@ export default function Settings() {
               borderRadius: '8px',
               color: '#666'
             }}>
-              <p>📝 Cette page permet de gérer les paramètres généraux de l'application.</p>
+              <p>📝 Cette page permet de gérer les paramètres généraux de l’application.</p>
               <p style={{ marginTop: '10px' }}>
-                L'API <code>/api/settings</code> est disponible dans le backend.
+                Les champs métier pourront être ajoutés ici au fil des besoins ; la sauvegarde envoie un objet JSON au backend.
               </p>
             </div>
           </div>

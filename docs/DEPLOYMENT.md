@@ -439,6 +439,18 @@ Vérifications à la fin
 
 Je peux implémenter la variante choisie (SSH tunnel rapide ou WireGuard complet). Dites-moi laquelle vous préférez et j'exécute les étapes sur le serveur et/ou VPS (il me faudra accès SSH au VPS ou vous pouvez exécuter les commandes que je fournis).
 
+## Mise à jour du dashboard sur Hostinger (aidalia.auxivie.org)
+
+Lorsque le domaine pointe vers l’**hébergement fichiers** Hostinger (CDN `hcdn`) et non vers le Next.js du VPS :
+
+1. Sur votre machine : `./scripts/deploy-aidalia-static.sh` (à la racine du dépôt *Christelle Projet*).  
+   Cela régénère `admin-dashboard/out/` et une archive `dist/aidalia-static-*.tar.gz`.
+2. Dans **hPanel → Fichiers** : ouvrir le dossier web du sous-domaine (ex. `public_html` du domaine ou dossier dédié à *aidalia*).
+3. **Remplacer tout** le contenu : au minimum tout le dossier `_next/` et les fichiers `*.html`, `.htaccess`, favicons.  
+   Mélanger un ancien `_next/` avec un nouveau HTML provoque des erreurs React ou des pages blanches.
+4. Recharger le site avec **vidage de cache** si besoin.
+
+Backend sur le VPS : copier `scripts/deploy-backend-vps.example.sh` vers un script local (avec vos variables), ou `rsync` + `pm2 restart api --update-env` comme ci-dessus.
 
 ## 📞 Support
 

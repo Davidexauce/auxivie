@@ -3,6 +3,7 @@ import { useRouter } from 'next/router';
 import Layout from '../components/Layout';
 import { usersAPI } from '../lib/api';
 import { exportUsersToCSV } from '../lib/export';
+import { displayUserName } from '../lib/displayUserName';
 import Pagination from '../components/Pagination';
 import styles from '../styles/Users.module.css';
 
@@ -43,7 +44,7 @@ export default function Users() {
     if (!searchTerm.trim()) return true;
     const search = searchTerm.toLowerCase();
     return (
-      user.name?.toLowerCase().includes(search) ||
+      displayUserName(user)?.toLowerCase().includes(search) ||
       user.email?.toLowerCase().includes(search) ||
       user.categorie?.toLowerCase().includes(search) ||
       user.ville?.toLowerCase().includes(search)
@@ -148,7 +149,7 @@ export default function Users() {
                 <th>Type</th>
                 <th>Catégorie</th>
                 <th>Ville</th>
-                <th>Actions</th>
+                <th className={styles.actionsHeader}>Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -156,7 +157,7 @@ export default function Users() {
                 <tr key={user.id} style={user.suspended ? { opacity: 0.6, backgroundColor: '#fee' } : {}}>
                   <td>{user.id}</td>
                   <td>
-                    {user.name}
+                    {displayUserName(user)}
                     {user.suspended && (
                       <span style={{ 
                         marginLeft: '8px', 
@@ -179,62 +180,70 @@ export default function Users() {
                   </td>
                   <td>{user.categorie || '-'}</td>
                   <td>{user.ville || '-'}</td>
-                        <td>
-                          <div className={styles.actionButtons}>
-                            <button
-                              className={styles.actionButton}
-                              onClick={() => router.push(`/users/${user.id}`)}
-                            >
-                              Voir
-                            </button>
-                            <button
-                              className={styles.actionButton}
-                              onClick={() => router.push(`/messages?userId=${user.id}`)}
-                              style={{ backgroundColor: 'var(--primary)', color: 'white', marginLeft: '8px' }}
-                            >
-                              Contacter
-                            </button>
-                            {user.suspended ? (
-                              <button
-                                className={styles.actionButton}
-                                onClick={async () => {
-                                  if (confirm(`Voulez-vous réactiver l'utilisateur ${user.name} ?`)) {
-                                    try {
-                                      await usersAPI.unsuspend(user.id);
-                                      loadUsers();
-                                    } catch (error) {
-                                      console.error('Erreur:', error);
-                                      alert('Erreur lors de la réactivation');
-                                    }
-                                  }
-                                }}
-                                style={{ backgroundColor: '#10b981', color: 'white', marginLeft: '8px' }}
-                                title="Réactiver l'utilisateur"
-                              >
-                                Activer
-                              </button>
-                            ) : (
-                              <button
-                                className={styles.actionButton}
-                                onClick={async () => {
-                                  if (confirm(`Voulez-vous suspendre l'utilisateur ${user.name} ?`)) {
-                                    try {
-                                      await usersAPI.suspend(user.id);
-                                      loadUsers();
-                                    } catch (error) {
-                                      console.error('Erreur:', error);
-                                      alert('Erreur lors de la suspension');
-                                    }
-                                  }
-                                }}
-                                style={{ backgroundColor: '#ef4444', color: 'white', marginLeft: '8px' }}
-                                title="Suspendre l'utilisateur"
-                              >
-                                Suspendre
-                              </button>
-                            )}
-                          </div>
-                        </td>
+                  <td className={styles.actionsCell}>
+                    <div className={styles.actionButtons}>
+                      <button
+                        type="button"
+                        className={`${styles.actionBtn} ${styles.actionBtnView}`}
+                        onClick={() => router.push(`/users/${user.id}`)}
+                      >
+                        Voir
+                      </button>
+                      <button
+                        type="button"
+                        className={`${styles.actionBtn} ${styles.actionBtnEdit}`}
+                        onClick={() => router.push(`/users/${user.id}/edit`)}
+                      >
+                        Modifier
+                      </button>
+                      <button
+                        type="button"
+                        className={`${styles.actionBtn} ${styles.actionBtnMessage}`}
+                        onClick={() => router.push(`/messages?userId=${user.id}`)}
+                      >
+                        Contacter
+                      </button>
+                      {user.suspended ? (
+                        <button
+                          type="button"
+                          className={`${styles.actionBtn} ${styles.actionBtnActivate}`}
+                          onClick={async () => {
+                            if (confirm(`Réactiver l'utilisateur ${displayUserName(user)} ?`)) {
+                              try {
+                                await usersAPI.unsuspend(user.id);
+                                loadUsers();
+                              } catch (error) {
+                                console.error('Erreur:', error);
+                                alert('Erreur lors de la réactivation');
+                              }
+                            }
+                          }}
+                          title="Réactiver l'utilisateur"
+                        >
+                          Activer
+                        </button>
+                      ) : (
+                        <button
+                          type="button"
+                          className={`${styles.actionBtn} ${styles.actionBtnSuspend}`}
+                          onClick={async () => {
+                            if (confirm(`Suspendre l'utilisateur ${displayUserName(user)} ?`)) {
+                              try {
+                                await usersAPI.suspend(user.id);
+                                loadUsers();
+                              } catch (error) {
+                                console.error('Erreur:', error);
+                                alert('Erreur lors de la suspension');
+                              }
+                            }
+                          }}
+                          title="Suspendre l'utilisateur"
+                        >
+                          Suspendre
+                        </button>
+                      )}
+                    </div>
+                  </td>
                 </tr>
               ))}
             </tbody>

@@ -1,46 +1,33 @@
+const path = require('path');
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
-  
-  // Variables d'environnement publiques
-  // NEXT_PUBLIC_* sont automatiquement exposées au client
+
+  // Évite l’avertissement « inferred workspace root » (autre package-lock à la maison).
+  turbopack: {
+    root: path.join(__dirname),
+  },
+
+  // À chaque build, nouveau préfixe sous `out/_next/static/<id>/` : les navigateurs/CDN
+  // ne réutilisent plus d’anciens chunks après un déploiement sur hébergement statique.
+  // Pour un build reproductible : NEXT_BUILD_ID=ma-valeur npm run build
+  generateBuildId: async () =>
+    process.env.NEXT_BUILD_ID || `export-${Date.now()}`,
+
+  // Export statique uniquement si STATIC_EXPORT=1 (ex. déploiement fichiers sur Hostinger).
+  // Sur le VPS, PM2 exécute `server.js` + `next prepare()` : ne pas activer `output: 'export'` par défaut.
+  ...(process.env.STATIC_EXPORT === '1' ? { output: 'export' } : {}),
+
   env: {
     NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL || 'https://api.auxivie.org',
   },
-  
-  // Optimisations de production
+
   compress: true,
   poweredByHeader: false,
-  
-  // Configuration pour Hostinger
-  output: 'standalone', // Pour un déploiement optimisé
-  
-  // Headers de sécurité
-  async headers() {
-    return [
-      {
-        source: '/:path*',
-        headers: [
-          {
-            key: 'X-Content-Type-Options',
-            value: 'nosniff',
-          },
-          {
-            key: 'X-Frame-Options',
-            value: 'DENY',
-          },
-          {
-            key: 'X-XSS-Protection',
-            value: '1; mode=block',
-          },
-          {
-            key: 'Referrer-Policy',
-            value: 'strict-origin-when-cross-origin',
-          },
-        ],
-      },
-    ];
-  },
+
+  // Les en-têtes de sécurité sont en partie gérés par Hostinger / CDN.
+  // `headers()` n’est pas pris en charge avec `output: 'export'`.
 };
 
 module.exports = nextConfig;

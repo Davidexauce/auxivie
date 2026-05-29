@@ -22,6 +22,7 @@ admin-dashboard/.env.production
 admin-dashboard/.DS_Store
 admin-dashboard/.prod_pid
 admin-dashboard/prod.log
+admin-dashboard/out/
 
 # Anciens artefacts Flutter (si réintroduits par erreur)
 build/
@@ -51,3 +52,6 @@ yarn-error.log*
 .env.local
 .env.production
 .env.*.local
+
+# Archives / export statique générés localement
+dist/

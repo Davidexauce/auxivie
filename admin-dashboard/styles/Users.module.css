@@ -47,8 +47,10 @@
 .tableContainer {
   background: white;
   border-radius: 12px;
-  overflow: hidden;
+  overflow-x: auto;
+  overflow-y: hidden;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  -webkit-overflow-scrolling: touch;
 }
 
 .table {
@@ -91,21 +93,124 @@
   border: 1px solid #dcfce7;
 }
 
-.actionButton {
-  background: linear-gradient(to right, #16a34a, #10b981, #16a34a);
-  color: white;
-  border: none;
-  padding: 6px 12px;
-  border-radius: 6px;
+.actionsHeader {
+  min-width: 13.5rem;
+}
+
+/* Colonne Actions : largeur stable + boutons alignés */
+.actionsCell {
+  width: 1%;
+  min-width: 13.5rem;
+  max-width: 18rem;
+  vertical-align: middle;
+  white-space: normal;
+}
+
+.actionButtons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  justify-content: flex-start;
+}
+
+/* Boutons d’action ligne utilisateurs */
+.actionBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
   cursor: pointer;
-  font-weight: 500;
-  font-size: 14px;
-  transition: all 0.2s;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.06);
+  border: 1px solid transparent;
+  transition: background 0.15s, border-color 0.15s, color 0.15s, transform 0.1s;
+  white-space: nowrap;
+  line-height: 1.2;
+}
+
+.actionBtn:focus-visible {
+  outline: 2px solid #16a34a;
+  outline-offset: 2px;
+}
+
+.actionBtn:active {
+  transform: scale(0.98);
+}
+
+.actionBtnView {
+  background: #f8fafc;
+  color: #0f172a;
+  border-color: #e2e8f0;
+}
+
+.actionBtnView:hover {
+  background: #f1f5f9;
+  border-color: #cbd5e1;
+}
+
+.actionBtnEdit {
+  background: #eff6ff;
+  color: #1d4ed8;
+  border-color: #bfdbfe;
+}
+
+.actionBtnEdit:hover {
+  background: #dbeafe;
+  border-color: #93c5fd;
+}
+
+.actionBtnMessage {
+  background: #16a34a;
+  color: #fff;
+  border-color: #15803d;
+}
+
+.actionBtnMessage:hover {
+  background: #15803d;
+}
+
+.actionBtnSuspend {
+  background: #fef2f2;
+  color: #b91c1c;
+  border-color: #fecaca;
+}
+
+.actionBtnSuspend:hover {
+  background: #fee2e2;
+}
+
+.actionBtnActivate {
+  background: #ecfdf5;
+  color: #047857;
+  border-color: #a7f3d0;
+}
+
+.actionBtnActivate:hover {
+  background: #d1fae5;
+}
+
+/* Ancienne classe (compat.) */
+.actionButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  border: 1px solid #e2e8f0;
+  background: #f8fafc;
+  color: #0f172a;
+  transition: background 0.15s, border-color 0.15s, transform 0.1s;
 }
 
 .actionButton:hover {
-  background: linear-gradient(to right, #15803d, #059669, #15803d);
+  background: #f1f5f9;
+  border-color: #cbd5e1;
 }
 
 .loading {
@@ -114,3 +219,14 @@
   color: #6c757d;
 }
 
+@media (max-width: 1100px) {
+  .actionButtons {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .actionBtn {
+    justify-content: center;
+    width: 100%;
+  }
+}

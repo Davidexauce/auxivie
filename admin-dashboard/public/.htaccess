@@ -1,0 +1,7 @@
+# Hostinger (Apache / LiteSpeed avec mod_headers) : les HTML Next exportés
+# doivent être revalidés pour ne pas référencer d’anciens bundles sous _next/static.
+<IfModule mod_headers.c>
+  <FilesMatch "\.(html|htm)$">
+    Header set Cache-Control "no-store, no-cache, must-revalidate, max-age=0"
+  </FilesMatch>
+</IfModule>

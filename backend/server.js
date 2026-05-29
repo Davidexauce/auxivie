@@ -10,7 +10,23 @@ const jwt = require('jsonwebtoken');
 const multer = require('multer');
 const fs = require('fs');
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY || 'sk_test_placeholder');
-const { sendAdminMessageNotification } = require('./email');
+const { sendAdminMessageNotification, sendLandingAppSoonEmail } = require('./email');
+const {
+  resolveUserDisplayName,
+  formatUserDisplayName,
+} = require('./lib/userDisplayName');
+
+/** Normalise les champs nom pour les réponses JSON (dashboard + app). */
+function mapUserForResponse(row) {
+  if (!row) return row;
+  const displayName = formatUserDisplayName(row);
+  return {
+    ...row,
+    name: displayName,
+    firstName: row.firstName ?? null,
+    lastName: row.lastName ?? null,
+  };
+}
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -84,17 +100,42 @@ const uploadPhoto = multer({
   }
 });
 
-// Configuration CORS pour production
+// Configuration CORS : en production, fusionner origines par défaut + CORS_ORIGIN
+// (évite qu’un .env incomplet sur le serveur bloque https://aidalia.auxivie.org).
+const DEFAULT_PRODUCTION_ORIGINS = [
+  'https://www.auxivie.org',
+  'https://auxivie.org',
+  'https://www.aidalia.auxivie.org',
+  'https://aidalia.auxivie.org',
+  'https://api.auxivie.org',
+  'http://178.16.131.24:3001',
+];
+const allowedCorsOrigins = new Set([
+  ...DEFAULT_PRODUCTION_ORIGINS,
+  ...(process.env.CORS_ORIGIN || '')
+    .split(',')
+    .map((o) => o.trim())
+    .filter(Boolean),
+]);
+
 const corsOptions = {
-  origin: process.env.CORS_ORIGIN 
-    ? process.env.CORS_ORIGIN.split(',').map(origin => origin.trim())
-    : process.env.NODE_ENV === 'production'
-      ? ['https://www.auxivie.org', 'https://auxivie.org', 'https://www.aidalia.auxivie.org', 'https://aidalia.auxivie.org', 'https://api.auxivie.org', 'http://178.16.131.24:3001']
-      : '*', // En développement, autoriser toutes les origines
+  origin(origin, callback) {
+    if (process.env.NODE_ENV !== 'production') {
+      return callback(null, true);
+    }
+    if (!origin) {
+      return callback(null, true);
+    }
+    if (allowedCorsOrigins.has(origin)) {
+      return callback(null, origin);
+    }
+    console.warn('[CORS] Origine non autorisée:', origin);
+    return callback(null, false);
+  },
   credentials: true,
   optionsSuccessStatus: 200,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'x-request-type']
+  allowedHeaders: ['Content-Type', 'Authorization', 'x-request-type'],
 };
 
 // Middleware
@@ -113,6 +154,28 @@ app.use((req, res, next) => {
   }
   next();
 });
+
+// Anti-spam simple pour la landing (formulaire « apps bientôt »)
+const landingNotifyBuckets = new Map();
+const landingNotifyRateLimit = (req, res, next) => {
+  const raw = req.headers['x-forwarded-for'] || req.socket.remoteAddress || '';
+  const ip = String(raw).split(',')[0].trim() || 'unknown';
+  const now = Date.now();
+  const windowMs = 60 * 60 * 1000;
+  const max = 10;
+  let b = landingNotifyBuckets.get(ip);
+  if (!b || now > b.resetAt) {
+    b = { count: 0, resetAt: now + windowMs };
+    landingNotifyBuckets.set(ip, b);
+  }
+  b.count += 1;
+  if (b.count > max) {
+    return res.status(429).json({ message: 'Trop de demandes. Réessayez dans une heure.' });
+  }
+  next();
+};
+
+const landingEmailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 // Initialiser la base de données MySQL
 (async () => {
@@ -163,10 +226,9 @@ app.post('/api/auth/login', async (req, res) => {
         }
       }
 
-    // Route de santé
-    if (!isValid) {
-      return res.status(401).json({ message: 'Email ou mot de passe incorrect' });
-    }
+      if (!isValid) {
+        return res.status(401).json({ message: 'Email ou mot de passe incorrect' });
+      }
 
       // Si c'est une requête mobile, accepter tous les types d'utilisateurs
       // Sinon, vérifier que c'est un admin (pour le dashboard)
@@ -200,7 +262,7 @@ app.post('/api/auth/login', async (req, res) => {
   }
 });
 
-// Redirection rapide : /login -> frontend
+// Redirection rapide : /login -> dashboard admin (sous-domaine inchangé)
 app.get('/login', (req, res) => {
   return res.redirect(301, 'https://aidalia.auxivie.org/login');
 });
@@ -291,6 +353,49 @@ app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', message: 'Aidalya API' });
 });
 
+// Landing : email automatique (apps pas encore sur les stores)
+app.post('/api/landing/app-soon', landingNotifyRateLimit, async (req, res) => {
+  try {
+    if (req.body && req.body.company_website) {
+      return res.status(400).json({ message: 'Requête invalide.' });
+    }
+    const email = (req.body.email || '').trim().toLowerCase();
+    const displayName = (req.body.name || '').trim().slice(0, 120);
+    const profileType = req.body.profileType === 'pro' ? 'pro' : 'famille';
+    const besoin = (req.body.besoin || '').trim().slice(0, 200);
+    const rawPhone = (req.body.phone || '').trim().slice(0, 32);
+    const phone = rawPhone.replace(/[^\d+\s().-]/g, '').slice(0, 30);
+    if (!email || !landingEmailRegex.test(email)) {
+      return res.status(400).json({ message: 'Adresse email invalide.' });
+    }
+    const profileLabel =
+      profileType === 'pro'
+        ? 'Professionnel de l’aide à domicile'
+        : 'Famille / particulier';
+    const result = await sendLandingAppSoonEmail(email, {
+      displayName,
+      profileLabel,
+      besoin,
+      phone,
+    });
+    if (!result.success) {
+      console.error('landing app-soon email:', result.error);
+      return res.status(503).json({
+        message:
+          'Envoi impossible pour le moment. Réessayez plus tard ou écrivez à contact@auxivie.org.',
+      });
+    }
+    return res.json({
+      ok: true,
+      message:
+        'Merci ! Un email de confirmation vous a été envoyé depuis contact@auxivie.org.',
+    });
+  } catch (error) {
+    console.error('landing app-soon:', error);
+    return res.status(500).json({ message: 'Erreur serveur.' });
+  }
+});
+
 // Middleware d'authentification
 const authenticateToken = (req, res, next) => {
   const authHeader = req.headers['authorization'];
@@ -309,6 +414,66 @@ const authenticateToken = (req, res, next) => {
   });
 };
 
+// Table clé/valeur pour les paramètres admin (page /settings du dashboard)
+let appSettingsTableReady = false;
+async function ensureAppSettingsTable() {
+  if (appSettingsTableReady) return;
+  await db.run(
+    `CREATE TABLE IF NOT EXISTS app_settings (
+      id TINYINT UNSIGNED NOT NULL PRIMARY KEY DEFAULT 1,
+      settings_json LONGTEXT NULL,
+      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`
+  );
+  const row = await db.get('SELECT id FROM app_settings WHERE id = 1');
+  if (!row) {
+    await db.run('INSERT INTO app_settings (id, settings_json) VALUES (1, ?)', [JSON.stringify({})]);
+  }
+  appSettingsTableReady = true;
+}
+
+app.get('/api/settings', authenticateToken, async (req, res) => {
+  try {
+    if (req.user.userType !== 'admin') {
+      return res.status(403).json({ message: 'Accès réservé aux administrateurs' });
+    }
+    await ensureAppSettingsTable();
+    const row = await db.get('SELECT settings_json FROM app_settings WHERE id = 1');
+    if (!row || row.settings_json == null || row.settings_json === '') {
+      return res.json({});
+    }
+    try {
+      const parsed = JSON.parse(row.settings_json);
+      return res.json(typeof parsed === 'object' && parsed !== null && !Array.isArray(parsed) ? parsed : {});
+    } catch {
+      return res.json({});
+    }
+  } catch (e) {
+    console.error('GET /api/settings', e);
+    return res.status(500).json({ message: 'Erreur serveur' });
+  }
+});
+
+app.put('/api/settings', authenticateToken, async (req, res) => {
+  try {
+    if (req.user.userType !== 'admin') {
+      return res.status(403).json({ message: 'Accès réservé aux administrateurs' });
+    }
+    await ensureAppSettingsTable();
+    const body = req.body && typeof req.body === 'object' && !Array.isArray(req.body) ? req.body : {};
+    const json = JSON.stringify(body);
+    await db.run(
+      `INSERT INTO app_settings (id, settings_json) VALUES (1, ?)
+       ON DUPLICATE KEY UPDATE settings_json = ?`,
+      [json, json]
+    );
+    return res.json({ ok: true, message: 'Paramètres enregistrés' });
+  } catch (e) {
+    console.error('PUT /api/settings', e);
+    return res.status(500).json({ message: 'Erreur serveur' });
+  }
+});
+
 // Routes des utilisateurs
 // Route publique pour récupérer les professionnels (app mobile)
 app.get('/api/users', async (req, res) => {
@@ -318,9 +483,9 @@ app.get('/api/users', async (req, res) => {
     // Si userType=professionnel, route publique pour l'app mobile
     if (userType === 'professionnel') {
       const rows = await db.all(
-        'SELECT id, name, email, phone, categorie, ville, tarif, experience, photo, userType FROM users WHERE userType = "professionnel" ORDER BY id DESC'
+        'SELECT id, name, firstName, lastName, email, phone, categorie, ville, tarif, experience, photo, userType FROM users WHERE userType = "professionnel" ORDER BY id DESC'
       );
-      return res.json(rows);
+      return res.json(rows.map(mapUserForResponse));
     }
     
     // Sinon, nécessite authentification (pour le dashboard)
@@ -341,9 +506,9 @@ app.get('/api/users', async (req, res) => {
           return res.status(403).json({ message: 'Accès réservé aux administrateurs' });
         }
         const rows = await db.all(
-          'SELECT id, name, email, phone, categorie, ville, tarif, experience, userType, suspended, createdAt FROM users WHERE userType != "admin" ORDER BY id DESC'
+          'SELECT id, name, firstName, lastName, email, phone, categorie, ville, tarif, experience, userType, suspended, createdAt FROM users WHERE userType != "admin" ORDER BY id DESC'
         );
-        res.json(rows);
+        res.json(rows.map(mapUserForResponse));
       } catch (error) {
         return res.status(500).json({ message: 'Erreur serveur' });
       }
@@ -357,7 +522,10 @@ app.get('/api/users', async (req, res) => {
 app.get('/api/users/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    const row = await db.get('SELECT id, name, email, phone, categorie, ville, tarif, experience, photo, userType, besoin, preference, mission, particularite, rib FROM users WHERE id = ?', [id]);
+    const row = await db.get(
+      'SELECT id, name, firstName, lastName, email, phone, categorie, ville, tarif, experience, photo, userType, besoin, preference, mission, particularite, rib FROM users WHERE id = ?',
+      [id]
+    );
     if (!row) {
       return res.status(404).json({ message: 'Utilisateur non trouvé' });
     }
@@ -380,7 +548,7 @@ app.get('/api/users/:id', async (req, res) => {
       delete row.rib;
     }
 
-    res.json(row);
+    res.json(mapUserForResponse(row));
   } catch (error) {
     return res.status(500).json({ message: 'Erreur serveur' });
   }
@@ -390,11 +558,14 @@ app.get('/api/users/:id', async (req, res) => {
 app.get('/api/users/:id/admin', authenticateToken, async (req, res) => {
   try {
     const { id } = req.params;
-    const row = await db.get('SELECT id, name, email, phone, categorie, ville, tarif, userType FROM users WHERE id = ?', [id]);
+    const row = await db.get(
+      'SELECT id, name, firstName, lastName, email, phone, categorie, ville, tarif, experience, userType FROM users WHERE id = ?',
+      [id]
+    );
     if (!row) {
       return res.status(404).json({ message: 'Utilisateur non trouvé' });
     }
-    res.json(row);
+    res.json(mapUserForResponse(row));
   } catch (error) {
     return res.status(500).json({ message: 'Erreur serveur' });
   }
@@ -412,7 +583,29 @@ app.put('/api/users/:id', authenticateToken, async (req, res) => {
       return res.status(403).json({ message: 'Accès refusé' });
     }
 
-    const { name, email, phone, categorie, ville, tarif, password, currentPassword, rib } = req.body;
+    const {
+      name: rawName,
+      firstName,
+      lastName,
+      email,
+      phone,
+      categorie,
+      ville,
+      tarif,
+      experience,
+      password,
+      currentPassword,
+      rib,
+    } = req.body;
+    const name =
+      rawName !== undefined || firstName !== undefined || lastName !== undefined
+        ? resolveUserDisplayName({ name: rawName, firstName, lastName, experience })
+        : undefined;
+    let experienceValue;
+    if (experience !== undefined && experience !== null && experience !== '') {
+      const n = parseInt(String(experience), 10);
+      experienceValue = Number.isFinite(n) ? n : null;
+    }
     
     // Si un nouveau mot de passe est fourni, vérifier l'ancien et hasher le nouveau
     if (password) {
@@ -439,11 +632,14 @@ app.put('/api/users/:id', authenticateToken, async (req, res) => {
       const values = [];
       
       if (name !== undefined) { fields.push('name = ?'); values.push(name); }
+      if (firstName !== undefined) { fields.push('firstName = ?'); values.push(firstName || null); }
+      if (lastName !== undefined) { fields.push('lastName = ?'); values.push(lastName || null); }
       if (email !== undefined) { fields.push('email = ?'); values.push(email); }
       if (phone !== undefined) { fields.push('phone = ?'); values.push(phone); }
       if (categorie !== undefined) { fields.push('categorie = ?'); values.push(categorie); }
       if (ville !== undefined) { fields.push('ville = ?'); values.push(ville); }
       if (tarif !== undefined) { fields.push('tarif = ?'); values.push(tarif); }
+      if (experience !== undefined) { fields.push('experience = ?'); values.push(experienceValue); }
       if (rib !== undefined) { fields.push('rib = ?'); values.push(rib); }
       fields.push('password = ?'); values.push(hashedPassword);
       values.push(id);
@@ -456,11 +652,14 @@ app.put('/api/users/:id', authenticateToken, async (req, res) => {
       const values = [];
       
       if (name !== undefined) { fields.push('name = ?'); values.push(name); }
+      if (firstName !== undefined) { fields.push('firstName = ?'); values.push(firstName || null); }
+      if (lastName !== undefined) { fields.push('lastName = ?'); values.push(lastName || null); }
       if (email !== undefined) { fields.push('email = ?'); values.push(email); }
       if (phone !== undefined) { fields.push('phone = ?'); values.push(phone); }
       if (categorie !== undefined) { fields.push('categorie = ?'); values.push(categorie); }
       if (ville !== undefined) { fields.push('ville = ?'); values.push(ville); }
       if (tarif !== undefined) { fields.push('tarif = ?'); values.push(tarif); }
+      if (experience !== undefined) { fields.push('experience = ?'); values.push(experienceValue); }
       if (rib !== undefined) { fields.push('rib = ?'); values.push(rib); }
       values.push(id);
       
@@ -678,13 +877,23 @@ app.post('/api/users/:id/photo', uploadPhoto.single('photo'), async (req, res) =
 // Routes des paiements
 app.get('/api/payments', authenticateToken, async (req, res) => {
   try {
-    const rows = await db.all(`
-      SELECT p.*, u.name as userName, r.id as reservationId
+    const rows = await db.all(
+      `
+      SELECT
+        p.id,
+        p.reservationId,
+        p.amount,
+        p.status,
+        p.method,
+        p.transactionId,
+        p.createdAt,
+        p.userId,
+        u.name AS userName
       FROM payments p
       LEFT JOIN users u ON p.userId = u.id
-      LEFT JOIN reservations r ON p.reservationId = r.id
       ORDER BY p.createdAt DESC
-    `);
+    `
+    );
     res.json(rows || []);
   } catch (error) {
     // Si la table n'existe pas ou erreur, retourner un tableau vide
@@ -741,7 +950,7 @@ app.post('/api/payments/confirm', async (req, res) => {
     // Enregistrer le paiement dans la base de données
     try {
       const result = await db.run(
-        `INSERT INTO payments (userId, reservationId, amount, status, paymentMethod, createdAt)
+        `INSERT INTO payments (userId, reservationId, amount, status, method, createdAt)
          VALUES (?, ?, ?, 'completed', 'stripe', NOW())`,
         [userId, reservationId, amount]
       );
@@ -1232,7 +1441,9 @@ app.post('/api/reservations/sync', async (req, res) => {
 app.post('/api/users/sync', async (req, res) => {
   try {
     const {
-      name,
+      name: rawName,
+      firstName,
+      lastName,
       email,
       password,
       phone,
@@ -1249,6 +1460,21 @@ app.post('/api/users/sync', async (req, res) => {
       particularite,
       rib,
     } = req.body;
+
+    const name = resolveUserDisplayName({
+      name: rawName,
+      firstName,
+      lastName,
+      experience,
+    });
+    const firstNameValue =
+      firstName != null && String(firstName).trim() !== ''
+        ? String(firstName).trim()
+        : null;
+    const lastNameValue =
+      lastName != null && String(lastName).trim() !== ''
+        ? String(lastName).trim()
+        : null;
 
     const effectiveUserType = (userType || user_type || '').toString().trim();
     let experienceValue = null;
@@ -1281,11 +1507,29 @@ app.post('/api/users/sync', async (req, res) => {
       
       await db.run(
         `UPDATE users SET 
-          name = ?, password = ?, phone = ?, categorie = ?, ville = ?, 
+          name = ?, firstName = ?, lastName = ?, password = ?, phone = ?, categorie = ?, ville = ?, 
           tarif = ?, experience = ?, photo = ?, userType = ?,
           besoin = ?, preference = ?, mission = ?, particularite = ?, rib = ?
          WHERE email = ?`,
-        [name, hashedPassword, phone || null, categorie, ville || null, tarif || null, experienceValue, photo || null, effectiveUserType, besoin || null, preference || null, mission || null, particularite || null, ribValue, email]
+        [
+          name,
+          firstNameValue,
+          lastNameValue,
+          hashedPassword,
+          phone || null,
+          categorie,
+          ville || null,
+          tarif || null,
+          experienceValue,
+          photo || null,
+          effectiveUserType,
+          besoin || null,
+          preference || null,
+          mission || null,
+          particularite || null,
+          ribValue,
+          email,
+        ]
       );
       res.json({
         message: 'Utilisateur mis à jour',
@@ -1297,9 +1541,27 @@ app.post('/api/users/sync', async (req, res) => {
       const hashedPassword = await bcrypt.hash(password, 10);
       
       const result = await db.run(
-        `INSERT INTO users (name, email, password, phone, categorie, ville, tarif, experience, photo, userType, besoin, preference, mission, particularite, rib, createdAt)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())`,
-        [name, email, hashedPassword, phone || null, categorie, ville || null, tarif || null, experienceValue, photo || null, effectiveUserType, besoin || null, preference || null, mission || null, particularite || null, rib ?? null]
+        `INSERT INTO users (name, firstName, lastName, email, password, phone, categorie, ville, tarif, experience, photo, userType, besoin, preference, mission, particularite, rib, createdAt)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())`,
+        [
+          name,
+          firstNameValue,
+          lastNameValue,
+          email,
+          hashedPassword,
+          phone || null,
+          categorie,
+          ville || null,
+          tarif || null,
+          experienceValue,
+          photo || null,
+          effectiveUserType,
+          besoin || null,
+          preference || null,
+          mission || null,
+          particularite || null,
+          rib ?? null,
+        ]
       );
       res.json({
         message: 'Utilisateur créé',
@@ -1328,6 +1590,7 @@ app.get('/', (req, res) => {
       ratings: '/api/ratings',
       reviews: '/api/reviews',
       reservations: '/api/reservations',
+      settings: '/api/settings',
     },
   });
 });

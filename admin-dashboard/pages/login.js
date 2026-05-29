@@ -1,11 +1,9 @@
 import { useState } from 'react';
-import { useRouter } from 'next/router';
 import Link from 'next/link';
 import { authAPI } from '../lib/api';
 import styles from '../styles/Login.module.css';
 
 export default function Login() {
-  const router = useRouter();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -26,7 +24,7 @@ export default function Login() {
         if (response.user) {
           localStorage.setItem('user', JSON.stringify(response.user));
         }
-        router.push('/dashboard');
+        window.location.replace('/dashboard');
       } else {
         setError('Erreur de connexion : token manquant');
       }

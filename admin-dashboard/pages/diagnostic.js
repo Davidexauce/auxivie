@@ -1,5 +1,10 @@
 import { useState, useEffect } from 'react';
 
+/** Même base que `lib/api.js` : le dashboard appelle l’API via le domaine principal. */
+const API_PRIMARY = 'https://auxivie.org';
+/** Hôte alternatif (même backend en prod si DNS configuré). */
+const API_ALT = 'https://api.auxivie.org';
+
 export default function Diagnostic() {
   const [results, setResults] = useState({
     loading: true,
@@ -34,88 +39,100 @@ export default function Diagnostic() {
       };
     }
 
-    // Test 2: Check API reachability (simple GET to health endpoint)
+    // Test 2: API + CORS (GET réel — les en-têtes CORS ne sont pas toujours lisibles en JS sur une requête OPTIONS)
     try {
-      console.log('Testing API reachability...');
+      console.log('Testing API + CORS (primary)...');
       const response = await Promise.race([
-        fetch('https://api.auxivie.org/api/health', {
+        fetch(`${API_PRIMARY}/api/health`, {
           method: 'GET',
           mode: 'cors',
+          credentials: 'include',
         }),
-        new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout')), 5000)),
+        new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout')), 8000)),
       ]);
+      const corsOk = response.type === 'cors' && response.ok;
       tests.apiReachability = {
-        passed: response.ok,
-        message: response.ok ? 'API accessible ✅' : `API responded with ${response.status}`,
+        passed: corsOk,
+        message: corsOk
+          ? `API ${API_PRIMARY}/api — CORS OK (réponse lisible depuis ce site) ✅`
+          : response.type === 'opaque'
+            ? 'Réponse « opaque » : CORS ou réseau bloque l’accès à l’API.'
+            : `HTTP ${response.status} (type: ${response.type})`,
       };
     } catch (error) {
       tests.apiReachability = {
         passed: false,
-        message: `API unreachable: ${error.message}`,
+        message: `API inaccessible : ${error.message}`,
       };
     }
 
-    // Test 3: Check CORS
-    try {
-      console.log('Testing CORS...');
-      const response = await fetch('https://api.auxivie.org/api/auth/login', {
-        method: 'OPTIONS',
-        mode: 'cors',
-        headers: {
-          'Access-Control-Request-Method': 'POST',
-          'Access-Control-Request-Headers': 'Content-Type',
-        },
-      });
-      const corsHeader = response.headers.get('access-control-allow-origin');
-      tests.cors = {
-        passed: corsHeader !== null,
-        message: corsHeader ? `CORS enabled ✅ (${corsHeader})` : 'CORS not enabled',
-      };
-    } catch (error) {
-      tests.cors = {
-        passed: false,
-        message: `CORS check failed: ${error.message}`,
-      };
-    }
+    // Test 3: CORS (même résultat que le test API : on ne se fie pas aux en-têtes lus en JS)
+    tests.cors = {
+      passed: tests.apiReachability?.passed === true,
+      message:
+        tests.apiReachability?.passed === true
+          ? 'CORS actif pour cette origine (réponse cross-origin exploitable, type « cors ») ✅'
+          : tests.apiReachability?.message
+            ? `Lié au test API ci-dessus : ${tests.apiReachability.message}`
+            : 'Exécutez d’abord le test de joignabilité API.',
+    };
 
     // Test 4: Check SSL/TLS
     try {
       console.log('Testing SSL...');
-      const response = await fetch('https://api.auxivie.org', {
+      await fetch(API_PRIMARY, {
         method: 'HEAD',
+        mode: 'cors',
       });
       tests.ssl = {
         passed: true,
-        message: 'SSL certificate valid ✅',
+        message: 'Certificat TLS (auxivie.org) joignable ✅',
       };
     } catch (error) {
       tests.ssl = {
         passed: false,
-        message: `SSL issue: ${error.message}`,
+        message: `SSL / TLS : ${error.message}`,
       };
     }
 
-    // Test 5: Check DNS resolution
+    // Test 5: DNS / hôte secondaire (informatif)
     try {
-      console.log('Testing DNS...');
-      const response = await fetch('https://api.auxivie.org/api/health');
+      console.log('Testing alternate API host...');
+      const response = await Promise.race([
+        fetch(`${API_ALT}/api/health`, {
+          method: 'GET',
+          mode: 'cors',
+          credentials: 'include',
+        }),
+        new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout')), 8000)),
+      ]);
+      const ok = response.type === 'cors' && response.ok;
+      const primaryOk = tests.apiReachability?.passed === true;
       tests.dns = {
-        passed: true,
-        message: 'DNS resolution working ✅',
+        passed: ok || primaryOk,
+        message: ok
+          ? `Hôte secondaire ${API_ALT}/api joignable ✅`
+          : primaryOk
+            ? `Hôte secondaire : optionnel — ${API_PRIMARY} suffit pour le dashboard ✅`
+            : `Hôte secondaire indisponible (HTTP ${response.status}, type ${response.type}).`,
       };
     } catch (error) {
+      const primaryOk = tests.apiReachability?.passed === true;
       tests.dns = {
-        passed: false,
-        message: `DNS issue: ${error.message}`,
+        passed: primaryOk,
+        message: primaryOk
+          ? `Hôte secondaire : erreur (${error.message}) — ignoré car ${API_PRIMARY} répond ✅`
+          : `Hôte secondaire non joignable : ${error.message}`,
       };
     }
 
-    // Test 6: Test actual login endpoint with OPTIONS
+    // Test 6: Prévol OPTIONS login (domaine principal)
     try {
-      console.log('Testing login endpoint OPTIONS...');
-      const response = await fetch('https://api.auxivie.org/api/auth/login', {
+      console.log('Testing login endpoint OPTIONS (primary)...');
+      const response = await fetch(`${API_PRIMARY}/api/auth/login`, {
         method: 'OPTIONS',
         mode: 'cors',
+        credentials: 'include',
         headers: {
           'Access-Control-Request-Method': 'POST',
           'Access-Control-Request-Headers': 'Content-Type,Authorization',
@@ -123,21 +140,22 @@ export default function Diagnostic() {
       });
       tests.loginEndpointOPTIONS = {
         passed: response.ok || response.status === 204,
-        message: `Login endpoint OPTIONS responding (${response.status}) ✅`,
+        message: `OPTIONS /api/auth/login (${API_PRIMARY}) → ${response.status} ✅`,
       };
     } catch (error) {
       tests.loginEndpointOPTIONS = {
         passed: false,
-        message: `Login endpoint OPTIONS error: ${error.message}`,
+        message: `OPTIONS login : ${error.message}`,
       };
     }
 
-    // Test 7: Test actual login endpoint with POST (invalid credentials expected)
+    // Test 7: POST login (identifiants invalides attendus)
     try {
-      console.log('Testing login endpoint POST...');
-      const response = await fetch('https://api.auxivie.org/api/auth/login', {
+      console.log('Testing login endpoint POST (primary)...');
+      const response = await fetch(`${API_PRIMARY}/api/auth/login`, {
         method: 'POST',
         mode: 'cors',
+        credentials: 'include',
         headers: {
           'Content-Type': 'application/json',
         },
@@ -145,59 +163,46 @@ export default function Diagnostic() {
       });
       tests.loginEndpointPOST = {
         passed: response.status === 401 || response.status === 200 || response.status === 400,
-        message: `Login endpoint responding (${response.status}) ✅`,
+        message: `POST /api/auth/login (${API_PRIMARY}) → ${response.status} ✅`,
       };
     } catch (error) {
       tests.loginEndpointPOST = {
         passed: false,
-        message: `Login endpoint POST error: ${error.message}`,
+        message: `POST login : ${error.message}`,
       };
     }
 
-    // Test 8: Test fallback URL via frontend domain
-    try {
-      console.log('Testing fallback URL (auxivie.org/api)...');
-      const response = await fetch('https://auxivie.org/api/auth/login', {
-        method: 'POST',
-        mode: 'cors',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ email: 'test@test.com', password: 'test' }),
-      });
-      tests.fallbackFrontendDomain = {
-        passed: response.status === 401 || response.status === 200 || response.status === 400,
-        message: `Fallback via frontend domain working ✅`,
-      };
-    } catch (error) {
-      tests.fallbackFrontendDomain = {
-        passed: false,
-        message: `Fallback frontend domain failed: ${error.message}`,
-      };
-    }
-
-    // Test 9: Test fallback URL via direct IP
-    try {
-      console.log('Testing fallback URL (Direct IP:8080)...');
-      const response = await fetch('http://178.16.131.24:8080/api/auth/login', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ email: 'test@test.com', password: 'test' }),
-      });
+    // Test 8: IP en HTTP — depuis une page HTTPS le navigateur bloque (mixed content) : on ne teste pas, ce n’est pas une erreur prod.
+    const pageIsHttps = typeof window !== 'undefined' && window.location.protocol === 'https:';
+    if (pageIsHttps) {
       tests.fallbackDirectIP = {
-        passed: response.status === 401 || response.status === 200 || response.status === 400,
-        message: `Fallback via direct IP working ✅`,
+        passed: true,
+        message:
+          'Non applicable : depuis HTTPS, une requête HTTP vers une IP est bloquée (mixed content). Le dashboard utilise uniquement des URLs HTTPS.',
       };
-    } catch (error) {
-      tests.fallbackDirectIP = {
-        passed: false,
-        message: `Fallback direct IP failed: ${error.message}`,
-      };
+    } else {
+      try {
+        console.log('Testing fallback URL (Direct IP:8080)...');
+        const response = await fetch('http://178.16.131.24:8080/api/auth/login', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ email: 'test@test.com', password: 'test' }),
+        });
+        tests.fallbackDirectIP = {
+          passed: response.status === 401 || response.status === 200 || response.status === 400,
+          message: `Fallback IP (HTTP) → ${response.status} ✅`,
+        };
+      } catch (error) {
+        tests.fallbackDirectIP = {
+          passed: false,
+          message: `Fallback IP : ${error.message}`,
+        };
+      }
     }
 
-    // Test 8: Browser info
+    // Infos navigateur
     tests.browser = {
       passed: true,
       message: `${navigator.userAgent.substring(0, 70)}...`,
@@ -265,13 +270,12 @@ export default function Diagnostic() {
           </p>
         ) : (
           <div>
-            <p><strong>Important:</strong> Si les premiers tests échouent mais les fallbacks (auxivie.org/api ou IP directe) réussissent, c'est que votre réseau bloque les connexions vers le domaine api.auxivie.org. Ne vous inquiétez pas - l'application bascule automatiquement vers les fallbacks!</p>
+            <p><strong>Important:</strong> Le diagnostic utilise surtout <code>https://auxivie.org/api</code> (comme la page de connexion). Un échec sur <code>api.auxivie.org</code> seul peut être ignoré si le test principal est vert.</p>
             
             <p><strong>Résumé des résultats:</strong></p>
             <ul>
-              <li>🔴 Tests vers api.auxivie.org échouent? → Votre réseau bloque ce domaine</li>
-              <li>🟢 Fallback via auxivie.org/api réussit? → L'application fonctionnera normalement</li>
-              <li>🟢 Fallback via IP directe réussit? → L'application fonctionnera aussi avec cette URL</li>
+              <li>🔴 « API / CORS » en échec → problème réseau, pare-feu ou configuration CORS sur le serveur</li>
+              <li>🟢 « Fallback direct IP » ignoré en HTTPS → comportement normal du navigateur (mixed content)</li>
             </ul>
             
             <p><strong>Les causes courantes:</strong></p>
@@ -284,7 +288,7 @@ export default function Diagnostic() {
             
             <p><strong>Solutions recommandées:</strong></p>
             <ul>
-              <li>✅ Si un fallback fonctionne, vous pouvez vous connecter normalement</li>
+              <li>✅ Si <code>auxivie.org/api</code> est vert, la connexion admin peut fonctionner même si l’hôte secondaire échoue</li>
               <li>Essayez sur un autre réseau (Hotspot mobile, réseau public, VPN)</li>
               <li>Essayez sur un autre navigateur ou appareil</li>
               <li>Contactez votre administrateur réseau si vous êtes sur un réseau d'entreprise</li>

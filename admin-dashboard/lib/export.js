@@ -1,4 +1,5 @@
 // Utilitaires pour l'export de données en CSV
+import { displayUserName } from './displayUserName';
 
 export const exportToCSV = (data, filename, headers = null) => {
   if (!data || data.length === 0) {
@@ -49,7 +50,7 @@ export const exportUsersToCSV = (users) => {
   const headers = ['ID', 'Nom', 'Email', 'Téléphone', 'Type', 'Catégorie', 'Ville', 'Tarif', 'Statut'];
   const data = users.map(user => ({
     'ID': user.id,
-    'Nom': user.name || '',
+    'Nom': displayUserName(user) || '',
     'Email': user.email || '',
     'Téléphone': user.phone || '',
     'Type': user.userType === 'professionnel' ? 'Professionnel' : 'Famille',
