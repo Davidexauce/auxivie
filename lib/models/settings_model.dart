@@ -2,6 +2,12 @@ import '../constants/app_brand.dart';
 
 /// Modèle pour les paramètres système de la plateforme
 class SettingsModel {
+  static String _parseStripePublicKey(dynamic raw) {
+    final s = raw?.toString().trim() ?? '';
+    if (s.isEmpty || s == '0') return '';
+    if (s.startsWith('pk_test_') || s.startsWith('pk_live_')) return s;
+    return '';
+  }
   // Général
   final double platformFee; // Commission en %
   final int cancellationDelay; // Heures avant réservation pour annulation gratuite
@@ -58,7 +64,7 @@ class SettingsModel {
       supportPhone: map['supportPhone'] as String? ?? '+33 6 52 24 85 94',
       minReservationHours: (map['minReservationHours'] as num?)?.toInt() ?? 2,
       maxReservationHours: (map['maxReservationHours'] as num?)?.toInt() ?? 24,
-      stripePublicKey: map['stripePublicKey'] as String? ?? '',
+      stripePublicKey: _parseStripePublicKey(map['stripePublicKey']),
       stripeMode: map['stripeMode'] as String? ?? 'test',
       autoApproveDocuments: map['autoApproveDocuments'] as bool? ?? false,
       sendEmailNotifications: map['sendEmailNotifications'] as bool? ?? true,

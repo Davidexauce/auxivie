@@ -2349,18 +2349,21 @@ class BackendApiService {
 
       if (response.statusCode == 200) {
         final List<dynamic> data = json.decode(response.body);
-        return data.map((user) => UserModel.fromMap(user as Map<String, dynamic>)).toList();
+        final list = data
+            .map((user) => UserModel.fromMap(user as Map<String, dynamic>))
+            .toList();
+        if (list.isNotEmpty) return list;
+      } else if (AppConfig.enableLogging) {
+        print(
+          '⚠️ getProtectedProfessionals: ${response.statusCode}, repli sur /users?userType=professionnel',
+        );
       }
-      if (AppConfig.enableLogging) {
-        print('❌ Erreur getProtectedProfessionals: ${response.statusCode} - ${response.body}');
-      }
-      return [];
     } catch (e) {
       if (AppConfig.enableLogging) {
-        print('❌ Erreur getProtectedProfessionals: $e');
+        print('⚠️ getProtectedProfessionals: $e — repli sur /users?userType=professionnel');
       }
-      return [];
     }
+    return getProfessionals();
   }
 
   /// Récupère les détails d'un utilisateur avec protection selon réservation
@@ -2376,7 +2379,7 @@ class BackendApiService {
         final data = json.decode(response.body) as Map<String, dynamic>;
         return UserModel.fromMap(data);
       }
-   
+
       if (response.statusCode == 404) {
         if (AppConfig.enableLogging) {
           print('⚠️ Utilisateur non trouvé: $userId');
@@ -2385,15 +2388,16 @@ class BackendApiService {
       }
 
       if (AppConfig.enableLogging) {
-        print('❌ Erreur getProtectedUser: ${response.statusCode} - ${response.body}');
+        print(
+          '⚠️ getProtectedUser: ${response.statusCode} — repli sur /users/$userId',
+        );
       }
-      return null;
     } catch (e) {
       if (AppConfig.enableLogging) {
-        print('❌ Erreur getProtectedUser: $e');
+        print('⚠️ getProtectedUser: $e — repli sur /users/$userId');
       }
-      return null;
     }
+    return getUserById(userId);
   }
 
   /// Récupère les informations de contact si autorisé

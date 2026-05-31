@@ -2,8 +2,9 @@
 String sanitizeUserDisplayName(String name, {int? experience}) {
   final trimmed = name.trim();
   if (trimmed.isEmpty) return trimmed;
-  if (experience != 0) return trimmed;
   if (trimmed.length < 2 || !trimmed.endsWith('0')) return trimmed;
+  final charBefore = trimmed[trimmed.length - 2];
+  if (RegExp(r'[0-9]').hasMatch(charBefore)) return trimmed;
   final without = trimmed.substring(0, trimmed.length - 1);
   if (without.isEmpty || without.endsWith(' ')) return trimmed;
   return without;

@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import '../models/settings_model.dart';
 import '../services/backend_api_service.dart';
+import '../services/stripe_init_service.dart';
 
 /// ViewModel pour gérer les paramètres de l'application
 class SettingsViewModel extends ChangeNotifier {
@@ -27,6 +28,11 @@ class SettingsViewModel extends ChangeNotifier {
       if (settings != null) {
         _settings = settings;
         _errorMessage = null;
+        unawaited(
+          StripeInitService.ensureInitialized(
+            fromSettings: settings.stripePublicKey,
+          ),
+        );
       } else {
         // Utiliser les valeurs par défaut si l'API échoue
         _settings = SettingsModel.defaults();

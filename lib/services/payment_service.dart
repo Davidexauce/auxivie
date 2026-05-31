@@ -1,6 +1,7 @@
 import 'package:flutter_stripe/flutter_stripe.dart';
 import '../config/app_config.dart';
 import '../services/backend_api_service.dart';
+import '../services/stripe_init_service.dart';
 import '../constants/app_brand.dart';
 import '../constants/payment_constants.dart';
 
@@ -85,6 +86,9 @@ class PaymentService {
     String currency = 'eur',
   }) async {
     try {
+      final ready = await StripeInitService.ensureInitialized();
+      if (!ready) return false;
+
       // 1. Créer le PaymentIntent via l'API backend
       final intentData = await BackendApiService.createPaymentIntent(
         reservationId: reservationId,

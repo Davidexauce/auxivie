@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_stripe/flutter_stripe.dart' hide Card;
+import 'package:provider/provider.dart';
 import '../../services/backend_api_service.dart';
+import '../../services/stripe_init_service.dart';
 import '../../constants/payment_constants.dart';
 import '../../theme/app_theme.dart';
+import '../../viewmodels/settings_viewmodel.dart';
 import '../../widgets/price_breakdown_widget.dart';
 
 class PaymentScreen extends StatefulWidget {
@@ -41,6 +44,20 @@ class _PaymentScreenState extends State<PaymentScreen> {
     setState(() => _isLoading = true);
 
     try {
+      final stripeReady = await StripeInitService.ensureInitialized(
+        fromSettings: context.read<SettingsViewModel>().settings?.stripePublicKey,
+      );
+      if (!stripeReady) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(StripeInitService.userFacingConfigError()),
+            backgroundColor: Colors.red,
+          ),
+        );
+        return;
+      }
+
       // 1. Créer le PaymentIntent côté backend
       print('💳 [PAYMENT] Création PaymentIntent...');
       final paymentIntentData = await BackendApiService.createPaymentIntent(
@@ -99,6 +116,14 @@ class _PaymentScreenState extends State<PaymentScreen> {
       // Retourner true pour indiquer le succès
       Navigator.of(context).pop(true);
 
+    } on StripeConfigException {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(StripeInitService.userFacingConfigError()),
+          backgroundColor: Colors.red,
+        ),
+      );
     } on StripeException catch (e) {
       print('❌ [PAYMENT] Erreur Stripe: ${e.error.message}');
       if (!mounted) return;

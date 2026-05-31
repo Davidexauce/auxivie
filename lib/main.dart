@@ -3,9 +3,8 @@ import 'package:provider/provider.dart';
 import 'package:flutter/services.dart';
 import 'dart:async';
 import 'package:intl/date_symbol_data_local.dart';
-import 'package:flutter_stripe/flutter_stripe.dart';
 import 'services/backend_api_service.dart';
-import 'constants/payment_constants.dart';
+import 'services/stripe_init_service.dart';
 import 'viewmodels/auth_viewmodel.dart';
 import 'viewmodels/profile_viewmodel.dart';
 import 'viewmodels/message_viewmodel.dart';
@@ -111,33 +110,9 @@ class _AidalyaAppState extends State<AidalyaApp> {
   }
 
   Future<void> _initializeStripeInBackground() async {
-    try {
-      final settings = _settingsViewModel.settings;
-      String stripeKey;
-      String mode;
-
-      if (settings != null && settings.stripePublicKey.isNotEmpty) {
-        stripeKey = settings.stripePublicKey;
-        mode = settings.stripeMode;
-      } else {
-        stripeKey = PaymentConstants.stripePublishableKey;
-        mode = 'production';
-        AppLogger.log('Stripe: Utilisation de la clé par défaut (fallback)');
-      }
-
-      if (stripeKey.isEmpty) {
-        AppLogger.error('Stripe non initialisé: aucune clé publishable disponible');
-        return;
-      }
-
-      Stripe.publishableKey = stripeKey;
-      await Stripe.instance
-          .applySettings()
-          .timeout(const Duration(seconds: 8));
-      AppLogger.log('Stripe initialisé avec succès (mode $mode)');
-    } catch (e) {
-      AppLogger.error('Erreur lors de l\'initialisation de Stripe', error: e);
-    }
+    await StripeInitService.ensureInitialized(
+      fromSettings: _settingsViewModel.settings?.stripePublicKey,
+    );
   }
 
   @override
