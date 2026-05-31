@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
 import Layout from '../../components/Layout';
 import { usersAPI, badgesAPI, ratingsAPI, reviewsAPI } from '../../lib/api';
+import { displayUserName } from '../../lib/displayUserName';
 import styles from '../../styles/UserDetail.module.css';
 
 export default function UserDetail() {
@@ -184,7 +185,7 @@ export default function UserDetail() {
         </button>
 
         <div className={styles.header}>
-          <h1 className={styles.title}>{user.name}</h1>
+          <h1 className={styles.title}>{displayUserName(user)}</h1>
           <div style={{ display: 'flex', gap: '12px' }}>
             <button
               className={styles.editButton}

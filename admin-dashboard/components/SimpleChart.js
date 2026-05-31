@@ -30,6 +30,7 @@ export default function SimpleChart({ title, data, maxValue, color = '#059669' }
                   style={{
                     width: `${percentage}%`,
                     backgroundColor: item.color || color,
+                    '--bar-delay': `${0.15 + index * 0.08}s`,
                   }}
                 />
               </div>

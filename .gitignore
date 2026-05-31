@@ -25,6 +25,8 @@ admin-dashboard/prod.log
 admin-dashboard/out/
 
 # Anciens artefacts Flutter (si réintroduits par erreur)
+ios/
+macos/
 build/
 .dart_tool/
 .flutter-plugins

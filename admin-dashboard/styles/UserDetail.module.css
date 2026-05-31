@@ -24,26 +24,27 @@
 }
 
 .title {
-  font-size: 32px;
+  font-size: 1.75rem;
   font-weight: 700;
-  color: #0b1220;
+  letter-spacing: -0.02em;
+  color: var(--text-primary);
   margin: 0;
 }
 
 .editButton {
-  background: linear-gradient(to right, #16a34a, #10b981, #16a34a);
-  color: white;
+  background: linear-gradient(135deg, var(--primary), var(--emerald));
+  color: var(--white);
   border: none;
-  padding: 12px 24px;
-  border-radius: 8px;
+  padding: 12px 22px;
+  border-radius: var(--radius-md);
   cursor: pointer;
   font-weight: 600;
-  transition: all 0.2s;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.06);
+  transition: filter 0.15s;
+  box-shadow: var(--shadow-sm);
 }
 
 .editButton:hover {
-  background: linear-gradient(to right, #15803d, #059669, #15803d);
+  filter: brightness(1.06);
 }
 
 .content {
@@ -53,10 +54,11 @@
 }
 
 .section {
-  background: white;
+  background: var(--surface);
   padding: 24px;
-  border-radius: 12px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border-subtle);
+  box-shadow: var(--shadow-md);
 }
 
 .section h2 {

@@ -3,9 +3,10 @@
 }
 
 .title {
-  font-size: 32px;
+  font-size: 1.75rem;
   font-weight: 700;
-  color: #0b1220;
+  letter-spacing: -0.02em;
+  color: var(--text-primary);
   margin-bottom: 24px;
 }
 
@@ -43,10 +44,11 @@
 }
 
 .reviewCard {
-  background: white;
+  background: var(--surface);
   padding: 24px;
-  border-radius: 12px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border-subtle);
+  box-shadow: var(--shadow-md);
 }
 
 .reviewHeader {

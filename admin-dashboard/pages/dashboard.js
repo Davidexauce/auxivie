@@ -3,7 +3,19 @@ import { useRouter } from 'next/router';
 import Layout from '../components/Layout';
 import { usersAPI, documentsAPI, reservationsAPI, paymentsAPI } from '../lib/api';
 import SimpleChart from '../components/SimpleChart';
+import AlertsPanel from '../components/AlertsPanel';
 import styles from '../styles/Dashboard.module.css';
+
+const QUICK_LINKS = [
+  { href: '/users', label: 'Utilisateurs', desc: 'Comptes pro & familles', accent: 'blue' },
+  { href: '/documents', label: 'Documents', desc: 'Vérifications en attente', accent: 'amber' },
+  { href: '/reservations', label: 'Réservations', desc: 'Planning & statuts', accent: 'indigo' },
+  { href: '/payments', label: 'Paiements', desc: 'Transactions Stripe', accent: 'green' },
+  { href: '/messages', label: 'Messages', desc: 'Conversations', accent: 'slate' },
+  { href: '/reviews', label: 'Avis', desc: 'Modération', accent: 'rose' },
+  { href: '/reports', label: 'Signalements', desc: 'Signalements utilisateurs', accent: 'amber' },
+  { href: '/settings', label: 'Paramètres', desc: 'Plateforme & Stripe', accent: 'green' },
+];
 
 export default function Dashboard() {
   const router = useRouter();
@@ -52,13 +64,13 @@ export default function Dashboard() {
         paymentsAPI.getAll().catch(() => []),
       ]);
 
-      const professionals = users.filter(u => u.userType === 'professionnel').length;
-      const families = users.filter(u => u.userType === 'famille').length;
-      const pendingDocuments = documents.filter(d => d.status === 'pending').length;
-      const activeReservations = reservations.filter(r => 
-        r.status === 'pending' || r.status === 'confirmed'
+      const professionals = users.filter((u) => u.userType === 'professionnel').length;
+      const families = users.filter((u) => u.userType === 'famille').length;
+      const pendingDocuments = documents.filter((d) => d.status === 'pending').length;
+      const activeReservations = reservations.filter(
+        (r) => r.status === 'pending' || r.status === 'confirmed'
       ).length;
-      const recentPayments = payments.filter(p => {
+      const recentPayments = payments.filter((p) => {
         const paymentDate = new Date(p.createdAt);
         const weekAgo = new Date();
         weekAgo.setDate(weekAgo.getDate() - 7);
@@ -75,22 +87,49 @@ export default function Dashboard() {
         recentPayments,
       });
 
-      // Préparer les données pour les graphiques
       setChartData({
         usersByType: [
           { label: 'Professionnels', value: professionals, color: '#3b82f6' },
           { label: 'Familles', value: families, color: '#10b981' },
         ],
         reservationsByStatus: [
-          { label: 'En attente', value: reservations.filter(r => r.status === 'pending').length, color: '#f59e0b' },
-          { label: 'Confirmées', value: reservations.filter(r => r.status === 'confirmed').length, color: '#3b82f6' },
-          { label: 'Terminées', value: reservations.filter(r => r.status === 'completed').length, color: '#10b981' },
-          { label: 'Annulées', value: reservations.filter(r => r.status === 'cancelled').length, color: '#ef4444' },
+          {
+            label: 'En attente',
+            value: reservations.filter((r) => r.status === 'pending').length,
+            color: '#f59e0b',
+          },
+          {
+            label: 'Confirmées',
+            value: reservations.filter((r) => r.status === 'confirmed').length,
+            color: '#3b82f6',
+          },
+          {
+            label: 'Terminées',
+            value: reservations.filter((r) => r.status === 'completed').length,
+            color: '#10b981',
+          },
+          {
+            label: 'Annulées',
+            value: reservations.filter((r) => r.status === 'cancelled').length,
+            color: '#ef4444',
+          },
         ],
         paymentsByStatus: [
-          { label: 'En attente', value: payments.filter(p => p.status === 'pending').length, color: '#f59e0b' },
-          { label: 'Complétés', value: payments.filter(p => p.status === 'completed').length, color: '#10b981' },
-          { label: 'Échoués', value: payments.filter(p => p.status === 'failed').length, color: '#ef4444' },
+          {
+            label: 'En attente',
+            value: payments.filter((p) => p.status === 'pending').length,
+            color: '#f59e0b',
+          },
+          {
+            label: 'Complétés',
+            value: payments.filter((p) => p.status === 'completed').length,
+            color: '#10b981',
+          },
+          {
+            label: 'Échoués',
+            value: payments.filter((p) => p.status === 'failed').length,
+            color: '#ef4444',
+          },
         ],
       });
     } catch (error) {
@@ -103,7 +142,7 @@ export default function Dashboard() {
   if (loading) {
     return (
       <Layout>
-        <div className={styles.loading}>Chargement...</div>
+        <div className={styles.loading}>Chargement du tableau de bord...</div>
       </Layout>
     );
   }
@@ -111,120 +150,116 @@ export default function Dashboard() {
   return (
     <Layout>
       <div className={styles.dashboard}>
-        <h1 className={styles.title}>Tableau de bord</h1>
-        
-        {admin && (
-          <div className={styles.adminCard}>
-            <div className={styles.adminCardHeader}>
-              <h2 className={styles.adminCardTitle}>Admin connecté</h2>
-            </div>
-            <div className={styles.adminCardContent}>
-              <div className={styles.adminField}>
-                <span className={styles.adminLabel}>Nom:</span>
-                <span className={styles.adminValue}>{admin.name}</span>
-              </div>
-              <div className={styles.adminField}>
-                <span className={styles.adminLabel}>Email:</span>
-                <span className={styles.adminValue}>{admin.email}</span>
-              </div>
-              <div className={styles.adminField}>
-                <span className={styles.adminLabel}>Type:</span>
-                <span className={styles.adminBadge}>{admin.userType}</span>
-              </div>
-              <div className={styles.adminField}>
-                <span className={styles.adminLabel}>ID:</span>
-                <span className={styles.adminValue}>{admin.id}</span>
-              </div>
-            </div>
+        <header className={styles.hero}>
+          <div>
+            <p className={styles.heroEyebrow}>Aidalya · Administration</p>
+            <h1 className={styles.heroTitle}>Tableau de bord</h1>
+            <p className={styles.heroSubtitle}>
+              Vue d&apos;ensemble de la plateforme en temps réel
+            </p>
           </div>
-        )}
-        
-        <div className={styles.statsGrid}>
-          <div className={styles.statCard}>
-            <h3 className={styles.statTitle}>Total Utilisateurs</h3>
+          {admin && (
+            <div className={styles.adminPill}>
+              <span className={styles.adminAvatar}>
+                {(admin.name?.[0] || admin.email?.[0] || 'A').toUpperCase()}
+              </span>
+              <div>
+                <span className={styles.adminName}>{admin.name || 'Administrateur'}</span>
+                <span className={styles.adminEmail}>{admin.email}</span>
+              </div>
+            </div>
+          )}
+        </header>
+
+        <AlertsPanel />
+
+        <section className={styles.statsGrid}>
+          <article className={`${styles.statCard} ${styles.statPrimary}`}>
+            <span className={styles.statLabel}>Utilisateurs</span>
             <p className={styles.statValue}>{stats.totalUsers}</p>
-          </div>
-          
-          <div className={styles.statCard}>
-            <h3 className={styles.statTitle}>Professionnels</h3>
-            <p className={styles.statValue}>{stats.professionals}</p>
-          </div>
-          
-          <div className={styles.statCard}>
-            <h3 className={styles.statTitle}>Familles</h3>
-            <p className={styles.statValue}>{stats.families}</p>
-          </div>
-
-          <div className={styles.statCard} style={{ borderLeft: '4px solid #f59e0b' }}>
-            <h3 className={styles.statTitle}>Documents en attente</h3>
-            <p className={styles.statValue}>{stats.pendingDocuments}</p>
-            <button 
-              className={styles.actionButton}
-              onClick={() => router.push('/documents')}
-              style={{ marginTop: '10px', fontSize: '12px', padding: '6px 12px' }}
-            >
-              Voir les documents
-            </button>
-          </div>
-
-          <div className={styles.statCard} style={{ borderLeft: '4px solid #3b82f6' }}>
-            <h3 className={styles.statTitle}>Réservations actives</h3>
-            <p className={styles.statValue}>{stats.activeReservations}</p>
-            <button 
-              className={styles.actionButton}
-              onClick={() => router.push('/reservations')}
-              style={{ marginTop: '10px', fontSize: '12px', padding: '6px 12px' }}
-            >
-              Voir les réservations
-            </button>
-          </div>
-
-          <div className={styles.statCard} style={{ borderLeft: '4px solid #10b981' }}>
-            <h3 className={styles.statTitle}>Paiements (7 jours)</h3>
-            <p className={styles.statValue}>{stats.recentPayments}</p>
-            <small style={{ color: '#666' }}>Total: {stats.totalPayments}</small>
-            <button 
-              className={styles.actionButton}
-              onClick={() => router.push('/payments')}
-              style={{ marginTop: '10px', fontSize: '12px', padding: '6px 12px' }}
-            >
-              Voir les paiements
-            </button>
-          </div>
-        </div>
-
-        <div className={styles.actions}>
-          <button 
-            className={styles.actionButton}
-            onClick={() => router.push('/users')}
+            <span className={styles.statMeta}>
+              {stats.professionals} pro · {stats.families} familles
+            </span>
+          </article>
+          <article
+            className={`${styles.statCard} ${styles.statWarning} ${
+              stats.pendingDocuments > 0 ? styles.statHighlight : ''
+            }`}
           >
-            Gérer les utilisateurs
-          </button>
-        </div>
+            <span className={styles.statLabel}>Documents en attente</span>
+            <p className={styles.statValue}>{stats.pendingDocuments}</p>
+            {stats.pendingDocuments > 0 && (
+              <span className={styles.statAlertTag}>À traiter</span>
+            )}
+            <button
+              type="button"
+              className={styles.statLink}
+              onClick={() => router.push('/documents')}
+            >
+              Voir les documents →
+            </button>
+          </article>
+          <article className={`${styles.statCard} ${styles.statInfo}`}>
+            <span className={styles.statLabel}>Réservations actives</span>
+            <p className={styles.statValue}>{stats.activeReservations}</p>
+            <button
+              type="button"
+              className={styles.statLink}
+              onClick={() => router.push('/reservations')}
+            >
+              Voir les réservations →
+            </button>
+          </article>
+          <article className={`${styles.statCard} ${styles.statSuccess}`}>
+            <span className={styles.statLabel}>Paiements (7 jours)</span>
+            <p className={styles.statValue}>{stats.recentPayments}</p>
+            <span className={styles.statMeta}>Total : {stats.totalPayments}</span>
+            <button
+              type="button"
+              className={styles.statLink}
+              onClick={() => router.push('/payments')}
+            >
+              Voir les paiements →
+            </button>
+          </article>
+        </section>
 
-        {/* Graphiques */}
-        <div style={{ 
-          display: 'grid', 
-          gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', 
-          gap: '20px', 
-          marginTop: '40px' 
-        }}>
-          <SimpleChart
-            title="Répartition des utilisateurs"
-            data={chartData.usersByType}
-            maxValue={stats.totalUsers}
-          />
-          <SimpleChart
-            title="Réservations par statut"
-            data={chartData.reservationsByStatus}
-          />
-          <SimpleChart
-            title="Paiements par statut"
-            data={chartData.paymentsByStatus}
-          />
-        </div>
+        <section className={styles.quickSection}>
+          <h2 className={styles.sectionTitle}>Accès rapide</h2>
+          <div className={styles.quickGrid}>
+            {QUICK_LINKS.map((link) => (
+              <button
+                key={link.href}
+                type="button"
+                className={`${styles.quickCard} ${styles[`quick_${link.accent}`]}`}
+                onClick={() => router.push(link.href)}
+              >
+                <span className={styles.quickLabel}>{link.label}</span>
+                <span className={styles.quickDesc}>{link.desc}</span>
+              </button>
+            ))}
+          </div>
+        </section>
+
+        <section className={styles.chartsSection}>
+          <h2 className={styles.sectionTitle}>Statistiques</h2>
+          <div className={styles.chartsGrid}>
+            <SimpleChart
+              title="Répartition des utilisateurs"
+              data={chartData.usersByType}
+              maxValue={stats.totalUsers || 1}
+            />
+            <SimpleChart
+              title="Réservations par statut"
+              data={chartData.reservationsByStatus}
+            />
+            <SimpleChart
+              title="Paiements par statut"
+              data={chartData.paymentsByStatus}
+            />
+          </div>
+        </section>
       </div>
     </Layout>
   );
 }
-

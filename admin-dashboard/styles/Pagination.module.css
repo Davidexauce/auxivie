@@ -2,52 +2,56 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-top: 20px;
-  padding: 15px;
-  background-color: #f9fafb;
-  border-radius: 8px;
+  margin-top: 24px;
+  padding: 16px 20px;
+  background: var(--surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
   flex-wrap: wrap;
-  gap: 15px;
+  gap: 16px;
 }
 
 .paginationInfo {
   display: flex;
   align-items: center;
-  gap: 15px;
-  color: #666;
-  font-size: 14px;
+  gap: 16px;
+  color: var(--text-secondary);
+  font-size: 0.875rem;
 }
 
 .itemsPerPage {
-  padding: 6px 10px;
-  border: 1px solid #ddd;
-  border-radius: 4px;
-  font-size: 14px;
-  background-color: white;
+  padding: 8px 12px;
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-sm);
+  font-size: 0.875rem;
+  background: var(--surface);
   cursor: pointer;
 }
 
 .paginationControls {
   display: flex;
   align-items: center;
-  gap: 5px;
+  gap: 6px;
   flex-wrap: wrap;
 }
 
 .paginationButton {
   padding: 8px 12px;
-  border: 1px solid #ddd;
-  background-color: white;
-  border-radius: 4px;
+  border: 1px solid var(--border-light);
+  background: var(--surface);
+  border-radius: var(--radius-sm);
   cursor: pointer;
-  font-size: 14px;
-  transition: all 0.2s;
+  font-size: 0.875rem;
+  font-weight: 500;
+  transition: all 0.15s;
   min-width: 40px;
 }
 
 .paginationButton:hover:not(:disabled) {
-  background-color: #f3f4f6;
-  border-color: #059669;
+  background: var(--green-50);
+  border-color: var(--primary);
+  color: var(--primary-dark);
 }
 
 .paginationButton:disabled {
@@ -56,14 +60,14 @@
 }
 
 .paginationButton.active {
-  background-color: #059669;
-  color: white;
-  border-color: #059669;
+  background: linear-gradient(135deg, var(--primary), var(--emerald));
+  color: var(--white);
+  border-color: transparent;
 }
 
 .ellipsis {
   padding: 8px 4px;
-  color: #666;
+  color: var(--text-tertiary);
 }
 
 @media (max-width: 768px) {
@@ -71,13 +75,12 @@
     flex-direction: column;
     align-items: stretch;
   }
-  
+
   .paginationInfo {
     justify-content: space-between;
   }
-  
+
   .paginationControls {
     justify-content: center;
   }
 }
-

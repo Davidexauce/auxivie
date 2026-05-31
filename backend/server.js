@@ -15,6 +15,11 @@ const {
   resolveUserDisplayName,
   formatUserDisplayName,
 } = require('./lib/userDisplayName');
+const {
+  mergeSettings,
+  sanitizePublicSettings,
+  validateSettings,
+} = require('./lib/appSettings');
 
 /** Normalise les champs nom pour les réponses JSON (dashboard + app). */
 function mapUserForResponse(row) {
@@ -25,6 +30,82 @@ function mapUserForResponse(row) {
     name: displayName,
     firstName: row.firstName ?? null,
     lastName: row.lastName ?? null,
+    suspended: Boolean(row.suspended),
+  };
+}
+
+const PROFESSIONAL_PUBLIC_FIELDS =
+  'id, name, firstName, lastName, email, phone, categorie, ville, tarif, experience, photo, userType';
+
+/** Profil professionnel pour l’app (sans email/téléphone). */
+function mapProtectedProfessional(row) {
+  const mapped = mapUserForResponse(row);
+  return {
+    id: mapped.id,
+    name: mapped.name,
+    firstName: mapped.firstName ?? null,
+    lastName: mapped.lastName ?? null,
+    email: '',
+    password: '',
+    phone: null,
+    categorie: mapped.categorie,
+    ville: mapped.ville ?? null,
+    tarif: mapped.tarif,
+    experience: mapped.experience,
+    photo: mapped.photo ?? null,
+    userType: mapped.userType,
+    isPhoneVisible: false,
+    isEmailVisible: false,
+    infoMessage: 'Les coordonnées sont visibles après une réservation confirmée.',
+  };
+}
+
+async function familyCanSeeProfessionalContact(familyId, professionalId) {
+  const row = await db.get(
+    `SELECT id FROM reservations
+     WHERE userId = ? AND professionnelId = ?
+       AND status IN ('confirmed', 'completed')
+     LIMIT 1`,
+    [familyId, professionalId]
+  );
+  return !!row;
+}
+
+const REVIEW_LIST_SQL = `
+  SELECT
+    r.id,
+    r.reservationId,
+    r.userId,
+    r.professionalId,
+    r.rating,
+    r.comment,
+    r.createdAt,
+    COALESCE(r.userName, u.name) AS userName,
+    p.name AS professionalName
+  FROM reviews r
+  LEFT JOIN users u ON r.userId = u.id
+  LEFT JOIN users p ON r.professionalId = p.id
+`;
+
+function mapReportForResponse(row) {
+  if (!row) return row;
+  const reporterId = row.reporterId ?? row.userId;
+  return {
+    id: row.id,
+    reporterId,
+    reportedUserId: row.reportedUserId,
+    reason: row.type,
+    type: row.type,
+    description: row.message,
+    message: row.message,
+    status: row.status || 'open',
+    adminNotes: row.adminNotes ?? null,
+    createdAt: row.createdAt,
+    resolvedAt: row.resolvedAt ?? null,
+    reporterName: row.reporterName ?? null,
+    reporterEmail: row.reporterEmail ?? null,
+    reportedName: row.reportedName ?? null,
+    reportedEmail: row.reportedEmail ?? null,
   };
 }
 
@@ -414,6 +495,17 @@ const authenticateToken = (req, res, next) => {
   });
 };
 
+/** Auth optionnelle : permet GET /api/settings pour l’app mobile sans token. */
+const optionalAuthenticateToken = (req, res, next) => {
+  const authHeader = req.headers['authorization'];
+  const token = authHeader && authHeader.split(' ')[1];
+  if (!token) return next();
+  jwt.verify(token, JWT_SECRET, (err, user) => {
+    if (!err) req.user = user;
+    next();
+  });
+};
+
 // Table clé/valeur pour les paramètres admin (page /settings du dashboard)
 let appSettingsTableReady = false;
 async function ensureAppSettingsTable() {
@@ -432,22 +524,37 @@ async function ensureAppSettingsTable() {
   appSettingsTableReady = true;
 }
 
-app.get('/api/settings', authenticateToken, async (req, res) => {
-  try {
-    if (req.user.userType !== 'admin') {
-      return res.status(403).json({ message: 'Accès réservé aux administrateurs' });
-    }
-    await ensureAppSettingsTable();
-    const row = await db.get('SELECT settings_json FROM app_settings WHERE id = 1');
-    if (!row || row.settings_json == null || row.settings_json === '') {
-      return res.json({});
-    }
+async function readAppSettingsFromDb() {
+  await ensureAppSettingsTable();
+  const row = await db.get(
+    'SELECT settings_json, updated_at FROM app_settings WHERE id = 1'
+  );
+  let stored = {};
+  if (row && row.settings_json) {
     try {
       const parsed = JSON.parse(row.settings_json);
-      return res.json(typeof parsed === 'object' && parsed !== null && !Array.isArray(parsed) ? parsed : {});
+      if (typeof parsed === 'object' && parsed !== null && !Array.isArray(parsed)) {
+        stored = parsed;
+      }
     } catch {
-      return res.json({});
+      stored = {};
     }
+  }
+  return {
+    settings: mergeSettings(stored),
+    updatedAt: row?.updated_at ?? null,
+  };
+}
+
+/** Lecture publique (app mobile) ou complète (admin avec JWT). */
+app.get('/api/settings', optionalAuthenticateToken, async (req, res) => {
+  try {
+    const { settings, updatedAt } = await readAppSettingsFromDb();
+    const isAdmin = req.user && req.user.userType === 'admin';
+    if (isAdmin) {
+      return res.json({ ...settings, _meta: { updatedAt } });
+    }
+    return res.json(sanitizePublicSettings(settings));
   } catch (e) {
     console.error('GET /api/settings', e);
     return res.status(500).json({ message: 'Erreur serveur' });
@@ -459,15 +566,19 @@ app.put('/api/settings', authenticateToken, async (req, res) => {
     if (req.user.userType !== 'admin') {
       return res.status(403).json({ message: 'Accès réservé aux administrateurs' });
     }
-    await ensureAppSettingsTable();
     const body = req.body && typeof req.body === 'object' && !Array.isArray(req.body) ? req.body : {};
-    const json = JSON.stringify(body);
+    delete body._meta;
+    const { ok, errors, settings } = validateSettings(body);
+    if (!ok) {
+      return res.status(400).json({ message: errors.join(' '), errors });
+    }
+    const json = JSON.stringify(settings);
     await db.run(
       `INSERT INTO app_settings (id, settings_json) VALUES (1, ?)
        ON DUPLICATE KEY UPDATE settings_json = ?`,
       [json, json]
     );
-    return res.json({ ok: true, message: 'Paramètres enregistrés' });
+    return res.json({ ok: true, message: 'Paramètres enregistrés', settings });
   } catch (e) {
     console.error('PUT /api/settings', e);
     return res.status(500).json({ message: 'Erreur serveur' });
@@ -514,6 +625,133 @@ app.get('/api/users', async (req, res) => {
       }
     });
   } catch (error) {
+    return res.status(500).json({ message: 'Erreur serveur' });
+  }
+});
+
+// Profils professionnels masqués (app mobile — onglet Recherche)
+app.get('/api/protected-users/professionals', async (req, res) => {
+  try {
+    const rows = await db.all(
+      `SELECT ${PROFESSIONAL_PUBLIC_FIELDS} FROM users
+       WHERE userType = 'professionnel' AND (suspended = 0 OR suspended IS NULL)
+       ORDER BY id DESC`
+    );
+    res.json(rows.map(mapProtectedProfessional));
+  } catch (error) {
+    console.error('GET /api/protected-users/professionals', error);
+    return res.status(500).json({ message: 'Erreur serveur' });
+  }
+});
+
+app.get('/api/protected-users/:id/contact-info', async (req, res) => {
+  try {
+    const targetId = parseInt(req.params.id, 10);
+    const row = await db.get(
+      `SELECT id, email, phone, userType FROM users WHERE id = ?`,
+      [targetId]
+    );
+    if (!row) {
+      return res.status(404).json({ message: 'Utilisateur non trouvé' });
+    }
+
+    const authHeader = req.headers['authorization'];
+    const token = authHeader && authHeader.split(' ')[1];
+    if (!token) {
+      return res.status(403).json({
+        canContact: false,
+        message: 'Connexion requise pour voir les coordonnées.',
+      });
+    }
+
+    let decoded;
+    try {
+      decoded = jwt.verify(token, JWT_SECRET);
+    } catch (_) {
+      return res.status(403).json({ canContact: false, message: 'Token invalide' });
+    }
+
+    const viewerId = decoded.userId;
+    let canContact = false;
+    if (decoded.userType === 'admin' || viewerId === targetId) {
+      canContact = true;
+    } else if (decoded.userType === 'famille' && row.userType === 'professionnel') {
+      canContact = await familyCanSeeProfessionalContact(viewerId, targetId);
+    } else if (decoded.userType === 'professionnel' && row.userType === 'famille') {
+      canContact = await familyCanSeeProfessionalContact(targetId, viewerId);
+    }
+
+    if (!canContact) {
+      return res.status(403).json({
+        canContact: false,
+        message: 'Coordonnées disponibles après une réservation confirmée.',
+        status: 'protected',
+      });
+    }
+
+    res.json({
+      canContact: true,
+      email: row.email,
+      phone: row.phone,
+    });
+  } catch (error) {
+    console.error('GET /api/protected-users/:id/contact-info', error);
+    return res.status(500).json({ message: 'Erreur serveur' });
+  }
+});
+
+app.get('/api/protected-users/:id', async (req, res) => {
+  try {
+    const targetId = parseInt(req.params.id, 10);
+    const row = await db.get(
+      `SELECT ${PROFESSIONAL_PUBLIC_FIELDS}, besoin, preference, mission, particularite
+       FROM users WHERE id = ?`,
+      [targetId]
+    );
+    if (!row) {
+      return res.status(404).json({ message: 'Utilisateur non trouvé' });
+    }
+
+    const authHeader = req.headers['authorization'];
+    const token = authHeader && authHeader.split(' ')[1];
+    let showContact = false;
+    if (token) {
+      try {
+        const decoded = jwt.verify(token, JWT_SECRET);
+        if (decoded.userType === 'admin' || decoded.userId === targetId) {
+          showContact = true;
+        } else if (decoded.userType === 'famille' && row.userType === 'professionnel') {
+          showContact = await familyCanSeeProfessionalContact(decoded.userId, targetId);
+        } else if (decoded.userType === 'professionnel' && row.userType === 'famille') {
+          showContact = await familyCanSeeProfessionalContact(targetId, decoded.userId);
+        }
+      } catch (_) {
+        /* pas de contact */
+      }
+    }
+
+    const mapped = mapUserForResponse(row);
+    if (showContact) {
+      return res.json({
+        ...mapped,
+        password: '',
+        isPhoneVisible: !!(mapped.phone && mapped.phone.length),
+        isEmailVisible: !!(mapped.email && mapped.email.length),
+        infoMessage: null,
+      });
+    }
+
+    if (row.userType === 'professionnel') {
+      return res.json(mapProtectedProfessional(row));
+    }
+
+    return res.json({
+      ...mapProtectedProfessional(row),
+      email: '',
+      phone: null,
+    });
+  } catch (error) {
+    console.error('GET /api/protected-users/:id', error);
     return res.status(500).json({ message: 'Erreur serveur' });
   }
 });
@@ -1065,9 +1303,71 @@ app.get('/api/reviews', async (req, res) => {
   }
 });
 
+// Sous-routes avis (app mobile) — avant /api/reviews/:id
+app.get('/api/reviews/my', authenticateToken, async (req, res) => {
+  try {
+    const rows = await db.all(
+      `${REVIEW_LIST_SQL} WHERE r.userId = ? ORDER BY r.createdAt DESC`,
+      [req.user.userId]
+    );
+    res.json(rows);
+  } catch (error) {
+    console.error('GET /api/reviews/my', error);
+    return res.json([]);
+  }
+});
+
+app.get('/api/reviews/check/:reservationId', authenticateToken, async (req, res) => {
+  try {
+    const reservationId = parseInt(req.params.reservationId, 10);
+    const row = await db.get(
+      'SELECT id FROM reviews WHERE reservationId = ? AND userId = ? LIMIT 1',
+      [reservationId, req.user.userId]
+    );
+    res.json({ hasReviewed: !!row });
+  } catch (error) {
+    console.error('GET /api/reviews/check/:reservationId', error);
+    return res.status(500).json({ message: 'Erreur serveur' });
+  }
+});
+
+app.get('/api/reviews/stats/:professionalId', async (req, res) => {
+  try {
+    const professionalId = parseInt(req.params.professionalId, 10);
+    const row = await db.get(
+      `SELECT COUNT(*) AS totalRatings, AVG(rating) AS averageRating
+       FROM reviews WHERE professionalId = ?`,
+      [professionalId]
+    );
+    res.json({
+      professionalId,
+      totalRatings: Number(row?.totalRatings || 0),
+      averageRating: row?.averageRating != null ? Number(Number(row.averageRating).toFixed(2)) : 0,
+    });
+  } catch (error) {
+    console.error('GET /api/reviews/stats/:professionalId', error);
+    return res.status(500).json({ message: 'Erreur serveur' });
+  }
+});
+
+app.get('/api/reviews/professional/:professionalId', async (req, res) => {
+  try {
+    const professionalId = parseInt(req.params.professionalId, 10);
+    const rows = await db.all(
+      `${REVIEW_LIST_SQL} WHERE r.professionalId = ? ORDER BY r.createdAt DESC`,
+      [professionalId]
+    );
+    res.json(rows);
+  } catch (error) {
+    console.error('GET /api/reviews/professional/:professionalId', error);
+    return res.json([]);
+  }
+});
+
 app.post('/api/reviews', authenticateToken, async (req, res) => {
   try {
     const { professionalId, userId, rating, comment, userName, reservationId } = req.body;
+    const reviewerId = req.user?.userId || userId || 0;
 
     if (!professionalId || !rating) {
       return res.status(400).json({ message: 'professionalId et rating sont requis' });
@@ -1079,9 +1379,9 @@ app.post('/api/reviews', authenticateToken, async (req, res) => {
 
     // Si userName est fourni, on l'utilise, sinon on cherche le nom de l'utilisateur
     let finalUserName = userName;
-    if (!finalUserName && userId && userId !== 0) {
+    if (!finalUserName && reviewerId && reviewerId !== 0) {
       try {
-        const user = await db.get('SELECT name FROM users WHERE id = ?', [userId]);
+        const user = await db.get('SELECT name FROM users WHERE id = ?', [reviewerId]);
         if (user) {
           finalUserName = user.name;
         }
@@ -1096,7 +1396,7 @@ app.post('/api/reviews', authenticateToken, async (req, res) => {
     const result = await db.run(
       `INSERT INTO reviews (professionalId, userId, rating, comment, reservationId, createdAt) 
        VALUES (?, ?, ?, ?, ?, NOW())`,
-      [professionalId, userId || 0, rating, comment || null, finalReservationId]
+      [professionalId, reviewerId, rating, comment || null, finalReservationId]
     );
     
     // Si userName est fourni et que la colonne existe, mettre à jour
@@ -1128,6 +1428,185 @@ app.delete('/api/reviews/:id', authenticateToken, async (req, res) => {
     res.json({ message: 'Avis supprimé' });
   } catch (error) {
     return res.status(500).json({ message: 'Erreur serveur' });
+  }
+});
+
+// ========== SIGNALEMENTS (REPORTS) ==========
+
+app.post('/api/reports', authenticateToken, async (req, res) => {
+  try {
+    const { reportedUserId, type, message, reason, description, reservationId } = req.body;
+    const reportedId = parseInt(reportedUserId, 10);
+    const reportType = (type || reason || 'other').toString().slice(0, 255);
+    const reportMessage = (message || description || '').toString().trim();
+    const resId = reservationId != null ? parseInt(reservationId, 10) : null;
+
+    if (!reportedId || Number.isNaN(reportedId)) {
+      return res.status(400).json({ message: 'reportedUserId est requis' });
+    }
+    if (!reportMessage) {
+      return res.status(400).json({ message: 'Le message est requis' });
+    }
+    if (reportedId === req.user.userId) {
+      return res.status(400).json({ message: 'Vous ne pouvez pas vous signaler vous-même' });
+    }
+
+    const reported = await db.get('SELECT id FROM users WHERE id = ?', [reportedId]);
+    if (!reported) {
+      return res.status(404).json({ message: 'Utilisateur signalé introuvable' });
+    }
+
+    const result = await db.run(
+      `INSERT INTO reports (userId, reportedUserId, reservationId, type, message, status, createdAt)
+       VALUES (?, ?, ?, ?, ?, 'open', NOW())`,
+      [req.user.userId, reportedId, Number.isNaN(resId) ? null : resId, reportType, reportMessage]
+    );
+
+    const row = await db.get(
+      `SELECT r.*,
+              ru.name AS reporterName, ru.email AS reporterEmail,
+              rd.name AS reportedName, rd.email AS reportedEmail
+       FROM reports r
+       LEFT JOIN users ru ON r.userId = ru.id
+       LEFT JOIN users rd ON r.reportedUserId = rd.id
+       WHERE r.id = ?`,
+      [result.lastID]
+    );
+
+    res.status(201).json(mapReportForResponse(row));
+  } catch (error) {
+    console.error('POST /api/reports', error);
+    return res.status(500).json({ message: 'Erreur serveur', error: error.message });
+  }
+});
+
+app.get('/api/reports/my', authenticateToken, async (req, res) => {
+  try {
+    const rows = await db.all(
+      `SELECT r.*,
+              ru.name AS reporterName, ru.email AS reporterEmail,
+              rd.name AS reportedName, rd.email AS reportedEmail
+       FROM reports r
+       LEFT JOIN users ru ON r.userId = ru.id
+       LEFT JOIN users rd ON r.reportedUserId = rd.id
+       WHERE r.userId = ?
+       ORDER BY r.createdAt DESC`,
+      [req.user.userId]
+    );
+    res.json(rows.map(mapReportForResponse));
+  } catch (error) {
+    console.error('GET /api/reports/my', error);
+    return res.json([]);
+  }
+});
+
+app.get('/api/reports', authenticateToken, async (req, res) => {
+  try {
+    if (req.user.userType !== 'admin') {
+      const rows = await db.all(
+        `SELECT r.*,
+                ru.name AS reporterName, ru.email AS reporterEmail,
+                rd.name AS reportedName, rd.email AS reportedEmail
+         FROM reports r
+         LEFT JOIN users ru ON r.userId = ru.id
+         LEFT JOIN users rd ON r.reportedUserId = rd.id
+         WHERE r.userId = ?
+         ORDER BY r.createdAt DESC`,
+        [req.user.userId]
+      );
+      return res.json(rows.map(mapReportForResponse));
+    }
+
+    const rows = await db.all(
+      `SELECT r.*,
+              ru.name AS reporterName, ru.email AS reporterEmail,
+              rd.name AS reportedName, rd.email AS reportedEmail
+       FROM reports r
+       LEFT JOIN users ru ON r.userId = ru.id
+       LEFT JOIN users rd ON r.reportedUserId = rd.id
+       ORDER BY r.createdAt DESC`
+    );
+    res.json(rows.map(mapReportForResponse));
+  } catch (error) {
+    console.error('GET /api/reports', error);
+    return res.json([]);
+  }
+});
+
+app.put('/api/reports/:id', authenticateToken, async (req, res) => {
+  try {
+    if (req.user.userType !== 'admin') {
+      return res.status(403).json({ message: 'Accès réservé aux administrateurs' });
+    }
+    const id = parseInt(req.params.id, 10);
+    if (!Number.isFinite(id)) {
+      return res.status(400).json({ message: 'ID invalide' });
+    }
+    const status = req.body?.status != null ? String(req.body.status).trim() : '';
+    const allowed = ['open', 'pending', 'resolved', 'dismissed'];
+    if (!allowed.includes(status)) {
+      return res.status(400).json({
+        message: 'Statut invalide (open, pending, resolved, dismissed)',
+      });
+    }
+    const resolvedAt = status === 'resolved' || status === 'dismissed' ? new Date() : null;
+    await db.run(
+      `UPDATE reports SET status = ?, resolvedAt = ? WHERE id = ?`,
+      [status, resolvedAt, id]
+    );
+    const row = await db.get(
+      `SELECT r.*,
+              ru.name AS reporterName, ru.email AS reporterEmail,
+              rd.name AS reportedName, rd.email AS reportedEmail
+       FROM reports r
+       LEFT JOIN users ru ON r.userId = ru.id
+       LEFT JOIN users rd ON r.reportedUserId = rd.id
+       WHERE r.id = ?`,
+      [id]
+    );
+    if (!row) {
+      return res.status(404).json({ message: 'Signalement introuvable' });
+    }
+    res.json(mapReportForResponse(row));
+  } catch (error) {
+    console.error('PUT /api/reports/:id', error);
+    return res.status(500).json({ message: 'Erreur serveur' });
+  }
+});
+
+// Remboursement Stripe
+app.post('/api/stripe/refund', authenticateToken, async (req, res) => {
+  try {
+    const { paymentIntentId, amount, reason } = req.body;
+
+    if (!paymentIntentId) {
+      return res.status(400).json({ message: 'paymentIntentId est requis' });
+    }
+
+    const refundParams = {
+      payment_intent: paymentIntentId,
+      reason: reason || 'requested_by_customer',
+    };
+
+    if (amount != null && amount !== '') {
+      refundParams.amount = Math.round(Number(amount) * 100);
+    }
+
+    const refund = await stripe.refunds.create(refundParams);
+
+    res.json({
+      id: refund.id,
+      status: refund.status,
+      amount: refund.amount / 100,
+      currency: refund.currency,
+      paymentIntentId,
+    });
+  } catch (error) {
+    console.error('POST /api/stripe/refund', error);
+    return res.status(500).json({
+      message: 'Erreur lors du remboursement',
+      error: error.message,
+    });
   }
 });
 
@@ -1589,6 +2068,9 @@ app.get('/', (req, res) => {
       badges: '/api/badges',
       ratings: '/api/ratings',
       reviews: '/api/reviews',
+      reports: '/api/reports',
+      protectedUsers: '/api/protected-users',
+      stripeRefund: '/api/stripe/refund',
       reservations: '/api/reservations',
       settings: '/api/settings',
     },

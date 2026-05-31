@@ -68,9 +68,22 @@ async function run(sql, params = []) {
 // Initialiser les tables si nécessaire (pour compatibilité avec SQLite)
 async function initializeTables() {
   try {
-    // Les tables sont déjà créées via l'import SQL
-    // On vérifie juste que la connexion fonctionne
     await testConnection();
+    await run(`
+      CREATE TABLE IF NOT EXISTS reports (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        userId INT NOT NULL,
+        reportedUserId INT NULL,
+        reservationId INT NULL,
+        type VARCHAR(50) NOT NULL,
+        message TEXT NOT NULL,
+        status VARCHAR(20) DEFAULT 'open',
+        createdAt DATETIME DEFAULT CURRENT_TIMESTAMP,
+        resolvedAt DATETIME NULL,
+        INDEX idx_userId (userId),
+        INDEX idx_reportedUserId (reportedUserId)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+    `);
     console.log('✅ Base de données MySQL initialisée');
   } catch (error) {
     console.error('❌ Erreur initialisation tables:', error);

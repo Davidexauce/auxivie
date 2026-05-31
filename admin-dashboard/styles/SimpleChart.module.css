@@ -1,8 +1,16 @@
 .chart {
-  background-color: white;
-  border-radius: 8px;
-  padding: 20px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  background: var(--surface);
+  border-radius: var(--radius-lg);
+  padding: 22px;
+  border: 1px solid var(--border-subtle);
+  box-shadow: var(--shadow-md);
+  animation: fadeInUp 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+}
+
+.chart:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-lg);
 }
 
 .chartTitle {
@@ -52,7 +60,10 @@
 .bar {
   height: 100%;
   border-radius: 4px;
-  transition: width 0.3s ease;
+  transform-origin: left center;
+  animation: barGrow 0.7s cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation-delay: var(--bar-delay, 0s);
+  transition: filter 0.2s ease;
   display: flex;
   align-items: center;
   justify-content: flex-end;
@@ -60,6 +71,10 @@
   color: white;
   font-size: 12px;
   font-weight: 600;
+}
+
+.chartBar:hover .bar {
+  filter: brightness(1.08);
 }
 
 .noData {

@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
 import Layout from '../../../components/Layout';
 import { usersAPI } from '../../../lib/api';
+import { displayUserName } from '../../../lib/displayUserName';
 import styles from '../../../styles/UserDetail.module.css';
 
 export default function EditUser() {
@@ -40,7 +41,7 @@ export default function EditUser() {
       const userData = await usersAPI.getById(id);
       setUser(userData);
       setFormData({
-        name: userData.name || '',
+        name: displayUserName(userData) || '',
         email: userData.email || '',
         phone: userData.phone || '',
         categorie: userData.categorie || '',

@@ -3,17 +3,21 @@
 }
 
 .title {
-  font-size: 32px;
+  font-size: 1.75rem;
   font-weight: 700;
-  color: #0b1220;
+  letter-spacing: -0.02em;
+  color: var(--text-primary);
   margin-bottom: 24px;
+  animation: fadeInUp 0.45s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
 .tableContainer {
-  background: white;
-  border-radius: 12px;
+  background: var(--surface);
+  border-radius: var(--radius-lg);
   overflow: hidden;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  border: 1px solid var(--border-subtle);
+  box-shadow: var(--shadow-md);
+  animation: fadeInUp 0.5s cubic-bezier(0.22, 1, 0.36, 1) 0.1s both;
 }
 
 .table {
@@ -22,36 +26,36 @@
 }
 
 .table thead {
-  background: #f8f9fa;
+  background: var(--green-50);
 }
 
 .table th {
-  padding: 16px;
+  padding: 14px 18px;
   text-align: left;
   font-weight: 600;
-  color: #0b1220;
-  font-size: 14px;
+  color: var(--text-secondary);
+  font-size: 0.6875rem;
   text-transform: uppercase;
-  letter-spacing: 0.5px;
+  letter-spacing: 0.06em;
 }
 
 .table td {
-  padding: 16px;
-  border-top: 1px solid #e2e8f0;
-  color: #0b1220;
+  padding: 14px 18px;
+  border-top: 1px solid var(--border-light);
+  color: var(--text-primary);
 }
 
 .table tbody tr:hover {
-  background: #f8f9fa;
+  background: var(--green-50);
 }
 
 .verified {
-  color: #166534;
+  color: var(--success-text);
   font-weight: 600;
 }
 
 .pending {
-  color: #15803d;
+  color: var(--emerald-dark);
   font-weight: 600;
 }
 
@@ -61,46 +65,43 @@
 }
 
 .verifyButton {
-  background: linear-gradient(to right, #16a34a, #10b981, #16a34a);
-  color: white;
+  background: linear-gradient(135deg, var(--primary), var(--emerald));
+  color: var(--white);
   border: none;
-  padding: 6px 12px;
-  border-radius: 6px;
+  padding: 7px 12px;
+  border-radius: var(--radius-sm);
   cursor: pointer;
-  font-weight: 500;
-  font-size: 14px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.06);
-  transition: all 0.2s;
+  font-weight: 600;
+  font-size: 0.8125rem;
+  transition: filter 0.15s;
 }
 
 .verifyButton:hover {
-  background: linear-gradient(to right, #15803d, #059669, #15803d);
+  filter: brightness(1.06);
 }
 
 .rejectButton {
-  background: #dc2626;
-  color: white;
+  background: var(--error);
+  color: var(--white);
   border: none;
-  padding: 6px 12px;
-  border-radius: 6px;
+  padding: 7px 12px;
+  border-radius: var(--radius-sm);
   cursor: pointer;
-  font-weight: 500;
-  font-size: 14px;
-  transition: background 0.2s;
+  font-weight: 600;
+  font-size: 0.8125rem;
 }
 
 .rejectButton:hover {
-  background: #991b1b;
+  background: var(--error-dark);
 }
 
 .rejected {
-  color: #dc2626;
+  color: var(--error);
   font-weight: 600;
 }
 
 .loading {
   text-align: center;
-  padding: 40px;
-  color: #475569;
+  padding: 48px;
+  color: var(--text-tertiary);
 }
-

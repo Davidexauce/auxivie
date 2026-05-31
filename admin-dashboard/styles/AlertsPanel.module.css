@@ -1,0 +1,170 @@
+.panel {
+  margin-bottom: 28px;
+  padding: 22px 24px;
+  background: var(--surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
+  animation: fadeInUp 0.5s cubic-bezier(0.22, 1, 0.36, 1) 0.12s both;
+}
+
+.panelOk {
+  background: linear-gradient(135deg, var(--green-50) 0%, var(--surface) 100%);
+  border-color: var(--success-border);
+}
+
+.panelHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.panelTitle {
+  font-size: 1.125rem;
+  font-weight: 700;
+  margin: 0;
+  color: var(--text-primary);
+}
+
+.panelSubtitle {
+  margin: 4px 0 0;
+  font-size: 0.8125rem;
+  color: var(--text-tertiary);
+}
+
+.panelBadge {
+  min-width: 36px;
+  height: 36px;
+  padding: 0 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #ef4444, #f97316);
+  color: white;
+  font-weight: 800;
+  font-size: 1rem;
+  border-radius: 999px;
+  box-shadow: 0 4px 14px rgba(239, 68, 68, 0.35);
+  animation: pulseSoft 2s ease-in-out infinite;
+}
+
+.alertList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.alertItem {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 16px;
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+  cursor: pointer;
+  text-align: left;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s;
+}
+
+.alertItem:hover {
+  transform: translateX(4px);
+  box-shadow: var(--shadow-sm);
+  border-color: var(--green-200);
+}
+
+.priority_high {
+  border-left: 4px solid #ef4444;
+  background: linear-gradient(90deg, #fef2f2 0%, var(--surface) 28%);
+}
+
+.priority_medium {
+  border-left: 4px solid #f59e0b;
+  background: linear-gradient(90deg, #fffbeb 0%, var(--surface) 28%);
+}
+
+.priority_low {
+  border-left: 4px solid #64748b;
+}
+
+.alertIcon {
+  font-size: 1.25rem;
+  flex-shrink: 0;
+}
+
+.alertBody {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.alertTitle {
+  font-weight: 700;
+  font-size: 0.9375rem;
+  color: var(--text-primary);
+}
+
+.alertMessage {
+  font-size: 0.8125rem;
+  color: var(--text-tertiary);
+}
+
+.alertCount {
+  font-weight: 800;
+  font-size: 0.875rem;
+  color: var(--text-primary);
+  background: var(--green-100);
+  padding: 4px 10px;
+  border-radius: 999px;
+}
+
+.alertArrow {
+  color: var(--primary);
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.okRow {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.okIcon {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: var(--green-100);
+  color: var(--success-text);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  font-size: 1.125rem;
+}
+
+.okTitle {
+  font-weight: 700;
+  margin: 0;
+  color: var(--success-text);
+}
+
+.okDesc {
+  margin: 4px 0 0;
+  font-size: 0.8125rem;
+  color: var(--text-tertiary);
+}
+
+.loadingText {
+  margin: 0;
+  color: var(--text-tertiary);
+  font-size: 0.875rem;
+}

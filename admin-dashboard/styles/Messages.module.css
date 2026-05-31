@@ -1,7 +1,5 @@
 .container {
-  padding: 24px;
-  max-width: 1400px;
-  margin: 0 auto;
+  width: 100%;
 }
 
 .header {
@@ -12,8 +10,9 @@
 }
 
 .title {
-  font-size: 28px;
+  font-size: 1.75rem;
   font-weight: 700;
+  letter-spacing: -0.02em;
   color: var(--text-primary);
   margin: 0;
 }
@@ -47,11 +46,13 @@
 .content {
   display: grid;
   grid-template-columns: 350px 1fr;
-  gap: 24px;
-  height: calc(100vh - 200px);
-  background: white;
-  border-radius: 12px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  gap: 0;
+  height: calc(100vh - 220px);
+  min-height: 480px;
+  background: var(--surface);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border-subtle);
+  box-shadow: var(--shadow-md);
   overflow: hidden;
 }
 

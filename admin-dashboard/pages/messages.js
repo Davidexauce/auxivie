@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
 import Layout from '../components/Layout';
 import { messagesAPI, usersAPI } from '../lib/api';
+import { displayUserName } from '../lib/displayUserName';
 import styles from '../styles/Messages.module.css';
 
 export default function Messages() {
@@ -204,12 +205,12 @@ export default function Messages() {
                   onClick={() => loadConversation(conv.userId)}
                 >
                   <div className={styles.conversationAvatar}>
-                    {conv.partner?.name?.[0]?.toUpperCase() || '?'}
+                    {(displayUserName(conv.partner)?.[0] || '?').toUpperCase()}
                   </div>
                   <div className={styles.conversationInfo}>
                     <div className={styles.conversationHeader}>
                       <span className={styles.conversationName}>
-                        {conv.partner?.name || 'Utilisateur inconnu'}
+                        {displayUserName(conv.partner) || 'Utilisateur inconnu'}
                       </span>
                       <span className={styles.conversationType}>
                         {conv.partner?.userType === 'professionnel' ? '👨‍⚕️' : '👨‍👩‍👧'}
@@ -236,10 +237,10 @@ export default function Messages() {
                 <div className={styles.chatHeader}>
                   <div className={styles.chatPartnerInfo}>
                     <div className={styles.chatAvatar}>
-                      {selectedPartner?.name?.[0]?.toUpperCase() || '?'}
+                      {(displayUserName(selectedPartner)?.[0] || '?').toUpperCase()}
                     </div>
                     <div>
-                      <h3>{selectedPartner?.name || 'Utilisateur'}</h3>
+                      <h3>{displayUserName(selectedPartner) || 'Utilisateur'}</h3>
                       <p className={styles.chatPartnerType}>
                         {selectedPartner?.userType === 'professionnel' ? 'Professionnel' : 'Famille'}
                         {selectedPartner?.categorie && ` • ${selectedPartner.categorie}`}

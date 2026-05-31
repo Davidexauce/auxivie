@@ -1,3 +1,5 @@
+import { normalizeUser, normalizeUsers } from './normalizeUser';
+
 // Récupérer l'URL de l'API depuis les variables d'environnement
 // API exposée sur le domaine principal : https://auxivie.org/api (proxy Nginx → backend).
 // Le dashboard admin est servi sur https://aidalia.auxivie.org (Next.js).
@@ -116,10 +118,12 @@ export const authAPI = {
 // API des utilisateurs
 export const usersAPI = {
   getAll: async () => {
-    return apiCall('/api/users');
+    const data = await apiCall('/api/users');
+    return normalizeUsers(Array.isArray(data) ? data : []);
   },
   getById: async (id) => {
-    return apiCall(`/api/users/${id}`);
+    const data = await apiCall(`/api/users/${id}`);
+    return normalizeUser(data);
   },
   update: async (id, data) => {
     return apiCall(`/api/users/${id}`, {
@@ -245,6 +249,19 @@ export const reviewsAPI = {
   delete: async (reviewId) => {
     return apiCall(`/api/reviews/${reviewId}`, {
       method: 'DELETE',
+    });
+  },
+};
+
+// API des signalements
+export const reportsAPI = {
+  getAll: async () => {
+    return apiCall('/api/reports');
+  },
+  updateStatus: async (id, status) => {
+    return apiCall(`/api/reports/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify({ status }),
     });
   },
 };
