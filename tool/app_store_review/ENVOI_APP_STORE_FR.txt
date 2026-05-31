@@ -1,0 +1,48 @@
+ENVOYER AIDALYA SUR APP STORE CONNECT
+=====================================
+
+Prérequis
+---------
+[ ] Compte Apple Developer actif (99 €/an)
+[ ] App créée sur https://appstoreconnect.apple.com → Mes apps
+      Bundle ID : com.example.auxivie
+      Nom : Aidalya
+[ ] Identifiant enregistré sur developer.apple.com → Identifiers → com.example.auxivie
+[ ] Xcode connecté au bon compte (Réglages Xcode → Comptes)
+
+Méthode 1 — Xcode (recommandée)
+-------------------------------
+1. Ouvrir : ios/Runner.xcworkspace
+2. En haut : sélectionner « Any iOS Device (arm64) » (pas simulateur)
+3. Product → Archive (attendre la fin)
+4. Fenêtre Organizer → Archives → sélectionner la dernière archive Aidalya
+5. Distribute App → App Store Connect → Upload
+6. Suivre l’assistant (signature automatique, équipe DB7N63UW57)
+
+Méthode 2 — Terminal (Flutter)
+------------------------------
+cd "/Users/david/Desktop/App flutter Auxivie"
+flutter pub get
+flutter build ipa --release
+
+Fichier généré : build/ios/ipa/*.ipa
+
+Puis Transporter (Mac App Store) : glisser le .ipa
+Ou : xcrun altool --upload-app -f build/ios/ipa/*.ipa -t ios -u VOTRE_APPLE_ID
+
+Après l’upload (15–45 min)
+--------------------------
+App Store Connect → votre app → TestFlight ou App Store
+→ le build apparaît sous « Builds » / TestFlight
+→ remplir fiche store, captures, politique confidentialité
+→ Soumettre pour révision
+
+Version actuelle du projet
+--------------------------
+pubspec.yaml : 1.0.1+2  (version 1.0.1, build 2)
+Bundle ID iOS : com.example.auxivie
+Équipe : DB7N63UW57
+
+Comptes démo pour Apple
+-----------------------
+Voir reponse_review_apple_EN.txt et les renseigner dans App Review Information.

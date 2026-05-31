@@ -68,34 +68,43 @@ post_install do |installer|
 
   # Patch StripePaymentSheet: désactive le "scan de carte" (STPCardScanner)
   # car certaines versions Stripe/Xcode ne l'exposent plus, ce qui empêche le build Release/Archive.
+  # CocoaPods installe les fichiers en lecture seule — chmod requis avant toute écriture.
+  patch_pod_file = lambda do |path, &block|
+    next unless File.exist?(path)
+
+    File.chmod(0o644, path)
+    content = File.read(path)
+    new_content = block.call(content)
+    next if new_content == content
+
+    File.write(path, new_content)
+    File.chmod(0o444, path)
+  end
+
   begin
     pod_root = File.dirname(__FILE__)
+    stripe_ps = File.join(pod_root, 'Pods', 'StripePaymentSheet', 'StripePaymentSheet', 'StripePaymentSheet', 'Source', 'PaymentSheet')
 
-    card_section_path = File.join(pod_root, 'Pods', 'StripePaymentSheet', 'StripePaymentSheet', 'StripePaymentSheet', 'Source', 'PaymentSheet', 'Elements', 'CardSection', 'CardSectionElement.swift')
-    if File.exist?(card_section_path)
-      content = File.read(card_section_path)
-      if content.include?('STPCardScanner') || content.include?('CardSectionWithScannerView')
-        content = content.gsub(/lazy var view: UIView = \\{[\\s\\S]*?\\}\\(\\)/m, "lazy var view: UIView = {\n        return cardSection.view\n    }()")
-        content = content.gsub(
-          "#if !canImport(CompositorServices)\n// MARK: - CardSectionWithScannerViewDelegate",
-          "#if !canImport(CompositorServices) && canImport(StripeCardScan)\n// MARK: - CardSectionWithScannerViewDelegate"
-        )
-        File.write(card_section_path, content)
-      end
+    patch_pod_file.call(File.join(stripe_ps, 'Elements', 'CardSection', 'CardSectionElement.swift')) do |content|
+      next content unless content.include?('STPCardScanner') || content.include?('CardSectionWithScannerView')
+
+      content = content.gsub(/lazy var view: UIView = \{[\s\S]*?\}\(\)/m, "lazy var view: UIView = {\n        return cardSection.view\n    }()")
+      content.sub(
+        "#if !os(visionOS)\n// MARK: - CardSectionWithScannerViewDelegate",
+        "#if false\n// MARK: - CardSectionWithScannerViewDelegate"
+      )
     end
 
-    card_scanning_view_path = File.join(pod_root, 'Pods', 'StripePaymentSheet', 'StripePaymentSheet', 'StripePaymentSheet', 'Source', 'PaymentSheet', 'Views', 'CardScanningView.swift')
-    if File.exist?(card_scanning_view_path)
-      content = File.read(card_scanning_view_path)
-      content = content.sub(/\A#if[^\n]*\n/, "#if false\n")
-      File.write(card_scanning_view_path, content)
+    patch_pod_file.call(File.join(stripe_ps, 'Views', 'CardScanningView.swift')) do |content|
+      next content if content.include?("#if false\n")
+
+      content.sub("#if !os(visionOS)", '#if false')
     end
 
-    card_section_with_scanner_path = File.join(pod_root, 'Pods', 'StripePaymentSheet', 'StripePaymentSheet', 'StripePaymentSheet', 'Source', 'PaymentSheet', 'Elements', 'CardSection', 'CardSectionWithScannerView.swift')
-    if File.exist?(card_section_with_scanner_path)
-      content = File.read(card_section_with_scanner_path)
-      content = content.sub(/\A#if[^\n]*\n/, "#if false\n")
-      File.write(card_section_with_scanner_path, content)
+    patch_pod_file.call(File.join(stripe_ps, 'Elements', 'CardSection', 'CardSectionWithScannerView.swift')) do |content|
+      next content if content.include?("#if false\n")
+
+      content.sub("#if !os(visionOS)", '#if false')
     end
   rescue => e
     puts "⚠️ post_install Stripe patch skipped: #{e}"
